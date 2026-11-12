@@ -4,6 +4,7 @@
 	import { onMount } from 'svelte';
 	import { m } from '#lib/paraglide/messages.js';
 	import { getLocale } from '#lib/paraglide/runtime.js';
+	import { initPwa } from '#lib/pwa/client.js';
 
 	let { children } = $props();
 
@@ -13,6 +14,7 @@
 		} catch {
 			// Locale resolution failed: keep the app.html default.
 		}
+		initPwa();
 	});
 </script>
 

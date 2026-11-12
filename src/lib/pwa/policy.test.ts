@@ -1,0 +1,41 @@
+import { describe, expect, it } from 'vitest';
+import { decide } from './policy.js';
+
+const app = 'https://letterbuckets.test';
+const input = (over: Partial<Parameters<typeof decide>[0]>) => ({
+	method: 'GET',
+	url: `${app}/levels`,
+	origin: app,
+	mode: 'navigate',
+	destination: 'document',
+	...over
+});
+
+describe('decide', () => {
+	it('serves navigations from the cached shell', () => {
+		expect(decide(input({}), app)).toBe('navigation');
+	});
+	it('serves same-origin audio cache-first', () => {
+		expect(
+			decide(
+				input({
+					mode: 'no-cors',
+					destination: 'audio',
+					url: `${app}/audio/words/en/l01-w1.mp3`
+				}),
+				app
+			)
+		).toBe('cache-first');
+	});
+	it('serves same-origin images, fonts, scripts and styles cache-first', () => {
+		for (const destination of ['image', 'font', 'script', 'style']) {
+			expect(decide(input({ mode: 'no-cors', destination, url: `${app}/x` }), app)).toBe(
+				'cache-first'
+			);
+		}
+	});
+	it('bypasses non-GET and cross-origin requests', () => {
+		expect(decide(input({ method: 'POST' }), app)).toBe('bypass');
+		expect(decide(input({ origin: 'https://other.test' }), app)).toBe('bypass');
+	});
+});
