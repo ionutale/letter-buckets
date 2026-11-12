@@ -1,0 +1,10 @@
+node_modules
+.svelte-kit
+build
+test-results
+playwright-report
+candidates
+.superpowers
+.DS_Store
+scripts/content.json
+scripts/themes.json

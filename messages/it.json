@@ -1,0 +1,12 @@
+{
+	"$schema": "https://inlang.com/schema/inlang-message-format",
+	"app_name": "Letter Buckets",
+	"tagline": "Parole gentili per i più piccoli",
+	"play": "Gioca",
+	"levels": "Livelli",
+	"word_book": "Libro delle parole",
+	"settings": "Impostazioni",
+	"back": "Indietro",
+	"next": "Avanti",
+	"close": "Chiudi"
+}

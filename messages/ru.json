@@ -1,0 +1,12 @@
+{
+	"$schema": "https://inlang.com/schema/inlang-message-format",
+	"app_name": "Letter Buckets",
+	"tagline": "Добрые игры со словами для малышей",
+	"play": "Играть",
+	"levels": "Уровни",
+	"word_book": "Книга слов",
+	"settings": "Настройки",
+	"back": "Назад",
+	"next": "Далее",
+	"close": "Закрыть"
+}

@@ -1,0 +1,12 @@
+{
+	"$schema": "https://inlang.com/schema/inlang-message-format",
+	"app_name": "Letter Buckets",
+	"tagline": "Jocuri blânde cu litere pentru cei mici",
+	"play": "Joacă",
+	"levels": "Niveluri",
+	"word_book": "Cartea cuvintelor",
+	"settings": "Setări",
+	"back": "Înapoi",
+	"next": "Înainte",
+	"close": "Închide"
+}
