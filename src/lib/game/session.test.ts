@@ -127,11 +127,12 @@ describe('level session', () => {
 		expect(session.hintStep).toBe(3);
 		expect(Object.keys(session.word?.placed ?? {})).toHaveLength(1);
 
-		// Locked: a second call must not place another letter.
+		// A deliberate hint press is an interaction, so it reopens the chain
+		// with a pulse rather than placing another letter.
 		session.hint();
+		expect(session.lastHint?.kind).toBe('pulse-slot');
 		expect(Object.keys(session.word?.placed ?? {})).toHaveLength(1);
 
-		// A real interaction unlocks the next cycle.
 		session.noteInteraction();
 		expect(session.hintStep).toBe(0);
 		session.hint();

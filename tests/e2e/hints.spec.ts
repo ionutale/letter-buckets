@@ -57,3 +57,36 @@ test('an idle word auto-places once and stops until the child interacts', async 
 	await hintButton(page).click();
 	await expect(page.locator('[data-slot][data-filled="true"]')).toHaveCount(2);
 });
+
+test('leaving the level cancels the idle hint chain without saving progress', async ({ page }) => {
+	await page.addInitScript(() => {
+		if (localStorage.getItem('letter-buckets-save')) return;
+		localStorage.setItem(
+			'letter-buckets-save',
+			JSON.stringify({
+				version: 1,
+				settings: { muted: true, coachDone: true, installHintDismissed: true },
+				locales: {
+					en: {
+						clearedThrough: 0,
+						levelWords: {},
+						unlocked: {},
+						chapterStamps: []
+					}
+				}
+			})
+		);
+	});
+	await page.clock.install();
+	await page.goto('/en/levels');
+	await page.locator('button.level[data-state="current"]').click();
+	await page.getByRole('button', { name: /open word 1/i }).click();
+	await page.goBack();
+	await expect(page).toHaveURL(/\/en\/levels$/);
+
+	await page.clock.runFor(60_000);
+	const save = await page.evaluate(() => JSON.parse(localStorage.getItem('letter-buckets-save')!));
+	expect(save.locales.en.levelWords).toEqual({});
+	expect(save.locales.en.unlocked).toEqual({});
+	expect(save.locales.en.clearedThrough).toBe(0);
+});

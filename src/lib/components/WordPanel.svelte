@@ -117,10 +117,16 @@
 
 		if (result.outcome === 'placed') {
 			suggestedSlot = null;
-			audio.playSfx('tile-place');
-			announcement =
-				session.word && isComplete(session.word) ? m.word_complete() : m.letter_placed();
-			if (session.word && isComplete(session.word)) audio.playSfx('word-complete');
+			const done = session.word !== null && isComplete(session.word);
+			if (done) {
+				announcement = m.word_complete();
+				if (session.openIndex !== null) {
+					audio.playWord(session.locale, session.level, session.openIndex);
+				}
+			} else {
+				audio.playSfx('tile-place');
+				announcement = m.letter_placed();
+			}
 			return;
 		}
 

@@ -59,3 +59,16 @@ test('the install hint appears after a cleared level and stays dismissed', async
 		page.getByText('Add Letter Buckets to your home screen to play offline.', { exact: true })
 	).toHaveCount(0);
 });
+
+test('the level header sound toggle persists', async ({ page }) => {
+	await page.goto('/en/levels/1');
+	const mute = page.getByRole('button', { name: 'Sound', exact: true });
+	await expect(mute).toHaveAttribute('aria-pressed', 'true');
+	await mute.click();
+	await expect(mute).toHaveAttribute('aria-pressed', 'false');
+	const muted = await page.evaluate(() => {
+		const raw = localStorage.getItem('letter-buckets-save');
+		return raw ? JSON.parse(raw).settings.muted : null;
+	});
+	expect(muted).toBe(true);
+});

@@ -198,7 +198,8 @@ export function markLevelComplete(data: SaveData, locale: Locale, level: number)
 	if (!Number.isInteger(level) || level < 1 || level > MAX_LEVEL) return;
 	const progress = data.locales[locale];
 	progress.clearedThrough = Math.max(progress.clearedThrough, level);
-	const stamp = Math.ceil(level / 10);
+	if (level % 10 !== 0) return;
+	const stamp = level / 10;
 	if (!progress.chapterStamps.includes(stamp)) {
 		progress.chapterStamps = [...progress.chapterStamps, stamp].sort((a, b) => a - b);
 	}

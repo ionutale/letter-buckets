@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onDestroy, onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { m } from '#lib/paraglide/messages.js';
@@ -28,6 +28,7 @@
 	let locale = $state<Locale>('en');
 	let artBroken = $state(false);
 	let coachStep = $state<1 | 2 | null>(null);
+	let muted = $state(false);
 
 	const paramLevel = $derived(Number.parseInt(page.params.level ?? '', 10));
 	const content = $derived(session?.content ?? null);
@@ -39,10 +40,13 @@
 	onMount(() => {
 		data = loadSave(localStorage);
 		locale = getLocale() as Locale;
-		audio.setMuted(data.settings.muted);
+		muted = data.settings.muted;
+		audio.setMuted(muted);
 		audio.preloadLevel(locale, paramLevel);
 		if (paramLevel === 1 && !data.settings.coachDone) coachStep = 1;
 	});
+
+	onDestroy(() => session?.closeWord());
 
 	$effect(() => {
 		if (coachStep === 1 && session?.openIndex != null) coachStep = 2;
@@ -58,6 +62,7 @@
 		if (session?.level === level) return;
 
 		audio.preloadLevel(locale, level);
+		session?.closeWord();
 		session = createLevelSession(level, locale, {
 			progress: getLocaleProgress(data, locale),
 			onWordComplete: (completedLevel, wordIndex) => {
@@ -102,6 +107,14 @@
 	function nextLevel(): void {
 		void goto(localizeHref(paramLevel >= 50 ? '/levels' : `/levels/${paramLevel + 1}`));
 	}
+
+	function toggleMute(): void {
+		if (!data) return;
+		muted = !muted;
+		data.settings.muted = muted;
+		audio.setMuted(muted);
+		persistSave(data, localStorage);
+	}
 </script>
 
 <svelte:head>
@@ -116,6 +129,47 @@
 			<h1>{content?.theme ?? ''}</h1>
 		</div>
 		<span class="count">{doneCount}/3</span>
+		<button
+			type="button"
+			class="round mute"
+			aria-label={m.sound()}
+			aria-pressed={!muted}
+			onclick={toggleMute}
+		>
+			{#if muted}
+				<svg class="glyph" viewBox="0 0 24 24" aria-hidden="true"
+					><path
+						d="M4 9h4l5-4v14l-5-4H4z"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linejoin="round"
+					/><path
+						d="M16 9l5 6M21 9l-5 6"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+					/></svg
+				>
+			{:else}
+				<svg class="glyph" viewBox="0 0 24 24" aria-hidden="true"
+					><path
+						d="M4 9h4l5-4v14l-5-4H4z"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linejoin="round"
+					/><path
+						d="M16 8a5 5 0 0 1 0 8"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+					/></svg
+				>
+			{/if}
+		</button>
 	</header>
 
 	{#if !artBroken}
@@ -188,6 +242,10 @@
 		color: var(--lb-ink);
 		font-size: 1.4rem;
 		text-decoration: none;
+	}
+	.mute .glyph {
+		width: 20px;
+		height: 20px;
 	}
 	.titles {
 		min-width: 0;

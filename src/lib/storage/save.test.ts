@@ -55,6 +55,12 @@ describe('save', () => {
 		expect(data.locales.en.chapterStamps).toEqual([1]);
 	});
 
+	it('does not award a chapter stamp for a mid-chapter level', () => {
+		const data = defaultSave();
+		clearLevel(data, 'en', 1);
+		expect(data.locales.en.chapterStamps).toEqual([]);
+	});
+
 	it('opens level 2 only after the whole first level is done', () => {
 		const data = defaultSave();
 		expect(isLevelOpen(data, 'en', 2)).toBe(false);

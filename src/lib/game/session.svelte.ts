@@ -184,6 +184,12 @@ export function createLevelSession(
 	}
 
 	function hint(): void {
+		// A deliberate press is an interaction: it reopens the chain after an
+		// automatic placement, while an idle tablet still cannot chain.
+		if (hintStep === 3) {
+			hintStep = 0;
+			lastHint = null;
+		}
 		advanceHint();
 	}
 
