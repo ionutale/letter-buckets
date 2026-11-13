@@ -34,6 +34,19 @@ describe('decide', () => {
 			);
 		}
 	});
+	it('serves an audio URL fetched from script cache-first', () => {
+		expect(
+			decide(
+				input({
+					mode: 'cors',
+					destination: 'empty',
+					url: `${app}/audio/words/en/l01-w1.mp3`
+				}),
+				app
+			)
+		).toBe('cache-first');
+	});
+
 	it('bypasses non-GET and cross-origin requests', () => {
 		expect(decide(input({ method: 'POST' }), app)).toBe('bypass');
 		expect(decide(input({ origin: 'https://other.test' }), app)).toBe('bypass');

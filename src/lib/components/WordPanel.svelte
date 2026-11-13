@@ -118,7 +118,8 @@
 		if (result.outcome === 'placed') {
 			suggestedSlot = null;
 			audio.playSfx('tile-place');
-			announcement = session.word && isComplete(session.word) ? m.word_complete() : m.letter_placed();
+			announcement =
+				session.word && isComplete(session.word) ? m.word_complete() : m.letter_placed();
 			if (session.word && isComplete(session.word)) audio.playSfx('word-complete');
 			return;
 		}
@@ -211,7 +212,16 @@
 			<button type="button" class="icon" aria-label="Close" onclick={close}>×</button>
 			<p>{m.word_of({ i: session.openIndex! + 1 })}</p>
 			<button type="button" class="icon hint" aria-label={m.hint()} onclick={() => session.hint()}
-				>💡</button
+				><svg class="glyph" viewBox="0 0 24 24" aria-hidden="true"
+					><path
+						d="M9 18h6M10 21h4M8 14a5 5 0 1 1 8 0c-.8.8-1.2 1.8-1.2 3H9.2c0-1.2-.4-2.2-1.2-3z"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+					/></svg
+				></button
 			>
 			<button
 				type="button"
@@ -219,7 +229,22 @@
 				aria-label={m.hear_word()}
 				onclick={() =>
 					session.openIndex !== null &&
-					audio.playWord(session.locale, session.level, session.openIndex)}>🔊</button
+					audio.playWord(session.locale, session.level, session.openIndex)}
+				><svg class="glyph" viewBox="0 0 24 24" aria-hidden="true"
+					><path
+						d="M4 9h4l5-4v14l-5-4H4z"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linejoin="round"
+					/><path
+						d="M16 8a5 5 0 0 1 0 8"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+					/></svg
+				></button
 			>
 		</header>
 
@@ -306,6 +331,10 @@
 		border-radius: 50%;
 		background: var(--lb-paper-2);
 		font-size: 1.5rem;
+	}
+	.glyph {
+		width: 22px;
+		height: 22px;
 	}
 	.word-row {
 		display: flex;

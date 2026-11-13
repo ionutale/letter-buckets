@@ -4,12 +4,12 @@
 	import { getLocale, localizeHref } from '#lib/paraglide/runtime.js';
 	import { getLevelContent } from '#lib/content/index.js';
 	import type { Locale } from '#lib/content/schema.js';
+	import { audio } from '#lib/audio/index.js';
 	import { loadSave, wordKey, type SaveData } from '#lib/storage/save.js';
 	import WordChip from '#lib/components/WordChip.svelte';
 
 	let data = $state<SaveData | null>(null);
 	let locale = $state<Locale>('en');
-	let playing = $state<string | null>(null);
 
 	onMount(() => {
 		data = loadSave(localStorage);
@@ -31,15 +31,8 @@
 		return `/audio/words/${locale}/l${String(level).padStart(2, '0')}-w${index + 1}.mp3`;
 	}
 
-	function play(path: string): void {
-		playing = path;
-		const audio = new Audio(path);
-		void audio.play().catch(() => {
-			playing = null;
-		});
-		audio.addEventListener('ended', () => {
-			playing = null;
-		});
+	function play(level: number, index: number): void {
+		audio.playWord(locale, level, index);
 	}
 </script>
 
@@ -69,7 +62,7 @@
 								{level}
 								unlocked={unlocked[wordKey(level, index)] === true}
 								audio={audioPath(level, index)}
-								onplay={() => play(audioPath(level, index))}
+								onplay={() => play(level, index)}
 							/>
 						{/each}
 					</div>
@@ -77,8 +70,6 @@
 			{/each}
 		</section>
 	{/each}
-
-	<p class="sr-only" aria-live="polite">{playing ? 'Playing word' : ''}</p>
 </main>
 
 <style>

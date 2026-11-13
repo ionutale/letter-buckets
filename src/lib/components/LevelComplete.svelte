@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { m } from '#lib/paraglide/messages.js';
+	import { audio } from '#lib/audio/index.js';
 	import type { LevelSession } from '#lib/game/session.svelte.js';
 
 	interface Props {
@@ -17,14 +18,22 @@
 </script>
 
 {#if session.complete}
-	<div class="complete" role="dialog" aria-modal="true" aria-label="Level complete">
+	<div class="complete" role="dialog" aria-modal="true" aria-label={m.level_complete()}>
 		<h2>{final ? m.you_did_it() : m.level_complete()}</h2>
 		{#if showStamp}
 			<p class="stamp">{m.chapter_stamp({ n: stamp })} ★</p>
 		{/if}
 		<ul class="words">
-			{#each session.buckets as bucket}
-				<li>{bucket.word}</li>
+			{#each session.buckets as bucket, index}
+				<li>
+					<button
+						type="button"
+						onclick={() => audio.playWord(session.locale, session.level, index)}
+					>
+						{bucket.word}
+						<span aria-hidden="true">🔊</span>
+					</button>
+				</li>
 			{/each}
 		</ul>
 		<div class="actions">
@@ -79,9 +88,19 @@
 		letter-spacing: 0.08em;
 	}
 	.words li {
-		padding: var(--lb-space-2) var(--lb-space-3);
+		padding: 0;
 		border-radius: var(--lb-radius-sm);
 		background: var(--lb-paper-2);
+	}
+	.words button {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+		min-height: 44px;
+		padding: var(--lb-space-2) var(--lb-space-3);
+		border-radius: var(--lb-radius-sm);
+		font-weight: 800;
+		letter-spacing: 0.06em;
 	}
 	.actions {
 		display: flex;

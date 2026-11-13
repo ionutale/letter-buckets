@@ -14,9 +14,7 @@
 	const color = $derived(palette[index - 1]);
 
 	const label = $derived(
-		state === 'done'
-			? m.word_done_label({ n: index, word: word ?? '' })
-			: m.open_word({ n: index })
+		state === 'done' ? m.word_done_label({ n: index, word: word ?? '' }) : m.open_word({ n: index })
 	);
 </script>
 
@@ -25,22 +23,22 @@
 	class="bucket"
 	data-state={state}
 	aria-label={label}
-	style={`--bucket-color:${color}`}
+	style={`--bucket-color:${color};--bucket-shadow:color-mix(in srgb, ${color} 55%, #000)`}
 	{onclick}
 >
 	<span class="number" aria-hidden="true">{index}</span>
 	<span class="pail" aria-hidden="true">
 		<svg viewBox="0 0 120 120" role="presentation">
+			<path class="body" d="M18 44h84l-9 62c-2 8-9 14-17 14H44c-8 0-15-6-17-14z" />
+			<path class="rim" d="M14 40h92l-2 14H16z" />
 			<path
 				class="handle"
-				d="M30 42c0-17 13-30 30-30s30 13 30 30"
+				d="M30 44c0-18 13-32 30-32s30 14 30 32"
 				fill="none"
 				stroke="var(--bucket-shadow)"
 				stroke-width="8"
 				stroke-linecap="round"
 			/>
-			<path class="body" d="M18 44h84l-9 62c-2 8-9 14-17 14H44c-8 0-15-6-17-14z" />
-			<path class="rim" d="M14 40h92l-2 14H16z" />
 			{#if state === 'closed'}
 				<path class="lid" d="M12 26h96l-4 18H16z" />
 				<path class="ribbon" d="M58 26h8v18h-8z" />

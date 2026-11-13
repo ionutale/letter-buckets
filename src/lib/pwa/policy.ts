@@ -9,6 +9,7 @@ export interface DecisionInput {
 export type Decision = 'navigation' | 'cache-first' | 'bypass';
 
 const CACHE_FIRST_DESTINATIONS = new Set(['audio', 'image', 'font', 'script', 'style', 'manifest']);
+const CACHE_FIRST_PREFIXES = ['/audio/', '/art/', '/icons/'];
 
 /**
  * Route one fetch to the service worker's three lanes:
@@ -19,5 +20,12 @@ const CACHE_FIRST_DESTINATIONS = new Set(['audio', 'image', 'font', 'script', 's
 export function decide(input: DecisionInput, origin: string): Decision {
 	if (input.method !== 'GET' || input.origin !== origin) return 'bypass';
 	if (input.mode === 'navigate') return 'navigation';
-	return CACHE_FIRST_DESTINATIONS.has(input.destination) ? 'cache-first' : 'bypass';
+	if (CACHE_FIRST_DESTINATIONS.has(input.destination)) return 'cache-first';
+	try {
+		const path = new URL(input.url).pathname;
+		if (CACHE_FIRST_PREFIXES.some((prefix) => path.startsWith(prefix))) return 'cache-first';
+	} catch {
+		return 'bypass';
+	}
+	return 'bypass';
 }

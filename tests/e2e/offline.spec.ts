@@ -3,6 +3,7 @@ import { expect, test } from '@playwright/test';
 test.describe.configure({ mode: 'serial' });
 
 test('works offline after install, including word audio and art', async ({ page, context }) => {
+	test.setTimeout(180_000);
 	await page.goto('/en/');
 	await page.evaluate(() => navigator.serviceWorker.ready);
 

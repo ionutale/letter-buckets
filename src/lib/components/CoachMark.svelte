@@ -10,7 +10,18 @@
 </script>
 
 <aside class="coach" class:top={step === 2} role="status">
-	<span class="bulb" aria-hidden="true">💡</span>
+	<span class="bulb" aria-hidden="true"
+		><svg viewBox="0 0 24 24"
+			><path
+				d="M9 18h6M10 21h4M8 14a5 5 0 1 1 8 0c-.8.8-1.2 1.8-1.2 3H9.2c0-1.2-.4-2.2-1.2-3z"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="2"
+				stroke-linecap="round"
+				stroke-linejoin="round"
+			/></svg
+		></span
+	>
 	<p>{step === 1 ? m.coach_bucket() : m.coach_tile()}</p>
 	<button type="button" onclick={onclose}>{m.got_it()}</button>
 </aside>
@@ -49,5 +60,9 @@
 		background: var(--lb-gold);
 		color: var(--lb-ink);
 		font-weight: 800;
+	}
+	.bulb svg {
+		width: 22px;
+		height: 22px;
 	}
 </style>

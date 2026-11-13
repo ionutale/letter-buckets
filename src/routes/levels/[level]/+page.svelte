@@ -152,7 +152,7 @@
 		<WordPanel {session} onclose={() => session?.closeWord()} />
 	{/if}
 
-	{#if session && session.complete}
+	{#if session && session.complete && session.openIndex === null}
 		<LevelComplete
 			{session}
 			onnext={nextLevel}

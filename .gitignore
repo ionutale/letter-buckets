@@ -9,3 +9,5 @@ candidates
 scripts/content.json
 scripts/themes.json
 .venv-piper
+src/lib/paraglide
+project.inlang/cache
