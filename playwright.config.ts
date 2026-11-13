@@ -16,7 +16,7 @@ export default defineConfig({
 		{ name: 'mobile-chromium', use: { ...devices['Pixel 7'] } }
 	],
 	webServer: {
-		command: 'pnpm build && pnpm preview --port 4173 --strictPort',
+		command: 'pnpm build && pnpm preview',
 		port: 4173,
 		reuseExistingServer: !process.env.CI,
 		timeout: 120_000
