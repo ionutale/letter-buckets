@@ -6,8 +6,9 @@ import { dirname, resolve } from 'node:path';
 const args = new Set(process.argv.slice(2));
 const FORCE = args.has('--force');
 const SAMPLE = args.has('--sample');
+const SFX_ONLY = args.has('--sfx');
 const ALL = args.has('--all') || SAMPLE;
-if (!ALL) {
+if (!ALL && !SFX_ONLY) {
 	console.error('usage: node scripts/generate_audio.mjs --all | --sample [--force]');
 	process.exit(2);
 }
@@ -18,6 +19,8 @@ const TOKEN = process.env.STUDIO_TOKEN ?? readFileSync(TOKEN_PATH, 'utf8').trim(
 const PIPER_BIN = process.env.PIPER_BIN ?? 'piper';
 const PIPER_VOICE =
 	process.env.PIPER_VOICE ?? resolve(homedir(), 'piper-voices/ro_RO-mihai-medium.onnx');
+const PIPER_VOICE_RU =
+	process.env.PIPER_VOICE_RU ?? resolve(homedir(), 'piper-voices/ru_RU-irina-medium.onnx');
 const CONTENT = JSON.parse(readFileSync('scripts/content.json', 'utf8'));
 const TMP = resolve('candidates/audio-tmp');
 mkdirSync(TMP, { recursive: true });
@@ -74,16 +77,14 @@ function convert(input, output, { music = false, sfx = false } = {}) {
 	if (result.status !== 0) throw new Error(`ffmpeg failed for ${output}`);
 }
 
-function piperWav(text) {
-	const output = resolve(TMP, `piper-${Date.now()}.wav`);
-	const result = spawnSync(PIPER_BIN, ['--model', PIPER_VOICE, '--output_file', output], {
+function piperWav(text, voice) {
+	const output = resolve(TMP, `piper-${Date.now()}-${Math.random().toString(16).slice(2)}.wav`);
+	const result = spawnSync(PIPER_BIN, ['--model', voice, '--output_file', output], {
 		input: text,
 		encoding: 'utf8'
 	});
 	if (result.status !== 0 || !existsSync(output)) {
-		throw new Error(
-			`Piper failed. Install piper-tts and download ro_RO-mihai-medium to ${PIPER_VOICE}.`
-		);
+		throw new Error(`Piper failed for ${voice}. Install piper-tts and the voice model.`);
 	}
 	return output;
 }
@@ -111,7 +112,12 @@ async function wordClip(locale, level, index, output) {
 	}
 	const entry = CONTENT[locale].levels[level - 1].words[index];
 	const text = entry.spoken ?? entry.word.toLowerCase();
-	const wav = locale === 'ro' ? piperWav(text) : await qwenWav(text, locale);
+	const wav =
+		locale === 'ro'
+			? piperWav(text, PIPER_VOICE)
+			: locale === 'ru'
+				? piperWav(text, PIPER_VOICE_RU)
+				: await qwenWav(text, locale);
 	convert(wav, output);
 	rmSync(wav, { force: true });
 	console.log(`wrote ${output}`);
@@ -123,7 +129,12 @@ async function generateWords() {
 			const output = `candidates/audio/${locale}-sample.mp3`;
 			const entry = CONTENT[locale].levels[0].words[0];
 			const text = entry.spoken ?? entry.word.toLowerCase();
-			const wav = locale === 'ro' ? piperWav(text) : await qwenWav(text, locale);
+			const wav =
+				locale === 'ro'
+					? piperWav(text, PIPER_VOICE)
+					: locale === 'ru'
+						? piperWav(text, PIPER_VOICE_RU)
+						: await qwenWav(text, locale);
 			convert(wav, output);
 			rmSync(wav, { force: true });
 			console.log(`wrote ${output}`);
@@ -138,12 +149,12 @@ async function generateWords() {
 	}
 }
 
-async function sfx(preset, ms) {
-	const output = `static/audio/sfx/${preset}.mp3`;
+async function sfx(name, preset, ms) {
+	const output = `static/audio/sfx/${name}.mp3`;
 	if (existsSync(output) && !FORCE) return;
 	const result = await studio('/sfx', { preset, duration_ms: ms, gain: 0.8 });
 	const data = await take(result.url);
-	const wav = resolve(TMP, `${preset}.wav`);
+	const wav = resolve(TMP, `${name}.wav`);
 	writeFileSync(wav, data);
 	convert(wav, output, { sfx: true });
 	rmSync(wav, { force: true });
@@ -186,13 +197,13 @@ async function main() {
 			`Audio studio is not running at ${STUDIO}. Start music-sfx-voice-studio first.`
 		);
 	}
-	await generateWords();
+	if (!SFX_ONLY) await generateWords();
 	if (SAMPLE) return;
-	await sfx('tile-pick', 90);
-	await sfx('tile-place', 130);
-	await sfx('tile-wrong', 180);
-	await sfx('ui-tap', 60);
-	await sfx('coin', 380);
+	await sfx('tile-pick', 'click', 90);
+	await sfx('tile-place', 'blip', 130);
+	await sfx('tile-wrong', 'error', 180);
+	await sfx('ui-tap', 'click', 60);
+	await sfx('coin', 'coin', 380);
 	await textSfx('bucket-open', 'wooden bucket lid pop, soft, warm, short');
 	await textSfx('word-complete', 'gentle warm chime, short, child-friendly');
 	await textSfx('level-complete', 'small celebratory sparkle flourish, warm, short, not loud');

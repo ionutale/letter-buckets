@@ -36,7 +36,7 @@ Romanian, Italian, English, German, Russian. UI copy, theme names, word lists, a
 
 All art and audio are generated once and committed; the app makes no runtime model calls and has no third-party requests.
 
-- **Word audio:** Qwen3-TTS (via `music-sfx-voice-studio`) for English, Italian, German, and Russian; Piper `ro_RO-mihai-medium` for Romanian.
+- **Word audio:** Qwen3-TTS (via `music-sfx-voice-studio`) for English, Italian, and German; Piper `ro_RO-mihai-medium` for Romanian and `ru_RU-irina-medium` for Russian.
 - **Effects and music:** Stable Audio 3 and the studio's procedural effects.
 - **Illustrations:** FLUX.2-klein 4B through mflux, layered-paper direction.
 
@@ -49,7 +49,10 @@ node scripts/generate_audio.mjs --all       # starts from the local studio; see 
 node scripts/validate_assets.mjs            # 50 images, 750 clips, effects, music
 ```
 
-The audio job expects the studio at `http://127.0.0.1:7910` with its token in `../music-sfx-voice-studio/data/token`, and Piper installed with the voice at `~/piper-voices/ro_RO-mihai-medium.onnx`. It retries `409 BUSY` from the shared GPU. The art job expects the FLUX studio's Python environment and downloaded FLUX.2-klein weights.
+`PIPER_BIN` can point at the local Piper virtualenv, for example
+`PIPER_BIN="$PWD/.venv-piper/bin/piper" node scripts/generate_audio.mjs --all`.
+
+The audio job expects the studio at `http://127.0.0.1:7910` with its token in `../music-sfx-voice-studio/data/token`, and Piper installed with the Romanian voice at `~/piper-voices/ro_RO-mihai-medium.onnx` and the Russian voice at `~/piper-voices/ru_RU-irina-medium.onnx`. It retries `409 BUSY` from the shared GPU. The art job expects the FLUX studio's Python environment and downloaded FLUX.2-klein weights.
 
 The word lists are reviewed before the audio batch. The art direction is reviewed through three candidates in `candidates/`. The review gates are in `docs/superpowers/plans/2026-11-12-letter-buckets.md`.
 
