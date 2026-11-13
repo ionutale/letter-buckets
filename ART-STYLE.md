@@ -5,7 +5,7 @@ The reference for all 50 level illustrations and the hand-built bucket/UI art.
 ## 1. Principles
 
 - **Cozy picture-book diorama.** Warm cream paper, rounded shapes, calm saturation. The game is a toy, not a poster.
-- **One hand.** All 50 illustrations share the same palette, line weight, and level of detail.
+- **One hand.** All 50 theme scenes and 750 word clues share the same palette, line weight, and level of detail.
 - **Readable at a glance.** A child should recognize the theme in under a second.
 - **The letters are sacred.** No generated image may contain text, letters, numbers, signs, or writing of any kind.
 - **Gentle, never scary.** No sharp teeth, weapons, dark silhouettes, or photorealistic faces.

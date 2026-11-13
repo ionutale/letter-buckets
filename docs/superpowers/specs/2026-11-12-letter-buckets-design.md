@@ -536,7 +536,7 @@ Content and art can run in parallel with the engine once the schema is frozen. A
 - The exact copy for every UI string, within the tone rules.
 - The bucket SVG proportions, panel transitions, and celebration choreography.
 - The exact voice preset per locale and any `spoken` overrides after listening.
-- The FLUX prompt wording beyond the style target, and the final 50 images.
+- The FLUX prompt wording beyond the style target, and the final 50 theme images plus 750 word clues.
 - The level-map and Word Book visual layout details within the rules above.
 - CI wiring and the Vercel project.
 
