@@ -117,4 +117,44 @@ describe('level session', () => {
 		solveCurrentWord(session);
 		expect(words).toEqual([0]);
 	});
+
+	it('walks the hint chain and auto-places only one letter', () => {
+		const session = createLevelSession(25, 'en');
+		session.openBucket(0);
+
+		session.hint();
+		expect(session.lastHint?.kind).toBe('pulse-slot');
+		expect(session.hintStep).toBe(1);
+
+		session.hint();
+		expect(session.lastHint?.kind).toBe('pulse-tile');
+		expect(session.hintStep).toBe(2);
+
+		session.hint();
+		expect(session.lastHint?.kind).toBe('auto-place');
+		expect(session.hintStep).toBe(3);
+		expect(Object.keys(session.word?.placed ?? {})).toHaveLength(1);
+
+		// Locked: a second call must not place another letter.
+		session.hint();
+		expect(Object.keys(session.word?.placed ?? {})).toHaveLength(1);
+
+		// A real interaction unlocks the next cycle.
+		session.noteInteraction();
+		expect(session.hintStep).toBe(0);
+		session.hint();
+		expect(session.lastHint?.kind).toBe('pulse-slot');
+	});
+
+	it('does not auto-place twice without a new interaction', () => {
+		const session = createLevelSession(25, 'en');
+		session.openBucket(0);
+		session.hint();
+		session.hint();
+		session.hint();
+		const placed = Object.keys(session.word?.placed ?? {}).length;
+		session.hint();
+		session.hint();
+		expect(Object.keys(session.word?.placed ?? {}).length).toBe(placed);
+	});
 });

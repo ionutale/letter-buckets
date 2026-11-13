@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onDestroy } from 'svelte';
+	import { onDestroy, onMount } from 'svelte';
 	import type { LevelSession } from '#lib/game/session.svelte.js';
 	import { isComplete, type Tile } from '#lib/game/puzzle.js';
 	import LetterTile from './LetterTile.svelte';
@@ -24,18 +24,52 @@
 
 	let selectedId = $state<string | null>(null);
 	let suggestedSlot = $state<number | null>(null);
+	let hintedSlot = $state<number | null>(null);
+	let hintedTile = $state<string | null>(null);
 	let announcement = $state('');
 	let drag = $state<DragState | null>(null);
 	let timers: number[] = [];
+	let uiTimers: number[] = [];
 
 	const word = $derived(session.word);
 	const complete = $derived(word ? isComplete(word) : false);
 
+	onMount(() => {
+		const onVisibility = (): void => {
+			if (document.hidden) session.pauseHints();
+			else session.resumeHints();
+		};
+		document.addEventListener('visibilitychange', onVisibility);
+		return () => document.removeEventListener('visibilitychange', onVisibility);
+	});
+
+	$effect(() => {
+		const hint = session.lastHint;
+		if (!hint) return;
+		if (hint.kind === 'pulse-slot' || hint.kind === 'auto-place') {
+			hintedSlot = hint.slot;
+			hintedTile = null;
+			const timer = window.setTimeout(() => {
+				hintedSlot = null;
+			}, 1400);
+			uiTimers.push(timer);
+		} else if (hint.kind === 'pulse-tile') {
+			hintedTile = hint.tileId;
+			hintedSlot = null;
+			const timer = window.setTimeout(() => {
+				hintedTile = null;
+			}, 1400);
+			uiTimers.push(timer);
+		}
+	});
+
 	onDestroy(() => {
 		for (const timer of timers) window.clearTimeout(timer);
+		for (const timer of uiTimers) window.clearTimeout(timer);
 	});
 
 	function selectTile(tile: Tile): void {
+		session.noteInteraction();
 		selectedId = selectedId === tile.id ? null : tile.id;
 		announcement = selectedId ? `Letter ${tile.letter} selected` : '';
 	}
@@ -62,11 +96,13 @@
 	}
 
 	function onSlot(slot: number): void {
+		session.noteInteraction();
 		if (selectedId) attempt(selectedId, slot);
 	}
 
 	function onTilePointerDown(event: PointerEvent, tile: Tile): void {
 		if (event.pointerType === 'mouse' && event.button !== 0) return;
+		session.noteInteraction();
 		drag = {
 			tileId: tile.id,
 			letter: tile.letter,
@@ -121,10 +157,18 @@
 </script>
 
 {#if word}
-	<div class="panel" role="dialog" aria-modal="true" aria-label={`Word ${session.openIndex! + 1} of 3`}>
+	<div
+		class="panel"
+		role="dialog"
+		aria-modal="true"
+		aria-label={`Word ${session.openIndex! + 1} of 3`}
+		data-hint-step={session.hintStep}
+		data-last-hint={session.lastHint?.kind ?? ''}
+	>
 		<header class="panel-head">
 			<button type="button" class="icon" aria-label="Close" onclick={close}>×</button>
 			<p>Word {session.openIndex! + 1} of 3</p>
+			<button type="button" class="icon hint" aria-label="Hint" onclick={() => session.hint()}>💡</button>
 			<span class="speaker" aria-hidden="true">🔊</span>
 		</header>
 
@@ -135,7 +179,7 @@
 						index={index}
 						letter={word.spec.word[index]}
 						filled={index in word.placed}
-						suggested={suggestedSlot === index}
+						suggested={suggestedSlot === index || hintedSlot === index}
 						onplace={() => onSlot(index)}
 					/>
 				{:else}
@@ -157,6 +201,7 @@
 						state={selectedId === tile.id ? 'selected' : 'tile'}
 						dataTile={tile.id}
 						dataDecoy={tile.decoy}
+						hinted={hintedTile === tile.id}
 						onpointerdown={(event) => onTilePointerDown(event, tile)}
 						onpointermove={onTilePointerMove}
 						onpointerup={onTilePointerUp}

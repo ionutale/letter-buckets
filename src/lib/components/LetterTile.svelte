@@ -5,6 +5,7 @@
 		label?: string;
 		dataTile?: string;
 		dataDecoy?: boolean;
+		hinted?: boolean;
 		onclick?: () => void;
 		onpointerdown?: (event: PointerEvent) => void;
 		onpointermove?: (event: PointerEvent) => void;
@@ -19,6 +20,7 @@
 		label,
 		dataTile,
 		dataDecoy,
+		hinted = false,
 		onclick,
 		onpointerdown,
 		onpointermove,
@@ -48,6 +50,7 @@
 	<button
 		type="button"
 		class="tile {state}"
+		class:hinted
 		data-state={state}
 		data-letter={letter}
 		data-tile={dataTile}
@@ -115,5 +118,21 @@
 		background: color-mix(in srgb, var(--lb-paper-2) 60%, transparent);
 		border: 2px dashed color-mix(in srgb, var(--lb-ink-soft) 45%, transparent);
 		box-shadow: none;
+	}
+	.tile.hinted {
+		box-shadow:
+			inset 0 0 0 3px var(--lb-gold),
+			0 7px 0 var(--lb-ochre-dark),
+			var(--lb-shadow-2);
+		animation: hint 700ms ease-in-out 2;
+	}
+	@keyframes hint {
+		0%,
+		100% {
+			transform: translateY(0);
+		}
+		50% {
+			transform: translateY(-4px);
+		}
 	}
 </style>

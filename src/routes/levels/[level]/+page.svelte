@@ -125,7 +125,12 @@
 	{/if}
 
 	{#if session && session.complete}
-		<LevelComplete {session} onnext={nextLevel} onclose={() => goto(localizeHref('/levels'))} />
+		<LevelComplete
+			{session}
+			onnext={nextLevel}
+			onclose={() => goto(localizeHref('/levels'))}
+			onwordbook={() => goto(localizeHref('/words'))}
+		/>
 	{/if}
 </main>
 
