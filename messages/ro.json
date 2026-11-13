@@ -17,5 +17,16 @@
 	"chapter_nature": "Natură și vreme",
 	"chapter_world": "Lumea mare",
 	"finish_level_first": "Termină mai întâi nivelul {n}.",
-	"words_unlocked": "{done} din 150 de cuvinte"
+	"words_unlocked": "{done} din 150 de cuvinte",
+	"language": "Limbă",
+	"sound": "Sunet",
+	"for_grownups": "Pentru adulți",
+	"hold_to_reset": "Ține apăsat pentru resetare",
+	"reset_progress": "Resetează progresul",
+	"about": "Despre",
+	"how_to_play": "Cum se joacă",
+	"level_locked_in_language": "Nivelul acesta nu este deschis în această limbă.",
+	"reset_done": "Progres resetat.",
+	"on": "Pornit",
+	"off": "Oprit"
 }

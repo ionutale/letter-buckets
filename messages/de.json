@@ -17,5 +17,16 @@
 	"chapter_nature": "Natur und Wetter",
 	"chapter_world": "Die weite Welt",
 	"finish_level_first": "Beende zuerst Level {n}.",
-	"words_unlocked": "{done} von 150 Wörtern"
+	"words_unlocked": "{done} von 150 Wörtern",
+	"language": "Sprache",
+	"sound": "Ton",
+	"for_grownups": "Für Erwachsene",
+	"hold_to_reset": "Zum Zurücksetzen halten",
+	"reset_progress": "Fortschritt zurücksetzen",
+	"about": "Über",
+	"how_to_play": "So wird gespielt",
+	"level_locked_in_language": "Dieses Level ist in dieser Sprache noch nicht offen.",
+	"reset_done": "Fortschritt zurückgesetzt.",
+	"on": "An",
+	"off": "Aus"
 }

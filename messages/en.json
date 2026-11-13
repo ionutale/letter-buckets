@@ -17,5 +17,16 @@
 	"chapter_nature": "Nature & Weather",
 	"chapter_world": "Big Wide World",
 	"finish_level_first": "Finish level {n} first.",
-	"words_unlocked": "{done} of 150 words"
+	"words_unlocked": "{done} of 150 words",
+	"language": "Language",
+	"sound": "Sound",
+	"for_grownups": "For grown-ups",
+	"hold_to_reset": "Hold to reset",
+	"reset_progress": "Reset progress",
+	"about": "About",
+	"how_to_play": "How to play",
+	"level_locked_in_language": "That level isn't open in this language yet.",
+	"reset_done": "Progress reset.",
+	"on": "On",
+	"off": "Off"
 }

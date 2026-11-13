@@ -40,7 +40,7 @@
 		const level = paramLevel;
 		if (!data) return;
 		if (!Number.isInteger(level) || !isLevelOpen(data, locale, level)) {
-			void goto(localizeHref('/levels'));
+			void goto(`${localizeHref('/levels')}?locked=1`);
 			return;
 		}
 		if (session?.level === level) return;

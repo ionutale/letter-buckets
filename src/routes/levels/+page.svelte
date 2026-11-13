@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onDestroy, onMount } from 'svelte';
 	import { goto } from '$app/navigation';
+	import { page } from '$app/state';
 	import { m } from '#lib/paraglide/messages.js';
 	import { getLocale, localizeHref } from '#lib/paraglide/runtime.js';
 	import { getLevelContent } from '#lib/content/index.js';
@@ -19,6 +20,13 @@
 		locale = getLocale() as Locale;
 		active = Math.ceil(currentLevel(data, locale) / 10);
 		active = Math.min(5, Math.max(1, active));
+		if (page.url.searchParams.get('locked') === '1') {
+			toast = m.level_locked_in_language();
+			toastTimer = window.setTimeout(() => {
+				toast = '';
+				toastTimer = null;
+			}, 2600);
+		}
 	});
 
 	onDestroy(() => {

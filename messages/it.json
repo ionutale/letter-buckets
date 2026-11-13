@@ -17,5 +17,16 @@
 	"chapter_nature": "Natura e tempo",
 	"chapter_world": "Il mondo grande",
 	"finish_level_first": "Prima finisci il livello {n}.",
-	"words_unlocked": "{done} di 150 parole"
+	"words_unlocked": "{done} di 150 parole",
+	"language": "Lingua",
+	"sound": "Suono",
+	"for_grownups": "Per gli adulti",
+	"hold_to_reset": "Tieni premuto per azzerare",
+	"reset_progress": "Azzera progressi",
+	"about": "Informazioni",
+	"how_to_play": "Come si gioca",
+	"level_locked_in_language": "Questo livello non è ancora aperto in questa lingua.",
+	"reset_done": "Progressi azzerati.",
+	"on": "Attivo",
+	"off": "Spento"
 }

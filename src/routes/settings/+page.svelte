@@ -1,0 +1,290 @@
+<script lang="ts">
+	import { onDestroy, onMount } from 'svelte';
+	import { goto } from '$app/navigation';
+	import { m } from '#lib/paraglide/messages.js';
+	import { getLocale, localizeHref, locales, setLocale } from '#lib/paraglide/runtime.js';
+	import type { Locale } from '#lib/content/schema.js';
+	import {
+		currentLevel,
+		loadSave,
+		persistSave,
+		resetLocale,
+		type SaveData
+	} from '#lib/storage/save.js';
+
+	const LOCALE_NAMES: Record<Locale, string> = {
+		ro: 'Română',
+		it: 'Italiano',
+		en: 'English',
+		de: 'Deutsch',
+		ru: 'Русский'
+	};
+
+	let data = $state<SaveData | null>(null);
+	let locale = $state<Locale>('en');
+	let muted = $state(false);
+	let holdProgress = $state(0);
+	let toast = $state('');
+	let holdTimer: number | null = null;
+	let toastTimer: number | null = null;
+
+	onMount(() => {
+		data = loadSave(localStorage);
+		locale = getLocale() as Locale;
+		muted = data.settings.muted;
+	});
+
+	onDestroy(() => {
+		if (holdTimer !== null) window.clearInterval(holdTimer);
+		if (toastTimer !== null) window.clearTimeout(toastTimer);
+	});
+
+	function persist(): void {
+		if (data) persistSave(data, localStorage);
+	}
+
+	function switchLanguage(target: Locale): void {
+		if (target === locale) return;
+		locale = target;
+		setLocale(target);
+		document.documentElement.lang = target;
+		void goto(localizeHref('/settings', { locale: target }));
+	}
+
+	function toggleMute(): void {
+		if (!data) return;
+		muted = !muted;
+		data.settings.muted = muted;
+		persist();
+	}
+
+	function goHome(): void {
+		void goto(localizeHref('/'));
+	}
+
+	function showToast(message: string): void {
+		toast = message;
+		if (toastTimer !== null) window.clearTimeout(toastTimer);
+		toastTimer = window.setTimeout(() => {
+			toast = '';
+			toastTimer = null;
+		}, 2600);
+	}
+
+	function cancelHold(): void {
+		if (holdTimer !== null) {
+			window.clearInterval(holdTimer);
+			holdTimer = null;
+		}
+		holdProgress = 0;
+	}
+
+	function startHold(): void {
+		if (!data) return;
+		cancelHold();
+		const started = Date.now();
+		holdTimer = window.setInterval(() => {
+			holdProgress = Math.min(1, (Date.now() - started) / 3000);
+			if (holdProgress < 1) return;
+			cancelHold();
+			resetLocale(data!, locale);
+			data!.settings.coachDone = false;
+			persist();
+			showToast(m.reset_done());
+		}, 50);
+	}
+
+	function howToPlay(): void {
+		if (!data) return;
+		data.settings.coachDone = false;
+		persist();
+		void goto(localizeHref(`/levels/${currentLevel(data, locale)}`));
+	}
+</script>
+
+<svelte:head>
+	<title>{m.settings()} — {m.app_name()}</title>
+</svelte:head>
+
+<main class="settings lb-safe">
+	<header class="top">
+		<a class="round" href={localizeHref('/')} aria-label={m.back()}>←</a>
+		<h1>{m.settings()}</h1>
+	</header>
+
+	<section class="card" aria-label={m.language()}>
+		<h2>{m.language()}</h2>
+		<div class="lang-grid">
+			{#each locales as target (target)}
+				<button
+					type="button"
+					class="lang"
+					class:selected={target === locale}
+					aria-pressed={target === locale}
+					onclick={() => switchLanguage(target as Locale)}
+				>
+					{LOCALE_NAMES[target as Locale]}
+				</button>
+			{/each}
+		</div>
+	</section>
+
+	<section class="card" aria-label={m.sound()}>
+		<h2>{m.sound()}</h2>
+		<button
+			type="button"
+			class="toggle"
+			aria-pressed={!muted}
+			onclick={toggleMute}
+		>
+			<span class="dot" class:on={!muted}></span>
+			{muted ? m.off() : m.on()}
+		</button>
+	</section>
+
+	<section class="card grown" aria-label={m.for_grownups()}>
+		<h2>{m.for_grownups()}</h2>
+		<p class="hint">{m.hold_to_reset()}</p>
+		<button
+			type="button"
+			class="reset"
+			onpointerdown={startHold}
+			onpointerup={cancelHold}
+			onpointerleave={cancelHold}
+			onpointercancel={cancelHold}
+		>
+			<span class="bar" style={`width:${Math.round(holdProgress * 100)}%`}></span>
+			<span class="reset-label">{m.reset_progress()}</span>
+		</button>
+		<button type="button" class="link" onclick={howToPlay}>{m.how_to_play()}</button>
+		<button type="button" class="link" onclick={goHome}>{m.back()}</button>
+	</section>
+
+	<section class="card about" aria-label={m.about()}>
+		<h2>{m.about()}</h2>
+		<p>{m.app_name()} · v0.1</p>
+		<p>Nunito (OFL). Generated art and audio. No accounts, no analytics, no tracking.</p>
+	</section>
+
+	{#if toast}
+		<p class="toast" role="status">{toast}</p>
+	{/if}
+</main>
+
+<style>
+	.settings {
+		display: grid;
+		align-content: start;
+		gap: var(--lb-space-4);
+	}
+	.top {
+		display: flex;
+		align-items: center;
+		gap: var(--lb-space-3);
+	}
+	.round {
+		display: grid;
+		place-items: center;
+		width: 48px;
+		height: 48px;
+		border-radius: 50%;
+		background: var(--lb-paper-2);
+		color: var(--lb-ink);
+		font-size: 1.4rem;
+		text-decoration: none;
+	}
+	h1 {
+		font-size: var(--lb-text-xl);
+	}
+	.card {
+		display: grid;
+		gap: var(--lb-space-3);
+		padding: var(--lb-space-4);
+		border-radius: var(--lb-radius);
+		background: var(--lb-paper-2);
+		box-shadow: inset 0 0 0 2px var(--lb-border);
+	}
+	h2 {
+		font-size: var(--lb-text-md);
+	}
+	.lang-grid {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: var(--lb-space-2);
+	}
+	.lang {
+		min-height: 48px;
+		padding: 0 var(--lb-space-3);
+		border-radius: var(--lb-radius-sm);
+		background: var(--lb-paper);
+		box-shadow: inset 0 0 0 2px var(--lb-border);
+		font-weight: 800;
+	}
+	.lang.selected {
+		background: var(--lb-ochre);
+		color: #fff;
+		box-shadow: 0 4px 0 var(--lb-ochre-dark);
+	}
+	.toggle {
+		display: flex;
+		align-items: center;
+		gap: var(--lb-space-2);
+		min-height: 48px;
+		font-weight: 800;
+	}
+	.dot {
+		width: 22px;
+		height: 22px;
+		border-radius: 50%;
+		background: var(--lb-border);
+	}
+	.dot.on {
+		background: var(--lb-leaf);
+	}
+	.hint,
+	.grown p,
+	.about p {
+		margin: 0;
+		color: var(--lb-ink-soft);
+		font-size: var(--lb-text-sm);
+	}
+	.reset {
+		position: relative;
+		overflow: hidden;
+		min-height: 48px;
+		border-radius: var(--lb-radius-pill);
+		background: color-mix(in srgb, var(--lb-berry) 18%, var(--lb-paper));
+		box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--lb-berry) 35%, transparent);
+		font-weight: 800;
+		touch-action: none;
+	}
+	.bar {
+		position: absolute;
+		inset: 0 auto 0 0;
+		background: color-mix(in srgb, var(--lb-berry) 35%, transparent);
+		pointer-events: none;
+	}
+	.reset-label {
+		position: relative;
+	}
+	.link {
+		justify-self: start;
+		min-height: 44px;
+		color: var(--lb-ochre-dark);
+		font-weight: 700;
+		text-decoration: underline;
+	}
+	.toast {
+		position: fixed;
+		left: 50%;
+		bottom: max(var(--lb-safe-bottom), var(--lb-space-4));
+		transform: translateX(-50%);
+		margin: 0;
+		padding: var(--lb-space-3) var(--lb-space-4);
+		border-radius: var(--lb-radius-pill);
+		background: var(--lb-ink);
+		color: var(--lb-paper);
+		font-size: var(--lb-text-sm);
+		font-weight: 700;
+	}
+</style>
