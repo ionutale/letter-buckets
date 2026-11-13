@@ -20,4 +20,3 @@ export function getLevelArt(level: number): string {
 }
 
 export * from './schema.js';
-export { validateContent } from './validate.js';
