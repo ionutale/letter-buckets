@@ -31,7 +31,9 @@
 
 	const paramLevel = $derived(Number.parseInt(page.params.level ?? '', 10));
 	const content = $derived(session?.content ?? null);
-	const doneCount = $derived(session?.buckets.filter((bucket) => bucket.status === 'done').length ?? 0);
+	const doneCount = $derived(
+		session?.buckets.filter((bucket) => bucket.status === 'done').length ?? 0
+	);
 	const allDone = $derived(doneCount === 3);
 
 	onMount(() => {
@@ -210,6 +212,7 @@
 	.banner {
 		width: 100%;
 		aspect-ratio: 16 / 9;
+		max-height: min(42vh, 360px);
 		object-fit: cover;
 		border-radius: var(--lb-radius);
 		background: var(--lb-paper-3);

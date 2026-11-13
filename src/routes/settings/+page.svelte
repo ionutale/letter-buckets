@@ -136,12 +136,7 @@
 
 	<section class="card" aria-label={m.sound()}>
 		<h2>{m.sound()}</h2>
-		<button
-			type="button"
-			class="toggle"
-			aria-pressed={!muted}
-			onclick={toggleMute}
-		>
+		<button type="button" class="toggle" aria-pressed={!muted} onclick={toggleMute}>
 			<span class="dot" class:on={!muted}></span>
 			{muted ? m.off() : m.on()}
 		</button>

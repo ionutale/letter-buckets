@@ -24,7 +24,7 @@ test('fills a gap by tapping the tile and then the slot', async ({ page }) => {
 	await slot.click();
 
 	await expect(page.locator('[data-slot][data-filled="true"]')).toHaveCount(1);
-	await expect(page.getByText('Word complete!', { exact: true })).toBeVisible();
+	await expect(page.locator('.done-title')).toHaveText('Word complete!');
 	await expect(page.getByRole('button', { name: /back to buckets/i })).toBeVisible();
 });
 

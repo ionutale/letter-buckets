@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { m } from '#lib/paraglide/messages.js';
 	import type { LevelSession } from '#lib/game/session.svelte.js';
 
 	interface Props {
@@ -17,9 +18,9 @@
 
 {#if session.complete}
 	<div class="complete" role="dialog" aria-modal="true" aria-label="Level complete">
-		<h2>{final ? 'You did it!' : 'Level complete!'}</h2>
+		<h2>{final ? m.you_did_it() : m.level_complete()}</h2>
 		{#if showStamp}
-			<p class="stamp">Chapter {stamp} ★</p>
+			<p class="stamp">{m.chapter_stamp({ n: stamp })} ★</p>
 		{/if}
 		<ul class="words">
 			{#each session.buckets as bucket}
@@ -28,11 +29,11 @@
 		</ul>
 		<div class="actions">
 			{#if final}
-				<button type="button" class="primary" onclick={onwordbook}>Word Book</button>
+				<button type="button" class="primary" onclick={onwordbook}>{m.word_book()}</button>
 			{:else}
-				<button type="button" class="primary" onclick={onnext}>Next level</button>
+				<button type="button" class="primary" onclick={onnext}>{m.next_level()}</button>
 			{/if}
-			<button type="button" class="secondary" onclick={onclose}>Back to levels</button>
+			<button type="button" class="secondary" onclick={onclose}>{m.back_to_levels()}</button>
 		</div>
 	</div>
 {/if}

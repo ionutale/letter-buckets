@@ -3,30 +3,33 @@ import { expect, test } from '@playwright/test';
 const seedInit = (enCleared: number, roCleared: number) => ({ enCleared, roCleared });
 
 const seed = (page: import('@playwright/test').Page, enCleared: number, roCleared: number) =>
-	page.addInitScript((data) => {
-		if (localStorage.getItem('letter-buckets-save')) return;
-		localStorage.setItem(
-			'letter-buckets-save',
-			JSON.stringify({
-				version: 1,
-				settings: { muted: true, coachDone: true, installHintDismissed: true },
-				locales: {
-					en: {
-						clearedThrough: data.enCleared,
-						levelWords: {},
-						unlocked: {},
-						chapterStamps: []
-					},
-					ro: {
-						clearedThrough: data.roCleared,
-						levelWords: {},
-						unlocked: {},
-						chapterStamps: []
+	page.addInitScript(
+		(data) => {
+			if (localStorage.getItem('letter-buckets-save')) return;
+			localStorage.setItem(
+				'letter-buckets-save',
+				JSON.stringify({
+					version: 1,
+					settings: { muted: true, coachDone: true, installHintDismissed: true },
+					locales: {
+						en: {
+							clearedThrough: data.enCleared,
+							levelWords: {},
+							unlocked: {},
+							chapterStamps: []
+						},
+						ro: {
+							clearedThrough: data.roCleared,
+							levelWords: {},
+							unlocked: {},
+							chapterStamps: []
+						}
 					}
-				}
-			})
-		);
-	}, seedInit(enCleared, roCleared));
+				})
+			);
+		},
+		seedInit(enCleared, roCleared)
+	);
 
 test('switches language and URL together', async ({ page }) => {
 	await page.goto('/en/settings');

@@ -35,5 +35,22 @@
 	"install_hint": "Adaugă Letter Buckets pe ecranul principal pentru a juca offline.",
 	"dismiss": "Nu acum",
 	"update_ready": "O versiune nouă este gata.",
-	"update_now": "Actualizează"
+	"update_now": "Actualizează",
+	"word_of": "Cuvântul {i} din 3",
+	"back_to_buckets": "Înapoi la găleți",
+	"hint": "Indiciu",
+	"hear_word": "Ascultă cuvântul",
+	"word_complete": "Cuvânt complet!",
+	"letter_placed": "Literă plasată",
+	"try_another": "Încearcă altă literă",
+	"letter_selected": "Litera {letter} selectată",
+	"level_complete": "Nivel complet!",
+	"you_did_it": "Ai reușit!",
+	"next_level": "Nivelul următor",
+	"back_to_levels": "Înapoi la niveluri",
+	"chapter_stamp": "Capitolul {n}",
+	"open_word": "Deschide cuvântul {n}",
+	"word_done_label": "Cuvântul {n}, {word}, atinge pentru a-l auzi",
+	"empty_slot": "Spațiu gol {n}",
+	"letter_label": "Litera {letter}"
 }

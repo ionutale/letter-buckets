@@ -29,15 +29,30 @@
 		>
 			<span class="emblem" data-icon={chapter.icon} aria-hidden="true">
 				{#if chapter.icon === 'home'}
-					<svg viewBox="0 0 32 32"><path d="M5 15 16 6l11 9v11H5z" /><path d="M12 26v-7h8v7" /></svg>
+					<svg viewBox="0 0 32 32"><path d="M5 15 16 6l11 9v11H5z" /><path d="M12 26v-7h8v7" /></svg
+					>
 				{:else if chapter.icon === 'farm'}
-					<svg viewBox="0 0 32 32"><path d="M5 26V12l11-6 11 6v14z" /><path d="M11 26v-8h10v8" /></svg>
+					<svg viewBox="0 0 32 32"
+						><path d="M5 26V12l11-6 11 6v14z" /><path d="M11 26v-8h10v8" /></svg
+					>
 				{:else if chapter.icon === 'town'}
-					<svg viewBox="0 0 32 32"><path d="M5 26V12h9v14" /><path d="M14 26V8h13v18" /><path d="M18 12h5M18 16h5M18 20h5" /></svg>
+					<svg viewBox="0 0 32 32"
+						><path d="M5 26V12h9v14" /><path d="M14 26V8h13v18" /><path
+							d="M18 12h5M18 16h5M18 20h5"
+						/></svg
+					>
 				{:else if chapter.icon === 'nature'}
-					<svg viewBox="0 0 32 32"><path d="M9 22a6 6 0 1 1 1-12 8 8 0 0 1 15 2 5 5 0 0 1-1 10z" /><path d="M12 26h12" /></svg>
+					<svg viewBox="0 0 32 32"
+						><path d="M9 22a6 6 0 1 1 1-12 8 8 0 0 1 15 2 5 5 0 0 1-1 10z" /><path
+							d="M12 26h12"
+						/></svg
+					>
 				{:else}
-					<svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="11" /><path d="M5 16h22M16 5c4 3 6 7 6 11s-2 8-6 11c-4-3-6-7-6-11s2-8 6-11z" /></svg>
+					<svg viewBox="0 0 32 32"
+						><circle cx="16" cy="16" r="11" /><path
+							d="M5 16h22M16 5c4 3 6 7 6 11s-2 8-6 11c-4-3-6-7-6-11s2-8 6-11z"
+						/></svg
+					>
 				{/if}
 			</span>
 			<span class="label">{chapter.label}</span>

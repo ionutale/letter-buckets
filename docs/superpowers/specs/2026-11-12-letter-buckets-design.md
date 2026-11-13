@@ -129,13 +129,13 @@ Chosen: **C**. The level screen is the "three buckets" screen; the word panel is
 
 The dial is the number of gaps and decoys, not the length of the word. Word length is 3–6 letters and varies naturally by language.
 
-| Levels | Gaps per word | Decoys | Intent |
-|---|---|---|---|
-| 1–10 | 1 | 0 | One missing letter; usually the final letter. Learn the tap/drag. |
-| 11–20 | 1 | 0 | One gap anywhere; longer, less familiar words. |
-| 21–30 | 2 | 0 | Two gaps; hold two letters in mind. |
-| 31–40 | 2 | 1 | One lookalike distractor. |
-| 41–50 | 2–3 | 2 | Three gaps on longer words; two distractors. |
+| Levels | Gaps per word | Decoys | Intent                                                            |
+| ------ | ------------- | ------ | ----------------------------------------------------------------- |
+| 1–10   | 1             | 0      | One missing letter; usually the final letter. Learn the tap/drag. |
+| 11–20  | 1             | 0      | One gap anywhere; longer, less familiar words.                    |
+| 21–30  | 2             | 0      | Two gaps; hold two letters in mind.                               |
+| 31–40  | 2             | 1      | One lookalike distractor.                                         |
+| 41–50  | 2–3           | 2      | Three gaps on longer words; two distractors.                      |
 
 Validation constraints:
 
@@ -214,21 +214,21 @@ Each locale has one typed content file:
 type Locale = 'ro' | 'it' | 'en' | 'de' | 'ru';
 
 interface WordEntry {
-  /** Display and puzzle form, uppercase, letters only. */
-  word: string;
-  /** Optional TTS override when the written form is pronounced differently. */
-  spoken?: string;
+	/** Display and puzzle form, uppercase, letters only. */
+	word: string;
+	/** Optional TTS override when the written form is pronounced differently. */
+	spoken?: string;
 }
 
 interface LevelContent {
-  id: number; // 1..50, aligned across locales
-  theme: string; // localized theme label, e.g. "Pets"
-  words: [WordEntry, WordEntry, WordEntry];
+	id: number; // 1..50, aligned across locales
+	theme: string; // localized theme label, e.g. "Pets"
+	words: [WordEntry, WordEntry, WordEntry];
 }
 
 interface LocaleContent {
-  locale: Locale;
-  levels: LevelContent[]; // exactly 50
+	locale: Locale;
+	levels: LevelContent[]; // exactly 50
 }
 ```
 
@@ -392,17 +392,17 @@ Pure TypeScript, no DOM:
 
 ```ts
 interface PuzzleSpec {
-  word: string;          // uppercase
-  gaps: number[];        // slot indices, deterministic
-  decoys: string[];      // letters not in word
+	word: string; // uppercase
+	gaps: number[]; // slot indices, deterministic
+	decoys: string[]; // letters not in word
 }
 
 interface PuzzleState {
-  spec: PuzzleSpec;
-  placed: Record<number, string>; // slot -> letter
-  tray: Tile[];                   // remaining tiles with stable ids
-  hintStep: 0 | 1 | 2 | 3;
-  complete: boolean;
+	spec: PuzzleSpec;
+	placed: Record<number, string>; // slot -> letter
+	tray: Tile[]; // remaining tiles with stable ids
+	hintStep: 0 | 1 | 2 | 3;
+	complete: boolean;
 }
 ```
 
@@ -419,14 +419,17 @@ interface PuzzleState {
 
 ```ts
 interface SaveData {
-  version: 1;
-  settings: { muted: boolean; coachDone: boolean; installHintDismissed: boolean };
-  locales: Record<Locale, {
-    clearedThrough: number;                 // 0..50
-    levelWords: Record<number, number[]>;   // completed word indices per level
-    unlocked: Record<string, true>;         // "level:index" ever completed
-    chapterStamps: number[];                // 1..5
-  }>;
+	version: 1;
+	settings: { muted: boolean; coachDone: boolean; installHintDismissed: boolean };
+	locales: Record<
+		Locale,
+		{
+			clearedThrough: number; // 0..50
+			levelWords: Record<number, number[]>; // completed word indices per level
+			unlocked: Record<string, true>; // "level:index" ever completed
+			chapterStamps: number[]; // 1..5
+		}
+	>;
 }
 ```
 
@@ -508,18 +511,18 @@ Content and art can run in parallel with the engine once the schema is frozen. A
 
 ## 17. Risks and mitigations
 
-| Risk | Mitigation |
-|---|---|
-| 750 clips make install heavy or slow | 48 kbps mono MP3, <10 KB each; batch precache; size budget test in CI. |
-| Generated art drifts in style | Fixed prompt/palette/negative prompt, 3 candidates first, contact-sheet review, regenerate outliers. |
-| Romanian audio sounds different from the other four | One voice per locale is expected; keep loudness and pacing matched; a child hears one locale at a time. |
-| Diacritics or Cyrillic break a font | Nunito latin-ext + cyrillic, glyph smoke test, visual snapshots in RO and RU. |
-| A 4-year-old cannot parse a 5-letter word with 2 gaps | Max gaps by length, at least one revealed letter, hint chain, tap path, coach marks. |
-| Localization lengths break layouts | No fixed-width text containers; test longest strings (German/Romanian) in snapshots. |
-| Language switch looks like lost progress | Per-locale progress is explicit in the UI; show the current locale's count everywhere. |
-| Dragging fights scrolling on touch | Play area never scrolls; `touch-action: none` on tiles; tap path always available. |
-| Generated images contain accidental text | Negative prompt "text, letters, words, signage"; contact-sheet review; regenerate. |
-| Service worker serves stale audio | Versioned cache, delete old caches on activate, update toast. |
+| Risk                                                  | Mitigation                                                                                              |
+| ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| 750 clips make install heavy or slow                  | 48 kbps mono MP3, <10 KB each; batch precache; size budget test in CI.                                  |
+| Generated art drifts in style                         | Fixed prompt/palette/negative prompt, 3 candidates first, contact-sheet review, regenerate outliers.    |
+| Romanian audio sounds different from the other four   | One voice per locale is expected; keep loudness and pacing matched; a child hears one locale at a time. |
+| Diacritics or Cyrillic break a font                   | Nunito latin-ext + cyrillic, glyph smoke test, visual snapshots in RO and RU.                           |
+| A 4-year-old cannot parse a 5-letter word with 2 gaps | Max gaps by length, at least one revealed letter, hint chain, tap path, coach marks.                    |
+| Localization lengths break layouts                    | No fixed-width text containers; test longest strings (German/Romanian) in snapshots.                    |
+| Language switch looks like lost progress              | Per-locale progress is explicit in the UI; show the current locale's count everywhere.                  |
+| Dragging fights scrolling on touch                    | Play area never scrolls; `touch-action: none` on tiles; tap path always available.                      |
+| Generated images contain accidental text              | Negative prompt "text, letters, words, signage"; contact-sheet review; regenerate.                      |
+| Service worker serves stale audio                     | Versioned cache, delete old caches on activate, update toast.                                           |
 
 ## 18. What's left to the builder
 

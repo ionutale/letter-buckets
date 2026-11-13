@@ -234,12 +234,7 @@ function chooseGaps(level: number, wordLength: number, random: () => number): nu
 		.sort((a, b) => a - b);
 }
 
-function chooseDecoys(
-	word: string,
-	count: number,
-	locale: Locale,
-	random: () => number
-): string[] {
+function chooseDecoys(word: string, count: number, locale: Locale, random: () => number): string[] {
 	if (count === 0) return [];
 	const chosen: string[] = [];
 	const letters = [...new Set(word)];

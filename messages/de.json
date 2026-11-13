@@ -35,5 +35,22 @@
 	"install_hint": "Füge Letter Buckets zum Home-Bildschirm hinzu, um offline zu spielen.",
 	"dismiss": "Nicht jetzt",
 	"update_ready": "Eine neue Version ist bereit.",
-	"update_now": "Aktualisieren"
+	"update_now": "Aktualisieren",
+	"word_of": "Wort {i} von 3",
+	"back_to_buckets": "Zurück zu den Eimern",
+	"hint": "Hinweis",
+	"hear_word": "Wort anhören",
+	"word_complete": "Wort vollständig!",
+	"letter_placed": "Buchstabe gesetzt",
+	"try_another": "Versuche einen anderen Buchstaben",
+	"letter_selected": "Buchstabe {letter} ausgewählt",
+	"level_complete": "Level geschafft!",
+	"you_did_it": "Geschafft!",
+	"next_level": "Nächstes Level",
+	"back_to_levels": "Zurück zu den Levels",
+	"chapter_stamp": "Kapitel {n}",
+	"open_word": "Wort {n} öffnen",
+	"word_done_label": "Wort {n}, {word}, zum Anhören tippen",
+	"empty_slot": "Leere Lücke {n}",
+	"letter_label": "Buchstabe {letter}"
 }

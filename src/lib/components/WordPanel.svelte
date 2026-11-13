@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onDestroy, onMount } from 'svelte';
+	import { m } from '#lib/paraglide/messages.js';
 	import type { LevelSession } from '#lib/game/session.svelte.js';
 	import { isComplete, type Tile } from '#lib/game/puzzle.js';
 	import { audio } from '#lib/audio/index.js';
@@ -29,6 +30,7 @@
 	let hintedTile = $state<string | null>(null);
 	let announcement = $state('');
 	let drag = $state<DragState | null>(null);
+	let panelEl = $state<HTMLDivElement | null>(null);
 	let timers: number[] = [];
 	let uiTimers: number[] = [];
 
@@ -36,15 +38,44 @@
 	const complete = $derived(word ? isComplete(word) : false);
 
 	onMount(() => {
+		const previousFocus = document.activeElement as HTMLElement | null;
+		panelEl?.focus();
+
 		const onVisibility = (): void => {
 			if (document.hidden) session.pauseHints();
 			else session.resumeHints();
 		};
+
+		const onKey = (event: KeyboardEvent): void => {
+			if (event.key === 'Escape') {
+				event.preventDefault();
+				close();
+				return;
+			}
+			if (event.key !== 'Tab' || !panelEl) return;
+			const focusables = [...panelEl.querySelectorAll<HTMLElement>('button:not([disabled])')];
+			if (focusables.length === 0) return;
+			const first = focusables[0];
+			const last = focusables[focusables.length - 1];
+			if (event.shiftKey && document.activeElement === first) {
+				event.preventDefault();
+				last.focus();
+			} else if (!event.shiftKey && document.activeElement === last) {
+				event.preventDefault();
+				first.focus();
+			}
+		};
+
 		document.addEventListener('visibilitychange', onVisibility);
+		document.addEventListener('keydown', onKey);
 		if (session.openIndex !== null) {
 			audio.playWord(session.locale, session.level, session.openIndex);
 		}
-		return () => document.removeEventListener('visibilitychange', onVisibility);
+		return () => {
+			document.removeEventListener('visibilitychange', onVisibility);
+			document.removeEventListener('keydown', onKey);
+			previousFocus?.focus();
+		};
 	});
 
 	$effect(() => {
@@ -76,7 +107,7 @@
 		session.noteInteraction();
 		selectedId = selectedId === tile.id ? null : tile.id;
 		if (selectedId) audio.playSfx('tile-pick');
-		announcement = selectedId ? `Letter ${tile.letter} selected` : '';
+		announcement = selectedId ? m.letter_selected({ letter: tile.letter }) : '';
 	}
 
 	function attempt(tileId: string, slot: number): void {
@@ -87,13 +118,13 @@
 		if (result.outcome === 'placed') {
 			suggestedSlot = null;
 			audio.playSfx('tile-place');
-			announcement = session.word && isComplete(session.word) ? 'Word complete' : 'Letter placed';
+			announcement = session.word && isComplete(session.word) ? m.word_complete() : m.letter_placed();
 			if (session.word && isComplete(session.word)) audio.playSfx('word-complete');
 			return;
 		}
 
 		audio.playSfx('tile-wrong');
-		announcement = 'Try another letter';
+		announcement = m.try_another();
 		if (result.outcome === 'wrong-word' && result.suggestedSlot !== undefined) {
 			suggestedSlot = result.suggestedSlot;
 			const timer = window.setTimeout(() => {
@@ -170,28 +201,33 @@
 		class="panel"
 		role="dialog"
 		aria-modal="true"
-		aria-label={`Word ${session.openIndex! + 1} of 3`}
+		aria-label={m.word_of({ i: session.openIndex! + 1 })}
 		data-hint-step={session.hintStep}
 		data-last-hint={session.lastHint?.kind ?? ''}
+		tabindex="-1"
+		bind:this={panelEl}
 	>
 		<header class="panel-head">
 			<button type="button" class="icon" aria-label="Close" onclick={close}>×</button>
-			<p>Word {session.openIndex! + 1} of 3</p>
-			<button type="button" class="icon hint" aria-label="Hint" onclick={() => session.hint()}>💡</button>
+			<p>{m.word_of({ i: session.openIndex! + 1 })}</p>
+			<button type="button" class="icon hint" aria-label={m.hint()} onclick={() => session.hint()}
+				>💡</button
+			>
 			<button
 				type="button"
 				class="icon"
-				aria-label="Hear the word"
+				aria-label={m.hear_word()}
 				onclick={() =>
-					session.openIndex !== null && audio.playWord(session.locale, session.level, session.openIndex)}
-			>🔊</button>
+					session.openIndex !== null &&
+					audio.playWord(session.locale, session.level, session.openIndex)}>🔊</button
+			>
 		</header>
 
 		<div class="word-row" style="--tile-size: clamp(34px, 9vw, 56px)">
 			{#each [...word.spec.word] as letter, index}
 				{#if word.spec.gaps.includes(index)}
 					<Slot
-						index={index}
+						{index}
 						letter={word.spec.word[index]}
 						filled={index in word.placed}
 						suggested={suggestedSlot === index || hintedSlot === index}
@@ -205,8 +241,8 @@
 
 		{#if complete}
 			<div class="done-card">
-				<p class="done-title">Word complete!</p>
-				<button type="button" class="back" onclick={close}>Back to buckets</button>
+				<p class="done-title">{m.word_complete()}</p>
+				<button type="button" class="back" onclick={close}>{m.back_to_buckets()}</button>
 			</div>
 		{:else}
 			<div class="tray" aria-label="Letter tiles">
@@ -243,7 +279,8 @@
 		inset: 0;
 		z-index: 20;
 		display: grid;
-		align-content: start;
+		grid-template-rows: auto 1fr auto;
+		align-content: stretch;
 		gap: var(--lb-space-6);
 		padding: max(var(--lb-safe-top), var(--lb-space-4)) var(--lb-space-4)
 			max(var(--lb-safe-bottom), var(--lb-space-4));
@@ -274,8 +311,13 @@
 		display: flex;
 		justify-content: center;
 		align-items: center;
+		align-self: center;
 		gap: clamp(4px, 1.2vw, 8px);
 		padding-block: var(--lb-space-4);
+	}
+	.tray,
+	.done-card {
+		align-self: end;
 	}
 	.tray {
 		display: flex;

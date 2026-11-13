@@ -109,9 +109,7 @@ export function validateContent(
 				}
 
 				if (options.requireAssets) {
-					const clip = assetPath(
-						`audio/words/${locale}/l${pad(level.id)}-w${wordIndex + 1}.mp3`
-					);
+					const clip = assetPath(`audio/words/${locale}/l${pad(level.id)}-w${wordIndex + 1}.mp3`);
 					if (!existsSync(clip)) {
 						issues.push({
 							locale,

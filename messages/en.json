@@ -35,5 +35,22 @@
 	"install_hint": "Add Letter Buckets to your home screen to play offline.",
 	"dismiss": "Not now",
 	"update_ready": "A new version is ready.",
-	"update_now": "Update"
+	"update_now": "Update",
+	"word_of": "Word {i} of 3",
+	"back_to_buckets": "Back to buckets",
+	"hint": "Hint",
+	"hear_word": "Hear the word",
+	"word_complete": "Word complete!",
+	"letter_placed": "Letter placed",
+	"try_another": "Try another letter",
+	"letter_selected": "Letter {letter} selected",
+	"level_complete": "Level complete!",
+	"you_did_it": "You did it!",
+	"next_level": "Next level",
+	"back_to_levels": "Back to levels",
+	"chapter_stamp": "Chapter {n}",
+	"open_word": "Open word {n}",
+	"word_done_label": "Word {n}, {word}, tap to hear it",
+	"empty_slot": "Empty slot {n}",
+	"letter_label": "Letter {letter}"
 }

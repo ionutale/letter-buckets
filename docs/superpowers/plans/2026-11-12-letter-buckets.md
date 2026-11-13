@@ -91,10 +91,12 @@ Testing split: pure logic and content validation run in Vitest (`node`). Svelte 
 ### Task 1: Project shell, i18n, fonts, static build
 
 **Files:**
+
 - Create: `letter-buckets/package.json`, `vite.config.ts`, `tsconfig.json`, `playwright.config.ts`, `.gitignore`, `prettier.config.js`, `project.inlang/settings.json`, `messages/{ro,it,en,de,ru}.json`, `src/app.html`, `src/app.d.ts`, `src/routes/+layout.ts`, `src/routes/+layout.svelte`, `src/routes/+page.svelte`, `src/lib/styles/{tokens,base}.css`, `src/lib/i18n.test.ts`, `src/lib/test/setup.ts`
 - Reference: `kids-games-4/package.json`, `kids-games-4/vite.config.ts`, `kids-games-4/tsconfig.json`, `kids-games-4/src/app.html` (a proven SvelteKit 3 setup in this workspace)
 
 **Interfaces:**
+
 - Produces: a building SvelteKit 3 app at `/`, with `pnpm dev`, `pnpm build`, `pnpm check`, `pnpm test`, `pnpm test:e2e`, `pnpm test:visual`; Paraglide `m` available as `#lib/paraglide/messages.js`; five locale message files; Nunito loaded with `latin-ext` and `cyrillic`.
 - Vitest has a `server` project (node, `src/**/*.test.ts`) and a `client` project (jsdom, `src/**/*.svelte.test.ts`, `src/lib/test/setup.ts`).
 - Playwright has a `chromium` desktop project and a `mobile-chromium` project (Pixel 7), both against `pnpm build && pnpm preview --port 4173`.
@@ -102,6 +104,7 @@ Testing split: pure logic and content validation run in Vitest (`node`). Svelte 
 - [ ] **Step 1: Create the project files**
 
 Create `letter-buckets/`, run `git init` inside it, and copy the SvelteKit 3 configuration shape from `kids-games-4`, changing:
+
 - package name to `letter-buckets`, `packageManager` to `pnpm@12.6.0`, engine `node >=24`;
 - dependencies: `@fontsource/nunito`; dev dependencies: `@inlang/paraglide-js`, `@playwright/test`, `@resvg/resvg-js`, `@sveltejs/adapter-static`, `@sveltejs/kit`, `@sveltejs/vite-plugin-svelte`, `@testing-library/svelte`, `@types/node`, `jsdom`, `prettier`, `prettier-plugin-svelte`, `svelte`, `svelte-check`, `tsx`, `typescript`, `vite`, `vitest`;
 - scripts: `dev`, `build`, `preview`, `prepare` (`paraglide-js compile --project ./project.inlang --outdir ./src/lib/paraglide --emit-ts-declarations && svelte-kit sync`), `check`, `test` (`vitest run`), `test:e2e` (`playwright test tests/e2e`), `test:visual` (`playwright test tests/visual`), `lint`, `format`, `icons`, `content:export` (`tsx scripts/export_content.ts`), `assets:audio`, `assets:art`, `validate:assets`;
@@ -130,18 +133,18 @@ import { readFileSync } from 'node:fs';
 
 const LOCALES = ['ro', 'it', 'en', 'de', 'ru'] as const;
 const read = (locale: string) =>
-  JSON.parse(readFileSync(new URL(`../../messages/${locale}.json`, import.meta.url), 'utf8'));
+	JSON.parse(readFileSync(new URL(`../../messages/${locale}.json`, import.meta.url), 'utf8'));
 
 describe('messages', () => {
-  it('has the same non-empty keys in every locale', () => {
-    const base = read('en');
-    const keys = Object.keys(base).sort();
-    for (const locale of LOCALES) {
-      const messages = read(locale);
-      expect(Object.keys(messages).sort()).toEqual(keys);
-      for (const key of keys) expect(messages[key].trim()).not.toBe('');
-    }
-  });
+	it('has the same non-empty keys in every locale', () => {
+		const base = read('en');
+		const keys = Object.keys(base).sort();
+		for (const locale of LOCALES) {
+			const messages = read(locale);
+			expect(Object.keys(messages).sort()).toEqual(keys);
+			for (const key of keys) expect(messages[key].trim()).not.toBe('');
+		}
+	});
 });
 ```
 
@@ -171,10 +174,12 @@ git commit -m "feat: scaffold Letter Buckets shell with five locales"
 ### Task 2: PWA shell, cache policy, icons
 
 **Files:**
+
 - Create: `src/lib/pwa/policy.ts`, `src/lib/pwa/policy.test.ts`, `src/lib/pwa/client.ts`, `src/service-worker.ts`, `static/manifest.webmanifest`, `static/favicon.svg`, `scripts/generate-icons.mjs`
 - Modify: `vite.config.ts` (service worker registration already disabled), `src/routes/+layout.svelte` (call `initPwa` on mount)
 
 **Interfaces:**
+
 - Produces: `decide(input: DecisionInput, origin: string): 'navigation' | 'cache-first' | 'bypass'`; `initPwa(): void`; `onUpdateReady(listener): () => void`; `applyUpdate(): void`.
 - The service worker precaches `$app/manifest` assets plus `/200.html`, batches writes, and deletes old caches on activate.
 
@@ -187,30 +192,37 @@ import { decide } from './policy.js';
 
 const app = 'https://letterbuckets.test';
 const input = (over: Partial<Parameters<typeof decide>[0]>) => ({
-  method: 'GET',
-  url: `${app}/levels`,
-  origin: app,
-  mode: 'navigate',
-  destination: 'document',
-  ...over
+	method: 'GET',
+	url: `${app}/levels`,
+	origin: app,
+	mode: 'navigate',
+	destination: 'document',
+	...over
 });
 
 describe('decide', () => {
-  it('serves navigations from the cached shell', () => {
-    expect(decide(input({}), app)).toBe('navigation');
-  });
-  it('serves same-origin audio cache-first', () => {
-    expect(decide(input({ mode: 'no-cors', destination: 'audio', url: `${app}/audio/words/en/l01-w1.mp3` }), app)).toBe('cache-first');
-  });
-  it('serves same-origin images, fonts, scripts and styles cache-first', () => {
-    for (const destination of ['image', 'font', 'script', 'style']) {
-      expect(decide(input({ mode: 'no-cors', destination, url: `${app}/x` }), app)).toBe('cache-first');
-    }
-  });
-  it('bypasses non-GET and cross-origin requests', () => {
-    expect(decide(input({ method: 'POST' }), app)).toBe('bypass');
-    expect(decide(input({ origin: 'https://other.test' }), app)).toBe('bypass');
-  });
+	it('serves navigations from the cached shell', () => {
+		expect(decide(input({}), app)).toBe('navigation');
+	});
+	it('serves same-origin audio cache-first', () => {
+		expect(
+			decide(
+				input({ mode: 'no-cors', destination: 'audio', url: `${app}/audio/words/en/l01-w1.mp3` }),
+				app
+			)
+		).toBe('cache-first');
+	});
+	it('serves same-origin images, fonts, scripts and styles cache-first', () => {
+		for (const destination of ['image', 'font', 'script', 'style']) {
+			expect(decide(input({ mode: 'no-cors', destination, url: `${app}/x` }), app)).toBe(
+				'cache-first'
+			);
+		}
+	});
+	it('bypasses non-GET and cross-origin requests', () => {
+		expect(decide(input({ method: 'POST' }), app)).toBe('bypass');
+		expect(decide(input({ origin: 'https://other.test' }), app)).toBe('bypass');
+	});
 });
 ```
 
@@ -224,6 +236,7 @@ Expected: FAIL because `policy.ts` does not exist.
 `decide` returns `navigation` for `mode === 'navigate'` and same-origin GET; `cache-first` for same-origin GET with destination `audio`, `image`, `font`, `script`, `style`, `manifest`; `bypass` otherwise.
 
 `src/service-worker.ts`:
+
 - cache name `letter-buckets-${version}`; `INDEX = '/200.html'`;
 - `PRECACHE = [...immutable.map(resolve), ...assets.map(resolve)]`;
 - install: open cache, add `[...PRECACHE, INDEX]` in batches of 8 with `.catch(() => {})` per entry;
@@ -259,10 +272,12 @@ git commit -m "feat: add offline PWA shell and cache-first service worker"
 ### Task 3: Content schema, validator, and the 750-word content
 
 **Files:**
+
 - Create: `src/lib/content/schema.ts`, `src/lib/content/rules.ts`, `src/lib/content/index.ts`, `src/lib/content/themes.ts`, `src/lib/content/validate.ts`, `src/lib/content/validate.test.ts`, `src/lib/content/levels.{ro,it,en,de,ru}.ts`, `scripts/export_content.ts`
 - Test: `src/lib/content/validate.test.ts`
 
 **Interfaces:**
+
 - Produces: `type Locale = 'ro' | 'it' | 'en' | 'de' | 'ru'`; `interface WordEntry { word: string; spoken?: string }`; `interface LevelContent { id: number; theme: string; words: [WordEntry, WordEntry, WordEntry] }`; `interface LocaleContent { locale: Locale; levels: LevelContent[] }`;
 - `LEVEL_COUNT = 50`; `CONTENT: Record<Locale, LocaleContent>`; `getLevelContent(locale, level): LevelContent`; `getLevelArt(level): string`; `THEME_PROMPTS: readonly string[]` (50 English art prompts, language-agnostic);
 - `ALPHABETS: Record<Locale, RegExp>`; `isAllowedWord(locale, word): boolean`; `gapCountForLevel(level: number, wordLength: number): number` (the single source of truth used by the validator and the puzzle engine);
@@ -278,20 +293,20 @@ import { CONTENT, LEVEL_COUNT } from './index.js';
 import { validateContent } from './validate.js';
 
 describe('content', () => {
-  it('is valid in all five locales', () => {
-    expect(validateContent(CONTENT)).toEqual([]);
-  });
-  it('has exactly 50 levels per locale', () => {
-    for (const locale of Object.keys(CONTENT) as (keyof typeof CONTENT)[]) {
-      expect(CONTENT[locale].levels).toHaveLength(LEVEL_COUNT);
-    }
-  });
-  it('rejects a word outside the locale alphabet', () => {
-    const broken = structuredClone(CONTENT);
-    broken.de.levels[0].words[0].word = 'STRAßE';
-    const issues = validateContent(broken);
-    expect(issues.some((i) => i.message.includes('ß'))).toBe(true);
-  });
+	it('is valid in all five locales', () => {
+		expect(validateContent(CONTENT)).toEqual([]);
+	});
+	it('has exactly 50 levels per locale', () => {
+		for (const locale of Object.keys(CONTENT) as (keyof typeof CONTENT)[]) {
+			expect(CONTENT[locale].levels).toHaveLength(LEVEL_COUNT);
+		}
+	});
+	it('rejects a word outside the locale alphabet', () => {
+		const broken = structuredClone(CONTENT);
+		broken.de.levels[0].words[0].word = 'STRAßE';
+		const issues = validateContent(broken);
+		expect(issues.some((i) => i.message.includes('ß'))).toBe(true);
+	});
 });
 ```
 
@@ -303,6 +318,7 @@ Expected: FAIL because the content modules and validator do not exist.
 - [ ] **Step 3: Implement the validator**
 
 `validateContent` returns an array of `{ locale, level?, word?, message }` and checks:
+
 - 50 levels, ids 1–50 in order, no duplicates;
 - 3 words per level, unique within the level;
 - 3–6 letters, only the locale alphabet, no spaces/digits/punctuation;
@@ -318,15 +334,16 @@ Expected: FAIL because the content modules and validator do not exist.
 
 Use the 50 themes from the spec. Every theme gets exactly three concrete, familiar words in each locale; the words fit the theme and the locale's letter rules, not a literal translation. Level 1 is the quality bar:
 
-| Locale | Level 1 — Pets |
-|---|---|
-| en | CAT, DOG, MOUSE |
-| ro | CÂINE, PISICĂ, PEȘTE |
-| it | GATTO, CANE, TOPO |
-| de | KATZE, HUND, MAUS |
-| ru | КОТ, ПЁС, РЫБА |
+| Locale | Level 1 — Pets       |
+| ------ | -------------------- |
+| en     | CAT, DOG, MOUSE      |
+| ro     | CÂINE, PISICĂ, PEȘTE |
+| it     | GATTO, CANE, TOPO    |
+| de     | KATZE, HUND, MAUS    |
+| ru     | КОТ, ПЁС, РЫБА       |
 
 Write the lists in five steps:
+
 1. Chapter 1 (levels 1–10) in all five locales.
 2. Chapter 2 (11–20).
 3. Chapter 3 (21–30).
@@ -351,9 +368,11 @@ git commit -m "content: add 50 themed levels in five locales"
 ### Task 4: Pure puzzle engine
 
 **Files:**
+
 - Create: `src/lib/game/puzzle.ts`, `src/lib/game/puzzle.test.ts`
 
 **Interfaces:**
+
 - Produces:
   - `interface PuzzleSpec { level: number; wordIndex: number; word: string; gaps: number[]; decoys: string[] }`
   - `interface Tile { id: string; letter: string; decoy: boolean }`
@@ -375,59 +394,59 @@ import { describe, expect, it } from 'vitest';
 import { buildPuzzle, createPuzzleState, hintTarget, isComplete, placeTile } from './puzzle.js';
 
 describe('buildPuzzle', () => {
-  it('puts the only gap on the final letter at level 1', () => {
-    const spec = buildPuzzle({ level: 1, wordIndex: 0, word: 'CAT', locale: 'en' });
-    expect(spec.gaps).toEqual([2]);
-    expect(spec.decoys).toEqual([]);
-  });
-  it('is deterministic for the same level, word and locale', () => {
-    const a = buildPuzzle({ level: 27, wordIndex: 1, word: 'HOUSE', locale: 'en' });
-    const b = buildPuzzle({ level: 27, wordIndex: 1, word: 'HOUSE', locale: 'en' });
-    expect(a).toEqual(b);
-  });
-  it('never leaves fewer than two revealed letters', () => {
-    for (const word of ['CAT', 'BALL', 'HOUSE', 'FLOWER']) {
-      for (let level = 1; level <= 50; level++) {
-        const spec = buildPuzzle({ level, wordIndex: 0, word, locale: 'en' });
-        expect(spec.gaps.length).toBeLessThanOrEqual(Math.min(3, word.length - 2));
-        expect(new Set(spec.gaps).size).toBe(spec.gaps.length);
-      }
-    }
-  });
-  it('adds confusable decoys only in the late bands', () => {
-    const early = buildPuzzle({ level: 20, wordIndex: 0, word: 'HOUSE', locale: 'en' });
-    const late = buildPuzzle({ level: 45, wordIndex: 0, word: 'HOUSE', locale: 'en' });
-    expect(early.decoys).toHaveLength(0);
-    expect(late.decoys).toHaveLength(2);
-    for (const decoy of late.decoys) expect(late.word).not.toContain(decoy);
-  });
+	it('puts the only gap on the final letter at level 1', () => {
+		const spec = buildPuzzle({ level: 1, wordIndex: 0, word: 'CAT', locale: 'en' });
+		expect(spec.gaps).toEqual([2]);
+		expect(spec.decoys).toEqual([]);
+	});
+	it('is deterministic for the same level, word and locale', () => {
+		const a = buildPuzzle({ level: 27, wordIndex: 1, word: 'HOUSE', locale: 'en' });
+		const b = buildPuzzle({ level: 27, wordIndex: 1, word: 'HOUSE', locale: 'en' });
+		expect(a).toEqual(b);
+	});
+	it('never leaves fewer than two revealed letters', () => {
+		for (const word of ['CAT', 'BALL', 'HOUSE', 'FLOWER']) {
+			for (let level = 1; level <= 50; level++) {
+				const spec = buildPuzzle({ level, wordIndex: 0, word, locale: 'en' });
+				expect(spec.gaps.length).toBeLessThanOrEqual(Math.min(3, word.length - 2));
+				expect(new Set(spec.gaps).size).toBe(spec.gaps.length);
+			}
+		}
+	});
+	it('adds confusable decoys only in the late bands', () => {
+		const early = buildPuzzle({ level: 20, wordIndex: 0, word: 'HOUSE', locale: 'en' });
+		const late = buildPuzzle({ level: 45, wordIndex: 0, word: 'HOUSE', locale: 'en' });
+		expect(early.decoys).toHaveLength(0);
+		expect(late.decoys).toHaveLength(2);
+		for (const decoy of late.decoys) expect(late.word).not.toContain(decoy);
+	});
 });
 
 describe('placeTile', () => {
-  const spec = buildPuzzle({ level: 1, wordIndex: 0, word: 'CAT', locale: 'en' });
-  it('places the correct letter and completes the word', () => {
-    const state = createPuzzleState(spec);
-    const tile = state.remaining.find((t) => t.letter === 'T')!;
-    const result = placeTile(state, tile.id, 2);
-    expect(result.outcome).toBe('placed');
-    expect(isComplete(result.state)).toBe(true);
-  });
-  it('rejects a letter that belongs to another empty slot and suggests it', () => {
-    const twoGap = buildPuzzle({ level: 25, wordIndex: 0, word: 'HOUSE', locale: 'en' });
-    const state = createPuzzleState(twoGap);
-    const [slotA, slotB] = twoGap.gaps;
-    const wrong = state.remaining.find((t) => t.letter === twoGap.word[slotB])!;
-    const result = placeTile(state, wrong.id, slotA);
-    expect(result.outcome).toBe('wrong-word');
-    expect(result.suggestedSlot).toBe(slotB);
-  });
-  it('keeps both identical tiles for a repeated letter', () => {
-    const ball = { level: 25, wordIndex: 0, word: 'BALL', gaps: [2, 3], decoys: [] };
-    const state = createPuzzleState(ball);
-    const ls = state.remaining.filter((t) => t.letter === 'L');
-    expect(ls).toHaveLength(2);
-    expect(new Set(ls.map((t) => t.id)).size).toBe(2);
-  });
+	const spec = buildPuzzle({ level: 1, wordIndex: 0, word: 'CAT', locale: 'en' });
+	it('places the correct letter and completes the word', () => {
+		const state = createPuzzleState(spec);
+		const tile = state.remaining.find((t) => t.letter === 'T')!;
+		const result = placeTile(state, tile.id, 2);
+		expect(result.outcome).toBe('placed');
+		expect(isComplete(result.state)).toBe(true);
+	});
+	it('rejects a letter that belongs to another empty slot and suggests it', () => {
+		const twoGap = buildPuzzle({ level: 25, wordIndex: 0, word: 'HOUSE', locale: 'en' });
+		const state = createPuzzleState(twoGap);
+		const [slotA, slotB] = twoGap.gaps;
+		const wrong = state.remaining.find((t) => t.letter === twoGap.word[slotB])!;
+		const result = placeTile(state, wrong.id, slotA);
+		expect(result.outcome).toBe('wrong-word');
+		expect(result.suggestedSlot).toBe(slotB);
+	});
+	it('keeps both identical tiles for a repeated letter', () => {
+		const ball = { level: 25, wordIndex: 0, word: 'BALL', gaps: [2, 3], decoys: [] };
+		const state = createPuzzleState(ball);
+		const ls = state.remaining.filter((t) => t.letter === 'L');
+		expect(ls).toHaveLength(2);
+		expect(new Set(ls.map((t) => t.id)).size).toBe(2);
+	});
 });
 ```
 
@@ -466,9 +485,11 @@ git commit -m "feat: add deterministic puzzle engine"
 ### Task 5: Versioned, per-locale save store
 
 **Files:**
+
 - Create: `src/lib/storage/save.ts`, `src/lib/storage/save.test.ts`
 
 **Interfaces:**
+
 - Produces: `SaveData`, `LocaleProgress`, `KeyValueStorage`, `SAVE_KEY = 'letter-buckets-save'`;
 - `defaultSave(): SaveData`; `loadSave(storage?): SaveData`; `persistSave(data, storage): void`;
 - `getLocaleProgress(data, locale): LocaleProgress`; `currentLevel(data, locale): number`; `isLevelOpen(data, locale, level): boolean`;
@@ -480,44 +501,52 @@ git commit -m "feat: add deterministic puzzle engine"
 // src/lib/storage/save.test.ts
 import { describe, expect, it } from 'vitest';
 import {
-  currentLevel, defaultSave, loadSave, markLevelComplete, markWordComplete,
-  resetLevelWords, wordKey
+	currentLevel,
+	defaultSave,
+	loadSave,
+	markLevelComplete,
+	markWordComplete,
+	resetLevelWords,
+	wordKey
 } from './save.js';
 
 function storage(initial?: string) {
-  const map = new Map<string, string>(initial ? [['letter-buckets-save', initial]] : []);
-  return { getItem: (k: string) => map.get(k) ?? null, setItem: (k: string, v: string) => void map.set(k, v) };
+	const map = new Map<string, string>(initial ? [['letter-buckets-save', initial]] : []);
+	return {
+		getItem: (k: string) => map.get(k) ?? null,
+		setItem: (k: string, v: string) => void map.set(k, v)
+	};
 }
 
 describe('save', () => {
-  it('starts every locale at level 1', () => {
-    expect(currentLevel(defaultSave(), 'en')).toBe(1);
-    expect(currentLevel(defaultSave(), 'ru')).toBe(1);
-  });
-  it('keeps progress separate per locale', () => {
-    const data = defaultSave();
-    markWordComplete(data, 'en', 1, 0);
-    markWordComplete(data, 'en', 1, 1);
-    markWordComplete(data, 'en', 1, 2);
-    expect(currentLevel(data, 'en')).toBe(2);
-    expect(currentLevel(data, 'ro')).toBe(1);
-  });
-  it('unlocks a word permanently even when the level is replayed', () => {
-    const data = defaultSave();
-    markWordComplete(data, 'en', 1, 0);
-    resetLevelWords(data, 'en', 1);
-    expect(data.locales.en.unlocked[wordKey(1, 0)]).toBe(true);
-    expect(data.locales.en.levelWords[1]).toEqual([]);
-  });
-  it('falls back to a fresh save on corrupt data', () => {
-    expect(loadSave(storage('not json'))).toEqual(defaultSave());
-    expect(loadSave(storage('{"version":99}'))).toEqual(defaultSave());
-  });
-  it('marks the chapter stamp at the end of a chapter', () => {
-    const data = defaultSave();
-    markLevelComplete(data, 'en', 10);
-    expect(data.locales.en.chapterStamps).toEqual([1]);
-  });
+	it('starts every locale at level 1', () => {
+		expect(currentLevel(defaultSave(), 'en')).toBe(1);
+		expect(currentLevel(defaultSave(), 'ru')).toBe(1);
+	});
+	it('keeps progress separate per locale', () => {
+		const data = defaultSave();
+		markWordComplete(data, 'en', 1, 0);
+		markWordComplete(data, 'en', 1, 1);
+		markWordComplete(data, 'en', 1, 2);
+		expect(currentLevel(data, 'en')).toBe(2);
+		expect(currentLevel(data, 'ro')).toBe(1);
+	});
+	it('unlocks a word permanently even when the level is replayed', () => {
+		const data = defaultSave();
+		markWordComplete(data, 'en', 1, 0);
+		resetLevelWords(data, 'en', 1);
+		expect(data.locales.en.unlocked[wordKey(1, 0)]).toBe(true);
+		expect(data.locales.en.levelWords[1]).toEqual([]);
+	});
+	it('falls back to a fresh save on corrupt data', () => {
+		expect(loadSave(storage('not json'))).toEqual(defaultSave());
+		expect(loadSave(storage('{"version":99}'))).toEqual(defaultSave());
+	});
+	it('marks the chapter stamp at the end of a chapter', () => {
+		const data = defaultSave();
+		markLevelComplete(data, 'en', 10);
+		expect(data.locales.en.chapterStamps).toEqual([1]);
+	});
 });
 ```
 
@@ -532,15 +561,15 @@ Use the exact schema from the spec:
 
 ```ts
 interface LocaleProgress {
-  clearedThrough: number;
-  levelWords: Record<number, number[]>;
-  unlocked: Record<string, true>;
-  chapterStamps: number[];
+	clearedThrough: number;
+	levelWords: Record<number, number[]>;
+	unlocked: Record<string, true>;
+	chapterStamps: number[];
 }
 interface SaveData {
-  version: 1;
-  settings: { muted: boolean; coachDone: boolean; installHintDismissed: boolean };
-  locales: Record<Locale, LocaleProgress>;
+	version: 1;
+	settings: { muted: boolean; coachDone: boolean; installHintDismissed: boolean };
+	locales: Record<Locale, LocaleProgress>;
 }
 ```
 
@@ -567,10 +596,12 @@ git commit -m "feat: add versioned per-locale save store"
 ### Task 6: Tokens, letter tile, bucket, and glyph smoke test
 
 **Files:**
+
 - Create: `src/lib/components/LetterTile.svelte`, `src/lib/components/Bucket.svelte`, `src/routes/dev/type/+page.svelte`, `tests/visual/type.spec.ts`, `src/lib/components/Bucket.svelte.test.ts`
 - Modify: `src/lib/styles/tokens.css`, `src/lib/styles/base.css`
 
 **Interfaces:**
+
 - `LetterTile` props: `letter: string; state: 'revealed' | 'empty' | 'tile' | 'selected' | 'placed'; label?: string; onclick?: () => void`.
 - `Bucket` props: `index: 1 | 2 | 3; state: 'closed' | 'open' | 'done'; word?: string; onclick?: () => void`.
 - Produces: `data-state` attributes on both for tests; bucket SVG shape and tile metrics used by later screens.
@@ -584,14 +615,14 @@ import { describe, expect, it } from 'vitest';
 import Bucket from './Bucket.svelte';
 
 describe('Bucket', () => {
-  it('labels a closed bucket by its word number', () => {
-    render(Bucket, { index: 1, state: 'closed' });
-    expect(screen.getByRole('button', { name: /open word 1/i })).toBeTruthy();
-  });
-  it('shows the word when done', () => {
-    render(Bucket, { index: 2, state: 'done', word: 'CAT' });
-    expect(screen.getByText('CAT')).toBeTruthy();
-  });
+	it('labels a closed bucket by its word number', () => {
+		render(Bucket, { index: 1, state: 'closed' });
+		expect(screen.getByRole('button', { name: /open word 1/i })).toBeTruthy();
+	});
+	it('shows the word when done', () => {
+		render(Bucket, { index: 2, state: 'done', word: 'CAT' });
+		expect(screen.getByText('CAT')).toBeTruthy();
+	});
 });
 ```
 
@@ -624,10 +655,12 @@ git commit -m "feat: add letter tiles, buckets, and glyph coverage check"
 ### Task 7: Level session and bucket screen
 
 **Files:**
+
 - Create: `src/lib/game/session.svelte.ts`, `src/lib/game/session.test.ts`, `src/routes/levels/[level]/+page.svelte`, `src/routes/levels/+page.svelte` (placeholder, Task 10 fills it), `src/lib/components/LevelComplete.svelte` (shell, fleshed out in Task 9), `tests/e2e/level.spec.ts`
 - Modify: `src/lib/components/WordPanel.svelte` (created here as a shell; filled in Task 8)
 
 **Interfaces:**
+
 - `interface BucketState { index: 0 | 1 | 2; status: 'closed' | 'open' | 'done'; word?: string }`
 - `interface LevelSession`
   - `level: number`, `locale: Locale`, `content: LevelContent`, `buckets: BucketState[]`, `openIndex: number | null`, `word: PuzzleState | null`, `complete: boolean`
@@ -651,6 +684,7 @@ Use Svelte 5 `$state` inside `session.svelte.ts`. Keep all content and save writ
 - [ ] **Step 4: Build the level screen**
 
 `/levels/[level]/+page.svelte`:
+
 - reads `page.params.level`, loads the save, and redirects to `/levels` when the level is out of range or locked (the toast arrives in Task 10);
 - creates the session with `progress: getLocaleProgress(data, locale)`, so completed words from a previous visit show as done buckets;
 - renders header (back, level number, theme name, sound toggle), the 16:9 theme banner from `getLevelArt(level)`, the three `Bucket` cards, and "{done} of 3 words";
@@ -677,10 +711,12 @@ git commit -m "feat: add level session and bucket screen"
 ### Task 8: Word panel, drag and tap
 
 **Files:**
+
 - Create: `src/lib/components/WordPanel.svelte`, `src/lib/components/Slot.svelte`, `src/lib/components/WordPanel.svelte.test.ts`, `tests/e2e/word-panel.spec.ts`
 - Modify: `src/lib/components/LetterTile.svelte`
 
 **Interfaces:**
+
 - `WordPanel` props: `session: LevelSession; onclose: () => void`.
 - `Slot` props: `index: number; letter: string; filled: boolean; suggested?: boolean; onplace: () => void`.
 - Consumes: `session.place`, `session.word`, `hintTarget`.
@@ -689,6 +725,7 @@ git commit -m "feat: add level session and bucket screen"
 - [ ] **Step 1: Write the failing E2E tests**
 
 `tests/e2e/word-panel.spec.ts`:
+
 - tap path: open level 1 bucket 1; read the missing letter from the fixture; tap its tray tile; tap the empty slot; expect the slot filled and the word complete; expect the completion panel and "Back to buckets".
 - drag path: same word, use `page.mouse` to press the tile center, move to the slot center in 8 steps, release; expect the same result.
 - wrong path: drag a decoy (level 31) or a wrong letter; expect the tile returns and the slot is empty.
@@ -729,10 +766,12 @@ git commit -m "feat: add tap and drag word panel"
 ### Task 9: Hints, word completion, level complete
 
 **Files:**
+
 - Create: `src/lib/game/hints.ts`, `src/lib/game/hints.test.ts`, `tests/e2e/hints.spec.ts`
 - Modify: `src/lib/game/session.svelte.ts`, `src/lib/components/WordPanel.svelte`, `src/lib/components/LevelComplete.svelte`, `src/routes/levels/[level]/+page.svelte`
 
 **Interfaces:**
+
 - `type HintAction = { kind: 'pulse-slot'; slot: number } | { kind: 'pulse-tile'; tileId: string } | { kind: 'auto-place'; tileId: string; slot: number } | { kind: 'locked' }`.
 - `nextHintAction(state: PuzzleState, step: 0 | 1 | 2 | 3): HintAction`.
 - Session adds `hintStep: 0 | 1 | 2 | 3`, `requestHint(): void`, `noteInteraction(): void`, `pauseHints()`, `resumeHints()`.
@@ -749,12 +788,12 @@ const spec = buildPuzzle({ level: 1, wordIndex: 0, word: 'CAT', locale: 'en' });
 const state = createPuzzleState(spec);
 
 describe('nextHintAction', () => {
-  it('pulses the slot, then the tile, then auto-places once', () => {
-    expect(nextHintAction(state, 0).kind).toBe('pulse-slot');
-    expect(nextHintAction(state, 1).kind).toBe('pulse-tile');
-    expect(nextHintAction(state, 2).kind).toBe('auto-place');
-    expect(nextHintAction(state, 3).kind).toBe('locked');
-  });
+	it('pulses the slot, then the tile, then auto-places once', () => {
+		expect(nextHintAction(state, 0).kind).toBe('pulse-slot');
+		expect(nextHintAction(state, 1).kind).toBe('pulse-tile');
+		expect(nextHintAction(state, 2).kind).toBe('auto-place');
+		expect(nextHintAction(state, 3).kind).toBe('locked');
+	});
 });
 ```
 
@@ -792,16 +831,19 @@ git commit -m "feat: add gentle hint chain and level completion"
 ### Task 10: Home, chapters, and level map
 
 **Files:**
+
 - Create: `src/lib/components/ChapterTabs.svelte`, `tests/e2e/map.spec.ts`
 - Modify: `src/routes/+page.svelte`, `src/routes/levels/+page.svelte`
 
 **Interfaces:**
+
 - Consumes: `currentLevel`, `isLevelOpen`, `CONTENT`, `m`, `audio`.
 - Produces: chapter tabs 1–5, ten level tiles each, states `done | current | locked`, toast for locked taps, Play/Levels/Word Book/Settings home actions.
 
 - [ ] **Step 1: Write the failing E2E tests**
 
 `tests/e2e/map.spec.ts`:
+
 - home Play goes to the current level (`/en/levels/1` on a fresh save);
 - the map shows exactly ten tiles in the selected chapter;
 - level 2 is locked on a fresh save and tapping it shows the "Finish level 1 first" toast;
@@ -835,9 +877,11 @@ git commit -m "feat: add home and chapter level map"
 ### Task 11: Word Book
 
 **Files:**
+
 - Create: `src/routes/words/+page.svelte`, `src/lib/components/WordChip.svelte`, `tests/e2e/word-book.spec.ts`
 
 **Interfaces:**
+
 - Consumes: `CONTENT[locale]`, `data.locales[locale].unlocked`, `wordKey`, `audio.playWord`.
 - Produces: count "{unlocked} of 150", chapter/level grouping, locked chips with "?", unlocked chips that speak the word.
 
@@ -873,10 +917,12 @@ git commit -m "feat: add per-locale Word Book"
 ### Task 12: Settings, language switching, per-locale isolation
 
 **Files:**
+
 - Create: `src/routes/settings/+page.svelte`, `tests/e2e/settings.spec.ts`
 - Modify: `src/routes/+layout.svelte`, `src/routes/levels/[level]/+page.svelte`
 
 **Interfaces:**
+
 - Consumes: Paraglide `setLocale`, `getLocale`, `localizeHref`; save `resetLocale`; `currentLevel`, `isLevelOpen`.
 - Produces: language list (Română, Italiano, English, Deutsch, Русский), sound toggle, 3-second hold reset for the current locale, about/licenses, "How to play" replay.
 - Language switch while on a locked level redirects to that locale's `/levels` with a toast.
@@ -884,6 +930,7 @@ git commit -m "feat: add per-locale Word Book"
 - [ ] **Step 1: Write the failing E2E tests**
 
 `tests/e2e/settings.spec.ts`:
+
 - switch from English to Romanian; expect the UI text changes and the URL is `/ro/settings`;
 - seed English progress to level 5 and Romanian progress to level 1; switch to Romanian; expect home Play to go to `/ro/levels/1`; switch back to English and expect `/en/levels/5`;
 - navigate to `/ro/levels/5` while Romanian is locked; switch to Romanian via settings; expect a redirect to `/ro/levels` and a toast;
@@ -918,10 +965,12 @@ git commit -m "feat: add settings and per-locale progress isolation"
 ### Task 13: Audio runtime, coach marks, install hint, update toast
 
 **Files:**
+
 - Create: `src/lib/audio/index.ts`, `src/lib/audio/index.test.ts`, `src/lib/components/CoachMark.svelte`, `src/lib/components/InstallHint.svelte`, `src/lib/components/UpdateToast.svelte`, `tests/e2e/audio.spec.ts`
 - Modify: `src/routes/+layout.svelte`, `src/routes/+page.svelte`, `src/routes/levels/[level]/+page.svelte`
 
 **Interfaces:**
+
 - `wordAudioPath(locale, level, index): string` → `/audio/words/{locale}/l{02}-w{index}.mp3`;
 - `createAudioController(options?): AudioController` with `unlock()`, `setMuted(boolean)`, `playWord(locale, level, index)`, `preloadLevel(locale, level)`, `playSfx(name)`, `playMusic()`, `stopWord()`;
 - `export type SfxName = 'tile-pick' | 'tile-place' | 'tile-wrong' | 'ui-tap' | 'bucket-open' | 'word-complete' | 'level-complete' | 'coin'`;
@@ -938,10 +987,10 @@ import { describe, expect, it } from 'vitest';
 import { wordAudioPath } from './index.js';
 
 describe('wordAudioPath', () => {
-  it('pads the level and word indexes', () => {
-    expect(wordAudioPath('en', 1, 1)).toBe('/audio/words/en/l01-w1.mp3');
-    expect(wordAudioPath('ru', 50, 3)).toBe('/audio/words/ru/l50-w3.mp3');
-  });
+	it('pads the level and word indexes', () => {
+		expect(wordAudioPath('en', 1, 1)).toBe('/audio/words/en/l01-w1.mp3');
+		expect(wordAudioPath('ru', 50, 3)).toBe('/audio/words/ru/l50-w3.mp3');
+	});
 });
 ```
 
@@ -987,10 +1036,12 @@ git commit -m "feat: add audio runtime, coach marks, and install hint"
 ### Task 14: Art style gate
 
 **Files:**
+
 - Create: `scripts/generate_art.py`, `ART-STYLE.md`, `candidates/` (gitignored)
 - Test: visual inspection of three candidates
 
 **Interfaces:**
+
 - `python3 scripts/generate_art.py --style-check` writes three `candidates/style-{1,2,3}.png` for level 1 using three prompt variants.
 - `python3 scripts/generate_art.py --all` writes `static/art/levels/l{02}.webp` for all 50 levels, skipping existing files unless `--force`.
 
@@ -1033,10 +1084,12 @@ git commit -m "art: add style guide and FLUX batch generator"
 ### Task 15: Generate and integrate the 50 illustrations
 
 **Files:**
+
 - Create: `static/art/levels/l01.webp … l50.webp`, `scripts/contact_sheet.py`, `scripts/validate_assets.mjs`
 - Modify: `src/routes/levels/[level]/+page.svelte` (banner `<img>`)
 
 **Interfaces:**
+
 - `getLevelArt(level)` returns `/art/levels/l{02}.webp`; the level screen displays it with `alt=""`, `loading="lazy"`, `decoding="async"`, and the theme name as adjacent text.
 
 - [ ] **Step 1: Generate the batch**
@@ -1069,10 +1122,12 @@ git commit -m "art: generate and wire the 50 level illustrations"
 ### Task 16: Generate and integrate word audio, SFX, and music
 
 **Files:**
+
 - Create: `scripts/generate_audio.mjs`, `static/audio/words/{ro,it,en,de,ru}/l01-w1.mp3 …`, `static/audio/sfx/*.mp3`, `static/audio/music/loop.mp3`
 - Modify: `scripts/validate_assets.mjs`
 
 **Interfaces:**
+
 - `generate_audio.mjs` reads `CONTENT` via a generated `scripts/content.json` (one source of truth from `src/lib/content/index.ts`), then writes one clip per word.
 - Studio base `http://127.0.0.1:7910`; token from `music-sfx-voice-studio/data/token`; language names `English`, `Italian`, `German`, `Russian`; voice `serena`; instruct "warm, gentle, clear, unhurried, for a young child".
 - Romanian Piper voice `ro_RO-mihai-medium` at `PIPER_VOICE` (default `~/piper-voices/ro_RO-mihai-medium.onnx`).
@@ -1120,10 +1175,12 @@ git commit -m "audio: add 750 word clips, effects, and music"
 ### Task 17: Accessibility, reduced motion, visual snapshots
 
 **Files:**
+
 - Modify: `src/lib/components/WordPanel.svelte`, `src/lib/components/Bucket.svelte`, `src/lib/components/LetterTile.svelte`, `src/lib/styles/base.css`, `src/routes/+layout.svelte`
 - Create: `tests/visual/app.spec.ts`, `tests/e2e/a11y.spec.ts`
 
 **Interfaces:**
+
 - Focus trap in the word panel; focus returns to the opening bucket on close; Escape closes.
 - Reduced motion: `@media (prefers-reduced-motion: reduce)` disables confetti, flying tiles, and looping sparkles; panel transitions become fades.
 - All text and glyphs pass AA against their backgrounds; all targets ≥44px.
@@ -1131,6 +1188,7 @@ git commit -m "audio: add 750 word clips, effects, and music"
 - [ ] **Step 1: Add the keyboard and screen-reader tests**
 
 `tests/e2e/a11y.spec.ts`:
+
 - Tab to bucket 1, Enter opens the panel; Tab reaches the tray; Enter selects; Tab to a slot; Enter places; Escape closes and focus is on bucket 1.
 - The live region announces "Letter placed" and "Word complete" (read `aria-live` text).
 - With `prefers-reduced-motion: reduce`, the panel has no transform animation (assert the computed `transition-duration` is `0s` or the animation class is absent).
@@ -1161,10 +1219,12 @@ git commit -m "a11y: add keyboard flow, reduced motion, and visual snapshots"
 ### Task 18: Offline E2E, CI, size budget, release
 
 **Files:**
+
 - Create: `tests/e2e/offline.spec.ts`, `scripts/check_build_size.mjs`, `.github/workflows/ci.yml`, `README.md`, `LICENSE`, `vercel.json`
 - Modify: `package.json` (CI scripts), `playwright.config.ts`
 
 **Interfaces:**
+
 - Offline test: install the service worker, set the browser offline, reload, see home, fetch a word clip and a level image, expect 200.
 - Build size check: 750 clips + 50 images + app shell < 20 MB; fails with a list of the largest files on overflow.
 - CI: install, lint, check, unit tests, build, E2E; visual tests are local-only.
@@ -1176,15 +1236,15 @@ git commit -m "a11y: add keyboard flow, reduced motion, and visual snapshots"
 import { expect, test } from '@playwright/test';
 
 test('works offline after install', async ({ page, context }) => {
-  await page.goto('/en/');
-  await page.evaluate(() => navigator.serviceWorker.ready);
-  await context.setOffline(true);
-  await page.reload();
-  await expect(page.getByRole('heading', { name: /letter buckets/i })).toBeVisible();
-  const audio = await page.evaluate(async () => (await fetch('/audio/words/en/l01-w1.mp3')).status);
-  const image = await page.evaluate(async () => (await fetch('/art/levels/l01.webp')).status);
-  expect(audio).toBe(200);
-  expect(image).toBe(200);
+	await page.goto('/en/');
+	await page.evaluate(() => navigator.serviceWorker.ready);
+	await context.setOffline(true);
+	await page.reload();
+	await expect(page.getByRole('heading', { name: /letter buckets/i })).toBeVisible();
+	const audio = await page.evaluate(async () => (await fetch('/audio/words/en/l01-w1.mp3')).status);
+	const image = await page.evaluate(async () => (await fetch('/art/levels/l01.webp')).status);
+	expect(audio).toBe(200);
+	expect(image).toBe(200);
 });
 ```
 
@@ -1198,6 +1258,7 @@ Expected: initially FAIL if audio is not precached or the navigation path is wro
 `scripts/check_build_size.mjs`: sum `build/**` bytes; assert <20 MB; assert exactly 50 images and 750 word clips; print the top 10 largest files.
 
 `.github/workflows/ci.yml`:
+
 ```yaml
 name: CI
 on: [push, pull_request]

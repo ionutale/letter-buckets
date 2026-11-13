@@ -22,12 +22,6 @@ export interface LocaleContent {
 export const LOCALES: readonly Locale[] = ['ro', 'it', 'en', 'de', 'ru'];
 
 /** Compact authoring helper: exactly three words per level, in order. */
-export function level(
-	id: number,
-	theme: string,
-	a: string,
-	b: string,
-	c: string
-): LevelContent {
+export function level(id: number, theme: string, a: string, b: string, c: string): LevelContent {
 	return { id, theme, words: [{ word: a }, { word: b }, { word: c }] };
 }

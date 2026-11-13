@@ -23,7 +23,8 @@
 		"content:export": "tsx scripts/export_content.ts",
 		"assets:audio": "node scripts/generate_audio.mjs",
 		"assets:art": "python3 scripts/generate_art.py",
-		"validate:assets": "node scripts/validate_assets.mjs"
+		"validate:assets": "node scripts/validate_assets.mjs",
+		"size": "node scripts/check_build_size.mjs"
 	},
 	"dependencies": {
 		"@fontsource/nunito": "^5.2.5"

@@ -42,10 +42,9 @@ export function defaultSave(): SaveData {
 	return {
 		version: 1,
 		settings: { muted: false, coachDone: false, installHintDismissed: false },
-		locales: Object.fromEntries(LOCALES.map((locale) => [locale, defaultLocaleProgress()])) as Record<
-			Locale,
-			LocaleProgress
-		>
+		locales: Object.fromEntries(
+			LOCALES.map((locale) => [locale, defaultLocaleProgress()])
+		) as Record<Locale, LocaleProgress>
 	};
 }
 

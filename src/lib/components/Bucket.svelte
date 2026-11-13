@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { m } from '#lib/paraglide/messages.js';
+
 	interface Props {
 		index: number;
 		state: 'closed' | 'open' | 'done';
@@ -13,8 +15,8 @@
 
 	const label = $derived(
 		state === 'done'
-			? `Word ${index}${word ? `, ${word}` : ''}, tap to hear it`
-			: `Open word ${index}`
+			? m.word_done_label({ n: index, word: word ?? '' })
+			: m.open_word({ n: index })
 	);
 </script>
 
@@ -24,7 +26,7 @@
 	data-state={state}
 	aria-label={label}
 	style={`--bucket-color:${color}`}
-	onclick={onclick}
+	{onclick}
 >
 	<span class="number" aria-hidden="true">{index}</span>
 	<span class="pail" aria-hidden="true">
@@ -47,10 +49,7 @@
 				<circle class="glow" cx="60" cy="76" r="22" />
 			{:else}
 				<path class="lid off" d="M104 16l14 8-10 16-14-8z" />
-				<path
-					class="star"
-					d="M60 54l5 12 13 1-10 9 3 13-11-7-11 7 3-13-10-9 13-1z"
-				/>
+				<path class="star" d="M60 54l5 12 13 1-10 9 3 13-11-7-11 7 3-13-10-9 13-1z" />
 			{/if}
 		</svg>
 	</span>

@@ -25,9 +25,7 @@ self.addEventListener('install', (event) => {
 			const cache = await caches.open(CACHE);
 			const urls = [...PRECACHE, INDEX];
 			for (let i = 0; i < urls.length; i += BATCH) {
-				await Promise.all(
-					urls.slice(i, i + BATCH).map((url) => cache.add(url).catch(() => {}))
-				);
+				await Promise.all(urls.slice(i, i + BATCH).map((url) => cache.add(url).catch(() => {})));
 			}
 		})()
 	);

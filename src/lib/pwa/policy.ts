@@ -8,14 +8,7 @@ export interface DecisionInput {
 
 export type Decision = 'navigation' | 'cache-first' | 'bypass';
 
-const CACHE_FIRST_DESTINATIONS = new Set([
-	'audio',
-	'image',
-	'font',
-	'script',
-	'style',
-	'manifest'
-]);
+const CACHE_FIRST_DESTINATIONS = new Set(['audio', 'image', 'font', 'script', 'style', 'manifest']);
 
 /**
  * Route one fetch to the service worker's three lanes:

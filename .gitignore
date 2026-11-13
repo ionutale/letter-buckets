@@ -8,3 +8,4 @@ candidates
 .DS_Store
 scripts/content.json
 scripts/themes.json
+.venv-piper

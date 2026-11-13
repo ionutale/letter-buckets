@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { m } from '#lib/paraglide/messages.js';
+
 	interface Props {
 		index: number;
 		letter: string;
@@ -18,7 +20,7 @@
 	data-slot={index}
 	data-letter={letter}
 	data-filled={filled}
-	aria-label={filled ? `Letter ${letter}` : `Empty slot ${index + 1}`}
+	aria-label={filled ? m.letter_label({ letter }) : m.empty_slot({ n: index + 1 })}
 	disabled={filled}
 	onclick={onplace}
 >

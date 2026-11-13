@@ -18,11 +18,7 @@ function solveCurrentWord(session: LevelSession): void {
 describe('level session', () => {
 	it('starts with three closed buckets', () => {
 		const session = createLevelSession(1, 'en');
-		expect(session.buckets.map((bucket) => bucket.status)).toEqual([
-			'closed',
-			'closed',
-			'closed'
-		]);
+		expect(session.buckets.map((bucket) => bucket.status)).toEqual(['closed', 'closed', 'closed']);
 		expect(session.openIndex).toBeNull();
 		expect(session.complete).toBe(false);
 	});
@@ -98,11 +94,7 @@ describe('level session', () => {
 		solveCurrentWord(session);
 		session.closeWord();
 		session.reset();
-		expect(session.buckets.map((bucket) => bucket.status)).toEqual([
-			'closed',
-			'closed',
-			'closed'
-		]);
+		expect(session.buckets.map((bucket) => bucket.status)).toEqual(['closed', 'closed', 'closed']);
 		expect(session.complete).toBe(false);
 	});
 

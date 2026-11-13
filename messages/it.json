@@ -35,5 +35,22 @@
 	"install_hint": "Aggiungi Letter Buckets alla schermata Home per giocare offline.",
 	"dismiss": "Non ora",
 	"update_ready": "Una nuova versione è pronta.",
-	"update_now": "Aggiorna"
+	"update_now": "Aggiorna",
+	"word_of": "Parola {i} di 3",
+	"back_to_buckets": "Torna ai secchielli",
+	"hint": "Suggerimento",
+	"hear_word": "Ascolta la parola",
+	"word_complete": "Parola completa!",
+	"letter_placed": "Lettera inserita",
+	"try_another": "Prova un'altra lettera",
+	"letter_selected": "Lettera {letter} selezionata",
+	"level_complete": "Livello completato!",
+	"you_did_it": "Ce l'hai fatta!",
+	"next_level": "Livello successivo",
+	"back_to_levels": "Torna ai livelli",
+	"chapter_stamp": "Capitolo {n}",
+	"open_word": "Apri la parola {n}",
+	"word_done_label": "Parola {n}, {word}, tocca per ascoltarla",
+	"empty_slot": "Spazio vuoto {n}",
+	"letter_label": "Lettera {letter}"
 }

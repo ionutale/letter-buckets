@@ -11,5 +11,5 @@ test('opens a bucket into a word panel', async ({ page }) => {
 
 test('a locked level redirects to the level map', async ({ page }) => {
 	await page.goto('/en/levels/50');
-	await expect(page).toHaveURL(/\/en\/levels$/);
+	await expect(page).toHaveURL(/\/en\/levels\?locked=1$/);
 });

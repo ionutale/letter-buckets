@@ -1,12 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { PuzzleSpec } from './puzzle.js';
-import {
-	buildPuzzle,
-	createPuzzleState,
-	hintTarget,
-	isComplete,
-	placeTile
-} from './puzzle.js';
+import { buildPuzzle, createPuzzleState, hintTarget, isComplete, placeTile } from './puzzle.js';
 
 describe('buildPuzzle', () => {
 	it('puts the only gap on the final letter at level 1', () => {
@@ -41,10 +35,18 @@ describe('buildPuzzle', () => {
 	});
 
 	it('uses the level band for the gap count', () => {
-		expect(buildPuzzle({ level: 10, wordIndex: 0, word: 'HOUSE', locale: 'en' }).gaps).toHaveLength(1);
-		expect(buildPuzzle({ level: 25, wordIndex: 0, word: 'HOUSE', locale: 'en' }).gaps).toHaveLength(2);
-		expect(buildPuzzle({ level: 45, wordIndex: 0, word: 'HOUSE', locale: 'en' }).gaps).toHaveLength(3);
-		expect(buildPuzzle({ level: 45, wordIndex: 0, word: 'BALL', locale: 'en' }).gaps).toHaveLength(2);
+		expect(buildPuzzle({ level: 10, wordIndex: 0, word: 'HOUSE', locale: 'en' }).gaps).toHaveLength(
+			1
+		);
+		expect(buildPuzzle({ level: 25, wordIndex: 0, word: 'HOUSE', locale: 'en' }).gaps).toHaveLength(
+			2
+		);
+		expect(buildPuzzle({ level: 45, wordIndex: 0, word: 'HOUSE', locale: 'en' }).gaps).toHaveLength(
+			3
+		);
+		expect(buildPuzzle({ level: 45, wordIndex: 0, word: 'BALL', locale: 'en' }).gaps).toHaveLength(
+			2
+		);
 	});
 });
 

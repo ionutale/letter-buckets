@@ -40,12 +40,7 @@
 </script>
 
 {#if state === 'empty'}
-	<span
-		class="tile empty"
-		data-state="empty"
-		role="img"
-		aria-label={accessibleLabel}
-	></span>
+	<span class="tile empty" data-state="empty" role="img" aria-label={accessibleLabel}></span>
 {:else}
 	<button
 		type="button"
@@ -57,12 +52,12 @@
 		data-decoy={dataDecoy ? 'true' : undefined}
 		aria-label={accessibleLabel}
 		aria-pressed={state === 'selected'}
-		onclick={onclick}
-		onpointerdown={onpointerdown}
-		onpointermove={onpointermove}
-		onpointerup={onpointerup}
-		onpointercancel={onpointercancel}
-		onkeydown={onkeydown}
+		{onclick}
+		{onpointerdown}
+		{onpointermove}
+		{onpointerup}
+		{onpointercancel}
+		{onkeydown}
 	>
 		{letter}
 	</button>

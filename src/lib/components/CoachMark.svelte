@@ -9,7 +9,7 @@
 	let { step, onclose }: Props = $props();
 </script>
 
-<aside class="coach" role="status">
+<aside class="coach" class:top={step === 2} role="status">
 	<span class="bulb" aria-hidden="true">💡</span>
 	<p>{step === 1 ? m.coach_bucket() : m.coach_tile()}</p>
 	<button type="button" onclick={onclose}>{m.got_it()}</button>
@@ -32,6 +32,10 @@
 		background: var(--lb-ink);
 		color: var(--lb-paper);
 		box-shadow: var(--lb-shadow-2);
+	}
+	.coach.top {
+		top: max(var(--lb-safe-top), 76px);
+		bottom: auto;
 	}
 	p {
 		margin: 0;
