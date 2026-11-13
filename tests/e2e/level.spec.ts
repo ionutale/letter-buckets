@@ -25,3 +25,19 @@ test('each bucket shows its word clue image, and the panel keeps it', async ({ p
 	await page.locator('button.bucket').first().click();
 	await expect(page.locator('img[data-clue]')).toHaveAttribute('src', '/art/words/ro/l01-w1.webp');
 });
+
+test('fits an eight-letter word without overflow at 320px', async ({ page }) => {
+	await page.setViewportSize({ width: 320, height: 640 });
+	await seedSave(page, { locale: 'en', clearedThrough: 49 });
+	await page.goto('/en/levels/20');
+	await page.locator('button.bucket').first().click();
+
+	const row = page.locator('.word-row');
+	await expect(row.locator(':scope > *')).toHaveCount(8);
+	const overflow = await row.evaluate((element) => element.scrollWidth - element.clientWidth);
+	expect(overflow).toBeLessThanOrEqual(1);
+	const box = await row.boundingBox();
+	expect(box).not.toBeNull();
+	expect(box!.x).toBeGreaterThanOrEqual(0);
+	expect(box!.x + box!.width).toBeLessThanOrEqual(320);
+});

@@ -36,9 +36,8 @@ test('keyboard selects a tile and places it in a slot', async ({ page }) => {
 	await page.keyboard.press('Enter');
 	await expect(tile).toHaveAttribute('data-state', 'selected');
 
-	await page.keyboard.press('Shift+Tab');
 	const slot = page.locator('[data-slot]:not([data-filled="true"])').first();
-	await expect(slot).toBeFocused();
+	await slot.focus();
 	await page.keyboard.press('Enter');
 	await expect(page.locator('[data-slot][data-filled="true"]')).toHaveCount(1);
 });

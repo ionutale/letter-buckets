@@ -271,7 +271,7 @@
 					onerror={() => (clueBroken = true)}
 				/>
 			{/if}
-			<div class="word-row" style="--tile-size: clamp(34px, 9vw, 56px)">
+			<div class="word-row" style="--tile-size: clamp(28px, calc((100vw - 68px) / 8), 56px)">
 				{#each [...word.spec.word] as letter, index}
 					{#if word.spec.gaps.includes(index)}
 						<Slot

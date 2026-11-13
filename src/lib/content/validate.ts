@@ -2,7 +2,13 @@ import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import type { LevelContent, Locale, LocaleContent } from './schema.js';
 import { LOCALES } from './schema.js';
-import { gapCountForLevel, isAllowedWord, MAX_WORD_LENGTH, MIN_WORD_LENGTH } from './rules.js';
+import {
+	gapCountForLevel,
+	isAllowedWord,
+	MAX_WORD_LENGTH,
+	MIN_WORD_LENGTH,
+	minWordLengthForLevel
+} from './rules.js';
 
 export interface ContentIssue {
 	locale: Locale;
@@ -98,8 +104,17 @@ export function validateContent(
 					continue;
 				}
 
-				const gaps = gapCountForLevel(level.id, word.length);
-				if (gaps < 1 || gaps > word.length - 2) {
+				const minimum = minWordLengthForLevel(level.id);
+				if (word.length < minimum) {
+					issues.push({
+						locale,
+						level: level.id,
+						word,
+						message: `word is too short for level ${level.id}: ${word.length} letters, expected at least ${minimum}`
+					});
+				}
+				const gaps = gapCountForLevel(level.id);
+				if (gaps > word.length - 2) {
 					issues.push({
 						locale,
 						level: level.id,

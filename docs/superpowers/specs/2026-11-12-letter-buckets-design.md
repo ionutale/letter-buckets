@@ -129,25 +129,26 @@ Chosen: **C**. The level screen is the "three buckets" screen; the word panel is
 
 ### 9.3 Difficulty curve
 
-The dial is the number of gaps and decoys, not the length of the word. Word length is 3–6 letters and varies naturally by language.
+Every chapter of ten levels repeats the same ramp. The dial is the number of gaps and decoys, supported by a minimum word length that always leaves two revealed letters.
 
-| Levels | Gaps per word | Decoys | Intent                                                            |
-| ------ | ------------- | ------ | ----------------------------------------------------------------- |
-| 1–10   | 1             | 0      | One missing letter; usually the final letter. Learn the tap/drag. |
-| 11–20  | 1             | 0      | One gap anywhere; longer, less familiar words.                    |
-| 21–30  | 2             | 0      | Two gaps; hold two letters in mind.                               |
-| 31–40  | 2             | 1      | One lookalike distractor.                                         |
-| 41–50  | 2–3           | 2      | Three gaps on longer words; two distractors.                      |
+| Position in chapter | Levels  | Gaps | Minimum letters | Decoys |
+| ------------------- | ------- | ---- | --------------- | ------ |
+| 1–4                 | 1–4, …  | 1    | 3               | 0      |
+| 5–7                 | 5–7, …  | 2    | 4               | 0      |
+| 8–9                 | 8–9, …  | 3    | 5               | 0      |
+| 10                  | 10, 20… | 4    | 6               | 0–2    |
+
+Decoys appear from level 31: one at 31–40 and two at 41–50. Word length is 3–8 letters, and the gap count must leave at least two revealed letters.
 
 Validation constraints:
 
-- At least one letter is revealed, always.
-- A 3-letter word has at most 1 gap; a 4-letter word at most 2; 5–6 letters at most 3.
+- At least two letters are revealed, always.
+- The word is at least `gaps + 2` letters long.
 - Gaps never include the same slot twice.
 - Decoy letters are visually confusable with a letter in the word and are **not** present in the word. Confusable sets are per script/locale (e.g. `B/D`, `P/Q`, `M/N`, `Ș/S`, `Ä/A`, `Ш/Щ`).
 - The tray contains exactly one tile per gap, so repeated letters get repeated tiles.
 
-The gap placement algorithm is deterministic from the level id and word index, and is left to the builder within these constraints. The first levels prefer the final letter; later levels can open the first letter and interior letters.
+Gap positions are chosen pseudorandomly and are stable per locale, level, word index, and word. The same word hides the same slots on replay, while different words get different layouts. The final-letter shortcut is gone.
 
 ### 9.4 Hints
 
@@ -237,7 +238,7 @@ interface LocaleContent {
 - 50 levels × 3 words × 5 locales = **750 entries**.
 - Level ids and themes align across locales. The actual words are chosen per language to fit the theme and the letter limit; they are not literal translations.
 - Words are concrete, child-friendly nouns or very familiar words. No verbs that need conjugation, no abstract words, no proper names.
-- Length 3–6 letters. No spaces, hyphens, apostrophes, or digits.
+- Length 3–8 letters, with the per-position minimums in 9.3. No spaces, hyphens, apostrophes, or digits.
 
 ### 10.2 Allowed letters
 
@@ -273,9 +274,9 @@ A unit test validates every locale on every run:
 
 - exactly 50 levels, ids 1–50, no duplicates;
 - exactly 3 words per level, unique within the level;
-- 3–6 letters, only the locale's allowed letters;
-- gap counts match the level band and the length constraint;
-- at least one revealed letter;
+- 3–8 letters, only the locale's allowed letters;
+- each word meets the minimum length for its level and the gap count;
+- at least two revealed letters;
 - decoys are not in the word and are confusable with a letter that is;
 - every word has an audio file and every level has an illustration;
 - every Paraglide key exists in all five locales, with no empty values.
@@ -517,18 +518,18 @@ Content and art can run in parallel with the engine once the schema is frozen. A
 
 ## 17. Risks and mitigations
 
-| Risk                                                  | Mitigation                                                                                              |
-| ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| 750 clips make install heavy or slow                  | 48 kbps mono MP3, <10 KB each; batch precache; size budget test in CI.                                  |
-| Generated art drifts in style                         | Fixed prompt/palette/negative prompt, 3 candidates first, contact-sheet review, regenerate outliers.    |
-| Romanian audio sounds different from the other four   | One voice per locale is expected; keep loudness and pacing matched; a child hears one locale at a time. |
-| Diacritics or Cyrillic break a font                   | Nunito latin-ext + cyrillic, glyph smoke test, visual snapshots in RO and RU.                           |
-| A 4-year-old cannot parse a 5-letter word with 2 gaps | Max gaps by length, at least one revealed letter, hint chain, tap path, coach marks.                    |
-| Localization lengths break layouts                    | No fixed-width text containers; test longest strings (German/Romanian) in snapshots.                    |
-| Language switch looks like lost progress              | Per-locale progress is explicit in the UI; show the current locale's count everywhere.                  |
-| Dragging fights scrolling on touch                    | Play area never scrolls; `touch-action: none` on tiles; tap path always available.                      |
-| Generated images contain accidental text              | Negative prompt "text, letters, words, signage"; contact-sheet review; regenerate.                      |
-| Service worker serves stale audio                     | Versioned cache, delete old caches on activate, update toast.                                           |
+| Risk                                                  | Mitigation                                                                                                  |
+| ----------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| 750 clips make install heavy or slow                  | 48 kbps mono MP3, <10 KB each; batch precache; size budget test in CI.                                      |
+| Generated art drifts in style                         | Fixed prompt/palette/negative prompt, 3 candidates first, contact-sheet review, regenerate outliers.        |
+| Romanian audio sounds different from the other four   | One voice per locale is expected; keep loudness and pacing matched; a child hears one locale at a time.     |
+| Diacritics or Cyrillic break a font                   | Nunito latin-ext + cyrillic, glyph smoke test, visual snapshots in RO and RU.                               |
+| A 4-year-old cannot parse a 5-letter word with 2 gaps | Exact gap ramp with minimum word lengths, at least two revealed letters, hint chain, tap path, coach marks. |
+| Localization lengths break layouts                    | No fixed-width text containers; test longest strings (German/Romanian) in snapshots.                        |
+| Language switch looks like lost progress              | Per-locale progress is explicit in the UI; show the current locale's count everywhere.                      |
+| Dragging fights scrolling on touch                    | Play area never scrolls; `touch-action: none` on tiles; tap path always available.                          |
+| Generated images contain accidental text              | Negative prompt "text, letters, words, signage"; contact-sheet review; regenerate.                          |
+| Service worker serves stale audio                     | Versioned cache, delete old caches on activate, update toast.                                               |
 
 ## 18. What's left to the builder
 
