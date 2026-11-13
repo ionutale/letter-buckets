@@ -52,7 +52,7 @@ Every level has three words. Difficulty is the gap count, not word length. A row
 | 44  | Muzică              | CÂNTEC (6) · FLUIER (6) · PIAN (4)   | 3/3/2 |
 | 45  | Artă                | PENEL (5) · ARGILĂ (6) · DESEN (5)   | 3/3/3 |
 | 46  | Povești             | REGE (4) · REGINĂ (6) · CASTEL (6)   | 2/3/3 |
-| 47  | Sport               | ÎNOT (4) · ALERG (5) · SALT (4)      | 2/3/2 |
+| 47  | Sport               | ÎNOT (4) · CURSA (5) · SALT (4)      | 2/3/2 |
 | 48  | Călătorie           | HARTĂ (5) · HOTEL (5) · VALIZĂ (6)   | 3/3/3 |
 | 49  | Zi de naștere       | CADOU (5) · TORT (4) · ZÂMBET (6)    | 3/2/3 |
 | 50  | Sărbătoare          | JOC (3) · URARE (5) · DANS (4)       | 1/3/2 |

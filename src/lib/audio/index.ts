@@ -28,11 +28,15 @@ export function wordAudioPath(locale: string, level: number, index: number): str
 }
 
 export function createAudioController(options: AudioOptions = {}): AudioController {
+	const MUSIC_VOLUME = 0.16;
+	const DUCKED_VOLUME = 0.04;
 	const make = options.createAudio ?? (() => new Audio());
 	let unlocked = false;
 	let muted = false;
 	let word: HTMLAudioElement | null = null;
+	let sfx: HTMLAudioElement | null = null;
 	let music: HTMLAudioElement | null = null;
+	let duckTimer: number | null = null;
 	const preloads = new Map<string, HTMLAudioElement>();
 
 	function playQuietly(audio: HTMLAudioElement): void {
@@ -47,11 +51,37 @@ export function createAudioController(options: AudioOptions = {}): AudioControll
 		if (!muted) playMusic();
 	}
 
+	function restoreMusic(): void {
+		if (duckTimer !== null && typeof window !== 'undefined') {
+			window.clearTimeout(duckTimer);
+			duckTimer = null;
+		}
+		if (music && !muted) music.volume = MUSIC_VOLUME;
+	}
+
+	function duckMusic(): void {
+		if (!music || muted) return;
+		music.volume = DUCKED_VOLUME;
+		if (typeof window === 'undefined') return;
+		if (duckTimer !== null) window.clearTimeout(duckTimer);
+		duckTimer = window.setTimeout(() => {
+			duckTimer = null;
+			if (music && !muted) music.volume = MUSIC_VOLUME;
+		}, 1200);
+	}
+
+	function stopSfx(): void {
+		sfx?.pause();
+		sfx = null;
+	}
+
 	function setMuted(next: boolean): void {
 		muted = next;
 		if (muted) {
-			word?.pause();
+			stopWord();
+			stopSfx();
 			music?.pause();
+			restoreMusic();
 			return;
 		}
 		if (unlocked) playMusic();
@@ -60,11 +90,14 @@ export function createAudioController(options: AudioOptions = {}): AudioControll
 	function stopWord(): void {
 		word?.pause();
 		word = null;
+		restoreMusic();
 	}
 
 	function playWord(locale: string, level: number, index: number): void {
 		if (muted) return;
+		stopSfx();
 		stopWord();
+		duckMusic();
 		const audio = make();
 		audio.src = wordAudioPath(locale, level, index);
 		audio.volume = 0.9;
@@ -86,9 +119,13 @@ export function createAudioController(options: AudioOptions = {}): AudioControll
 
 	function playSfx(name: SfxName): void {
 		if (muted) return;
+		stopSfx();
+		duckMusic();
 		const audio = make();
 		audio.src = `/audio/sfx/${name}.mp3`;
 		audio.volume = 0.55;
+		sfx = audio;
+		audio.addEventListener('ended', restoreMusic);
 		playQuietly(audio);
 	}
 
@@ -98,7 +135,7 @@ export function createAudioController(options: AudioOptions = {}): AudioControll
 			music = make();
 			music.src = '/audio/music/loop.mp3';
 			music.loop = true;
-			music.volume = 0.16;
+			music.volume = MUSIC_VOLUME;
 		}
 		if (music.paused) playQuietly(music);
 	}

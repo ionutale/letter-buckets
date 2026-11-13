@@ -155,8 +155,8 @@
 			var(--lb-shadow-1);
 	}
 	.level.locked {
-		opacity: 0.55;
 		background: var(--lb-paper-2);
+		color: var(--lb-ink-soft);
 	}
 	.num {
 		font-family: var(--lb-font-display);

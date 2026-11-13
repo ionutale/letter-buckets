@@ -221,9 +221,9 @@
 		font-weight: 800;
 	}
 	.lang.selected {
-		background: var(--lb-ochre);
-		color: #fff;
-		box-shadow: 0 4px 0 var(--lb-ochre-dark);
+		background: var(--lb-paper);
+		color: var(--lb-ink);
+		box-shadow: inset 0 0 0 3px var(--lb-ochre);
 	}
 	.toggle {
 		display: flex;
@@ -270,7 +270,7 @@
 	.link {
 		justify-self: start;
 		min-height: 44px;
-		color: var(--lb-ochre-dark);
+		color: var(--lb-ink);
 		font-weight: 700;
 		text-decoration: underline;
 	}

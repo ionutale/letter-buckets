@@ -30,8 +30,8 @@ function notifyUpdateReady(): void {
  * Register `/service-worker.js`. Production only (a dev registration would keep
  * serving stale assets) and only where the API exists.
  */
-export function initPwa(): void {
-	if (!import.meta.env.PROD) return;
+export function initPwa(options: { force?: boolean } = {}): void {
+	if (!options.force && !import.meta.env.PROD) return;
 	if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return;
 
 	navigator.serviceWorker.addEventListener('controllerchange', () => {

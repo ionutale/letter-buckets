@@ -52,6 +52,33 @@ describe('audio controller', () => {
 		expect(created.length).toBe(before);
 	});
 
+	it('ducks the music and replaces overlapping effects', () => {
+		const Fake = fakeAudio();
+		const created: InstanceType<typeof Fake>[] = [];
+		const controller = createAudioController({
+			createAudio: () => {
+				const audio = new Fake();
+				created.push(audio);
+				return audio as unknown as HTMLAudioElement;
+			}
+		});
+
+		controller.unlock();
+		const music = created[0];
+		expect(music.src).toContain('/audio/music/loop.mp3');
+
+		controller.playWord('en', 1, 0);
+		expect(music.volume).toBeLessThan(0.16);
+
+		controller.playSfx('tile-pick');
+		const firstSfx = created.at(-1)!;
+		controller.playSfx('tile-place');
+		expect(firstSfx.pause).toHaveBeenCalled();
+
+		controller.setMuted(true);
+		expect(music.pause).toHaveBeenCalled();
+	});
+
 	it('preloads the three clips of a level', () => {
 		const Fake = fakeAudio();
 		const created: InstanceType<typeof Fake>[] = [];

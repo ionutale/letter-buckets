@@ -381,7 +381,7 @@
 		min-height: 48px;
 		padding: 0 var(--lb-space-5);
 		border-radius: var(--lb-radius-pill);
-		background: var(--lb-leaf);
+		background: var(--lb-leaf-dark);
 		color: #fff;
 		font-weight: 800;
 	}

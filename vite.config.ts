@@ -52,7 +52,7 @@ export default defineConfig({
 				test: {
 					name: 'client',
 					environment: 'jsdom',
-					include: ['src/**/*.svelte.test.ts'],
+					include: ['src/**/*.svelte.test.ts', 'src/**/*.dom.test.ts'],
 					setupFiles: ['./src/lib/test/setup.ts']
 				}
 			}

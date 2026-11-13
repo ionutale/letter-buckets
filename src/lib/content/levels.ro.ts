@@ -49,7 +49,7 @@ export const ro: LocaleContent = {
 		level(44, 'Muzică', 'CÂNTEC', 'FLUIER', 'PIAN'),
 		level(45, 'Artă', 'PENEL', 'ARGILĂ', 'DESEN'),
 		level(46, 'Povești', 'REGE', 'REGINĂ', 'CASTEL'),
-		level(47, 'Sport', 'ÎNOT', 'ALERG', 'SALT'),
+		level(47, 'Sport', 'ÎNOT', 'CURSA', 'SALT'),
 		level(48, 'Călătorie', 'HARTĂ', 'HOTEL', 'VALIZĂ'),
 		level(49, 'Zi de naștere', 'CADOU', 'TORT', 'ZÂMBET'),
 		level(50, 'Sărbătoare', 'JOC', 'URARE', 'DANS')

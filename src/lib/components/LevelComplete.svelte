@@ -115,8 +115,8 @@
 		font-weight: 800;
 	}
 	.primary {
-		background: var(--lb-ochre);
-		color: #fff;
+		background: var(--lb-ink);
+		color: var(--lb-paper);
 	}
 	.secondary {
 		background: var(--lb-paper-2);

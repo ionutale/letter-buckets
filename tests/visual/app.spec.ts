@@ -42,7 +42,7 @@ async function seed(page: Page, locale: string, unlocked: boolean) {
 	);
 }
 
-for (const locale of ['en', 'ro', 'ru']) {
+for (const locale of ['en', 'ro', 'it', 'de', 'ru']) {
 	test(`home, level, word panel and Word Book in ${locale}`, async ({ page }) => {
 		await seed(page, locale, false);
 		await page.goto(`/${locale}/`);

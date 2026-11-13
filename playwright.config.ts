@@ -13,7 +13,17 @@ export default defineConfig({
 	},
 	projects: [
 		{ name: 'chromium', use: { ...devices['Desktop Chrome'] } },
-		{ name: 'mobile-chromium', use: { ...devices['Pixel 7'] } }
+		{ name: 'mobile-chromium', use: { ...devices['Pixel 7'] } },
+		{
+			name: 'webkit',
+			use: { ...devices['Desktop Safari'] },
+			testMatch: /cross-browser\.spec\.ts/
+		},
+		{
+			name: 'firefox',
+			use: { ...devices['Desktop Firefox'] },
+			testMatch: /cross-browser\.spec\.ts/
+		}
 	],
 	webServer: {
 		command: 'pnpm build && pnpm preview',

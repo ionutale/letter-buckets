@@ -136,8 +136,8 @@
 		min-height: 56px;
 		padding: 0 var(--lb-space-6);
 		border-radius: var(--lb-radius-pill);
-		background: var(--lb-ochre);
-		box-shadow: 0 5px 0 var(--lb-ochre-dark);
+		background: var(--lb-ochre-deep);
+		box-shadow: 0 5px 0 #6f360b;
 		color: #fff;
 		font-family: var(--lb-font-display);
 		font-size: var(--lb-text-lg);
@@ -146,7 +146,7 @@
 	}
 	.play:active {
 		transform: translateY(3px);
-		box-shadow: 0 2px 0 var(--lb-ochre-dark);
+		box-shadow: 0 2px 0 #6f360b;
 	}
 	.actions {
 		display: grid;
