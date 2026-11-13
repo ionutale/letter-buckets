@@ -326,7 +326,7 @@ A unit test validates every locale on every run:
 ### 13.1 Level illustrations and word clues
 
 - 50 theme images, one per level, language-agnostic.
-- 750 word clue images, one per locale/level/word, 256×256 WebP. The localized word is the prompt; the same layered-paper language.
+- 750 word clue images, one per locale/level/word, 256×256 WebP. Every word has a reviewed English gloss so the image shows the right object; the same layered-paper language.
 - **Style target:** soft cut-paper storybook diorama; warm cream background; rounded, simple shapes; muted sage, ochre, berry, sky palette; gentle lighting; centered vignette; child-friendly; **no text, no letters**; simple paper-cut people are allowed only where the theme needs them (family, school, doctor, jobs, celebration).
 - Consistent prompt template + fixed palette + fixed negative prompt, generated with FLUX.2-klein. Three style candidates are generated for one theme and reviewed before the other 49.
 - Level output: 768×432 WebP, quality ~80, target under 90 KB each.
@@ -492,7 +492,7 @@ interface SaveData {
 
 - `scripts/generate_audio.mjs`: reads the five content files, calls the local studio API (`http://127.0.0.1:7910`, bearer token from `data/token`) for EN/IT/DE/RU, runs Piper for RO, post-processes with ffmpeg, writes `static/audio/words/…`, and writes a manifest of what was generated.
 - `scripts/generate_art.py`: reads the 50 themes, uses the same mflux FLUX.2-klein pipeline as the local FLUX studio (`Flux2Klein` with `ModelConfig.flux2_klein_4b()`), writes 768×432 WebP to `static/art/levels/…`. A `--style-check` mode generates three candidates for one theme first.
-- `scripts/generate_word_art.py`: reads the typed content, uses the localized word in a single-object paper-cut prompt, writes 256×256 WebP to `static/art/words/{locale}/…`. It is idempotent and reports remaining time.
+- `scripts/generate_word_art.py`: reads the typed content and `scripts/word_glosses.json`, uses a bilingual `localized word (English gloss)` single-object paper-cut prompt, and writes 256×256 WebP to `static/art/words/{locale}/…`. It is idempotent and reports remaining time. `scripts/contact_sheet.mjs` builds the per-locale review sheets.
 - `scripts/validate_assets.mjs`: checks every word has a clip, every level has an image, every file is under its size budget, and no clip is silent or longer than 3 s.
 - The scripts are idempotent and skip existing outputs unless `--force`.
 - Generated assets are committed. The app does not need the studios to build or run.

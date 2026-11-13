@@ -14,15 +14,16 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 CONTENT = ROOT / "scripts" / "content.json"
+GLOSSES = ROOT / "scripts" / "word_glosses.json"
 OUT = ROOT / "static" / "art" / "words"
 
-STEPS = 4
+STEPS = 6
 SIZE = 256
 GUIDANCE = 1.0
 STYLE = (
-    "Soft cut-paper storybook icon of a single {word}, colorful layered paper cutout, "
-    "centered, warm cream background, rounded simple shapes, muted sage ochre and berry "
-    "palette, gentle light, no text, no letters, no people, no extra objects"
+    "Soft cut-paper storybook icon of {word}, one clear centered subject, colorful "
+    "layered paper cutout, warm cream background, rounded simple shapes, muted sage "
+    "ochre and berry palette, gentle light, no text, no letters, no people, no extra objects"
 )
 
 
@@ -45,6 +46,7 @@ def main() -> int:
         parser.error("choose --all")
 
     content = json.loads(CONTENT.read_text())
+    glosses = json.loads(GLOSSES.read_text()) if GLOSSES.exists() else {}
     locales = [args.locale] if args.locale else list(content)
     only = {int(part) for part in args.only.split(",") if part.strip()}
     model = load_model()
@@ -59,7 +61,9 @@ def main() -> int:
                 output = OUT / locale / f"l{level['id']:02}-w{index + 1}.webp"
                 if output.exists() and not args.force:
                     continue
-                prompt = STYLE.format(word=entry["word"].lower())
+                key = f"{locale}:{level['id']}:{index}"
+                subject = glosses.get(key, entry["word"].lower())
+                prompt = STYLE.format(word=subject)
                 seed = level["id"] * 1000 + index + 41
                 image = model.generate_image(
                     seed=seed,

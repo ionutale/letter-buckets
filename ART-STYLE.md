@@ -58,13 +58,16 @@ reference but are not used for the batch.
 Each bucket carries a 256×256 clue of its own word. The same icon appears above the word slots. Prompt:
 
 ```
-Soft cut-paper storybook icon of a single {localized word}, colorful layered
-paper cutout, centered, warm cream background, rounded simple shapes, muted
-sage ochre and berry palette, gentle light, no text, no letters, no people,
-no extra objects
+Soft cut-paper storybook icon of {localized word} ({English gloss}), one clear
+centered subject, colorful layered paper cutout, warm cream background, rounded
+simple shapes, muted sage ochre and berry palette, gentle light, no text, no
+letters, no people, no extra objects
 ```
 
-One icon per locale/level/word, 256×256 WebP, target under 30 KB. The localized word is used directly; the model understands all five languages in the tested set.
+One icon per locale/level/word, 256×256 WebP, target under 30 KB. Every word has
+a reviewed English gloss in `scripts/word_glosses.json`; the bilingual prompt
+keeps the local word visible while giving the model an unambiguous subject.
+Abstract words get a concrete override (seasons, colors, feelings, actions).
 
 ## 6. Buckets and UI
 
