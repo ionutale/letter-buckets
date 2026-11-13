@@ -28,5 +28,12 @@
 	"level_locked_in_language": "Questo livello non è ancora aperto in questa lingua.",
 	"reset_done": "Progressi azzerati.",
 	"on": "Attivo",
-	"off": "Spento"
+	"off": "Spento",
+	"coach_bucket": "Tocca un secchiello",
+	"coach_tile": "Trascina la lettera nello spazio, oppure toccala e poi tocca lo spazio.",
+	"got_it": "Ho capito",
+	"install_hint": "Aggiungi Letter Buckets alla schermata Home per giocare offline.",
+	"dismiss": "Non ora",
+	"update_ready": "Una nuova versione è pronta.",
+	"update_now": "Aggiorna"
 }

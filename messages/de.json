@@ -28,5 +28,12 @@
 	"level_locked_in_language": "Dieses Level ist in dieser Sprache noch nicht offen.",
 	"reset_done": "Fortschritt zurückgesetzt.",
 	"on": "An",
-	"off": "Aus"
+	"off": "Aus",
+	"coach_bucket": "Tippe auf einen Eimer",
+	"coach_tile": "Ziehe den Buchstaben in die Lücke oder tippe ihn und dann die Lücke an.",
+	"got_it": "Verstanden",
+	"install_hint": "Füge Letter Buckets zum Home-Bildschirm hinzu, um offline zu spielen.",
+	"dismiss": "Nicht jetzt",
+	"update_ready": "Eine neue Version ist bereit.",
+	"update_now": "Aktualisieren"
 }

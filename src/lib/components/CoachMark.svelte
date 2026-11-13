@@ -1,0 +1,49 @@
+<script lang="ts">
+	import { m } from '#lib/paraglide/messages.js';
+
+	interface Props {
+		step: 1 | 2;
+		onclose: () => void;
+	}
+
+	let { step, onclose }: Props = $props();
+</script>
+
+<aside class="coach" role="status">
+	<span class="bulb" aria-hidden="true">💡</span>
+	<p>{step === 1 ? m.coach_bucket() : m.coach_tile()}</p>
+	<button type="button" onclick={onclose}>{m.got_it()}</button>
+</aside>
+
+<style>
+	.coach {
+		position: fixed;
+		left: 50%;
+		bottom: max(var(--lb-safe-bottom), var(--lb-space-4));
+		transform: translateX(-50%);
+		z-index: 40;
+		display: grid;
+		grid-template-columns: auto 1fr auto;
+		align-items: center;
+		gap: var(--lb-space-2);
+		width: min(94vw, 440px);
+		padding: var(--lb-space-3);
+		border-radius: var(--lb-radius);
+		background: var(--lb-ink);
+		color: var(--lb-paper);
+		box-shadow: var(--lb-shadow-2);
+	}
+	p {
+		margin: 0;
+		font-size: var(--lb-text-sm);
+		font-weight: 700;
+	}
+	button {
+		min-height: 40px;
+		padding: 0 var(--lb-space-3);
+		border-radius: var(--lb-radius-pill);
+		background: var(--lb-gold);
+		color: var(--lb-ink);
+		font-weight: 800;
+	}
+</style>

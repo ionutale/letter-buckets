@@ -4,6 +4,7 @@
 	import { m } from '#lib/paraglide/messages.js';
 	import { getLocale, localizeHref, locales, setLocale } from '#lib/paraglide/runtime.js';
 	import type { Locale } from '#lib/content/schema.js';
+	import { audio } from '#lib/audio/index.js';
 	import {
 		currentLevel,
 		loadSave,
@@ -32,6 +33,7 @@
 		data = loadSave(localStorage);
 		locale = getLocale() as Locale;
 		muted = data.settings.muted;
+		audio.setMuted(muted);
 	});
 
 	onDestroy(() => {
@@ -45,6 +47,7 @@
 
 	function switchLanguage(target: Locale): void {
 		if (target === locale) return;
+		audio.playSfx('ui-tap');
 		locale = target;
 		setLocale(target);
 		document.documentElement.lang = target;
@@ -55,6 +58,8 @@
 		if (!data) return;
 		muted = !muted;
 		data.settings.muted = muted;
+		audio.setMuted(muted);
+		if (!muted) audio.playSfx('ui-tap');
 		persist();
 	}
 

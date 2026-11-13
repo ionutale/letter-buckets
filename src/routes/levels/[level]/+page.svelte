@@ -8,6 +8,7 @@
 	import type { Locale } from '#lib/content/schema.js';
 	import { createLevelSession } from '#lib/game/session.svelte.js';
 	import type { LevelSession } from '#lib/game/session.svelte.js';
+	import { audio } from '#lib/audio/index.js';
 	import {
 		getLocaleProgress,
 		isLevelOpen,
@@ -20,11 +21,13 @@
 	import Bucket from '#lib/components/Bucket.svelte';
 	import WordPanel from '#lib/components/WordPanel.svelte';
 	import LevelComplete from '#lib/components/LevelComplete.svelte';
+	import CoachMark from '#lib/components/CoachMark.svelte';
 
 	let data = $state<SaveData | null>(null);
 	let session = $state<LevelSession | null>(null);
 	let locale = $state<Locale>('en');
 	let artBroken = $state(false);
+	let coachStep = $state<1 | 2 | null>(null);
 
 	const paramLevel = $derived(Number.parseInt(page.params.level ?? '', 10));
 	const content = $derived(session?.content ?? null);
@@ -34,6 +37,13 @@
 	onMount(() => {
 		data = loadSave(localStorage);
 		locale = getLocale() as Locale;
+		audio.setMuted(data.settings.muted);
+		audio.preloadLevel(locale, paramLevel);
+		if (paramLevel === 1 && !data.settings.coachDone) coachStep = 1;
+	});
+
+	$effect(() => {
+		if (coachStep === 1 && session?.openIndex != null) coachStep = 2;
 	});
 
 	$effect(() => {
@@ -45,6 +55,7 @@
 		}
 		if (session?.level === level) return;
 
+		audio.preloadLevel(locale, level);
 		session = createLevelSession(level, locale, {
 			progress: getLocaleProgress(data, locale),
 			onWordComplete: (completedLevel, wordIndex) => {
@@ -54,6 +65,7 @@
 			},
 			onLevelComplete: () => {
 				if (!data) return;
+				audio.playSfx('level-complete');
 				persistSave(data, localStorage);
 			}
 		});
@@ -66,9 +78,23 @@
 
 	function playAgain(): void {
 		if (!data || !session) return;
+		audio.playSfx('ui-tap');
 		resetLevelWords(data, locale, paramLevel);
 		persistSave(data, localStorage);
 		session.reset();
+	}
+
+	function dismissCoach(): void {
+		if (!data) return;
+		data.settings.coachDone = true;
+		persistSave(data, localStorage);
+		coachStep = null;
+	}
+
+	function openBucket(index: number): void {
+		if (!session) return;
+		audio.playSfx('bucket-open');
+		session.openBucket(index);
 	}
 
 	function nextLevel(): void {
@@ -108,7 +134,7 @@
 					index={bucket.index + 1}
 					state={bucket.status}
 					word={bucket.word}
-					onclick={() => session?.openBucket(bucket.index)}
+					onclick={() => openBucket(bucket.index)}
 				/>
 			{/each}
 		</div>
@@ -131,6 +157,10 @@
 			onclose={() => goto(localizeHref('/levels'))}
 			onwordbook={() => goto(localizeHref('/words'))}
 		/>
+	{/if}
+
+	{#if coachStep !== null}
+		<CoachMark step={coachStep} onclose={dismissCoach} />
 	{/if}
 </main>
 

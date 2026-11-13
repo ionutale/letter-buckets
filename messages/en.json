@@ -28,5 +28,12 @@
 	"level_locked_in_language": "That level isn't open in this language yet.",
 	"reset_done": "Progress reset.",
 	"on": "On",
-	"off": "Off"
+	"off": "Off",
+	"coach_bucket": "Tap a bucket",
+	"coach_tile": "Drag the letter to the gap, or tap it, then tap the gap.",
+	"got_it": "Got it",
+	"install_hint": "Add Letter Buckets to your home screen to play offline.",
+	"dismiss": "Not now",
+	"update_ready": "A new version is ready.",
+	"update_now": "Update"
 }

@@ -2,6 +2,7 @@
 	import { onDestroy, onMount } from 'svelte';
 	import type { LevelSession } from '#lib/game/session.svelte.js';
 	import { isComplete, type Tile } from '#lib/game/puzzle.js';
+	import { audio } from '#lib/audio/index.js';
 	import LetterTile from './LetterTile.svelte';
 	import Slot from './Slot.svelte';
 
@@ -40,6 +41,9 @@
 			else session.resumeHints();
 		};
 		document.addEventListener('visibilitychange', onVisibility);
+		if (session.openIndex !== null) {
+			audio.playWord(session.locale, session.level, session.openIndex);
+		}
 		return () => document.removeEventListener('visibilitychange', onVisibility);
 	});
 
@@ -71,6 +75,7 @@
 	function selectTile(tile: Tile): void {
 		session.noteInteraction();
 		selectedId = selectedId === tile.id ? null : tile.id;
+		if (selectedId) audio.playSfx('tile-pick');
 		announcement = selectedId ? `Letter ${tile.letter} selected` : '';
 	}
 
@@ -81,10 +86,13 @@
 
 		if (result.outcome === 'placed') {
 			suggestedSlot = null;
+			audio.playSfx('tile-place');
 			announcement = session.word && isComplete(session.word) ? 'Word complete' : 'Letter placed';
+			if (session.word && isComplete(session.word)) audio.playSfx('word-complete');
 			return;
 		}
 
+		audio.playSfx('tile-wrong');
 		announcement = 'Try another letter';
 		if (result.outcome === 'wrong-word' && result.suggestedSlot !== undefined) {
 			suggestedSlot = result.suggestedSlot;
@@ -152,6 +160,7 @@
 	function close(): void {
 		selectedId = null;
 		drag = null;
+		audio.stopWord();
 		onclose();
 	}
 </script>
@@ -169,7 +178,13 @@
 			<button type="button" class="icon" aria-label="Close" onclick={close}>×</button>
 			<p>Word {session.openIndex! + 1} of 3</p>
 			<button type="button" class="icon hint" aria-label="Hint" onclick={() => session.hint()}>💡</button>
-			<span class="speaker" aria-hidden="true">🔊</span>
+			<button
+				type="button"
+				class="icon"
+				aria-label="Hear the word"
+				onclick={() =>
+					session.openIndex !== null && audio.playWord(session.locale, session.level, session.openIndex)}
+			>🔊</button>
 		</header>
 
 		<div class="word-row" style="--tile-size: clamp(34px, 9vw, 56px)">
@@ -254,16 +269,6 @@
 		border-radius: 50%;
 		background: var(--lb-paper-2);
 		font-size: 1.5rem;
-	}
-	.speaker {
-		display: grid;
-		place-items: center;
-		width: 44px;
-		height: 44px;
-		border-radius: 50%;
-		background: var(--lb-paper-2);
-		font-size: 1.1rem;
-		opacity: 0.55;
 	}
 	.word-row {
 		display: flex;

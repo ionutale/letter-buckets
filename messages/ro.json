@@ -28,5 +28,12 @@
 	"level_locked_in_language": "Nivelul acesta nu este deschis în această limbă.",
 	"reset_done": "Progres resetat.",
 	"on": "Pornit",
-	"off": "Oprit"
+	"off": "Oprit",
+	"coach_bucket": "Atinge o găleată",
+	"coach_tile": "Trage litera în spațiu, sau atinge-o, apoi atinge spațiul.",
+	"got_it": "Am înțeles",
+	"install_hint": "Adaugă Letter Buckets pe ecranul principal pentru a juca offline.",
+	"dismiss": "Nu acum",
+	"update_ready": "O versiune nouă este gata.",
+	"update_now": "Actualizează"
 }

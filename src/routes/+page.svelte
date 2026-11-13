@@ -4,6 +4,7 @@
 	import { getLocale, localizeHref } from '#lib/paraglide/runtime.js';
 	import type { Locale } from '#lib/content/schema.js';
 	import { currentLevel, loadSave, type SaveData } from '#lib/storage/save.js';
+	import InstallHint from '#lib/components/InstallHint.svelte';
 
 	let data = $state<SaveData | null>(null);
 	let locale = $state<Locale>('en');
@@ -49,6 +50,8 @@
 			<span class:filled={stamps.includes(chapter)}>★</span>
 		{/each}
 	</div>
+
+	<InstallHint />
 </main>
 
 <style>
