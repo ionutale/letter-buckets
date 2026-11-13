@@ -4,7 +4,7 @@
 	import { page } from '$app/state';
 	import { m } from '#lib/paraglide/messages.js';
 	import { getLocale, localizeHref } from '#lib/paraglide/runtime.js';
-	import { getLevelArt } from '#lib/content/index.js';
+	import { getLevelArt, getWordArt } from '#lib/content/index.js';
 	import type { Locale } from '#lib/content/schema.js';
 	import { createLevelSession } from '#lib/game/session.svelte.js';
 	import type { LevelSession } from '#lib/game/session.svelte.js';
@@ -188,8 +188,9 @@
 			{#each session.buckets as bucket (bucket.index)}
 				<Bucket
 					index={bucket.index + 1}
-					state={bucket.status}
+					status={bucket.status}
 					word={bucket.word}
+					image={getWordArt(locale, paramLevel, bucket.index)}
 					onclick={() => openBucket(bucket.index)}
 				/>
 			{/each}

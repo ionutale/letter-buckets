@@ -118,6 +118,15 @@ export function validateContent(
 							message: `missing audio clip ${clip}`
 						});
 					}
+					const clue = assetPath(`art/words/${locale}/l${pad(level.id)}-w${wordIndex + 1}.webp`);
+					if (!existsSync(clue)) {
+						issues.push({
+							locale,
+							level: level.id,
+							word,
+							message: `missing word illustration ${clue}`
+						});
+					}
 				}
 			}
 

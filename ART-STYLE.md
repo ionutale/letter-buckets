@@ -53,7 +53,20 @@ The chosen direction is **layered paper**, recorded as `VARIANTS[0]` in
 `scripts/generate_art.py`. The other two candidates stay in `candidates/` for
 reference but are not used for the batch.
 
-## 5. Buckets and UI
+## 5. Word clue icons
+
+Each bucket carries a 256×256 clue of its own word. The same icon appears above the word slots. Prompt:
+
+```
+Soft cut-paper storybook icon of a single {localized word}, colorful layered
+paper cutout, centered, warm cream background, rounded simple shapes, muted
+sage ochre and berry palette, gentle light, no text, no letters, no people,
+no extra objects
+```
+
+One icon per locale/level/word, 256×256 WebP, target under 30 KB. The localized word is used directly; the model understands all five languages in the tested set.
+
+## 6. Buckets and UI
 
 - Buckets are hand-built SVG, not generated: one shared pail shape, handle, rim,
   and lid, in leaf, ochre, and berry. Closed = lid and ribbon; open = lid tipped
@@ -64,7 +77,7 @@ reference but are not used for the batch.
   `static/favicon.svg`.
 - No gradient or shadow may reduce glyph contrast.
 
-## 6. Motion
+## 7. Motion
 
 - Tile pick: lift 4 px and ring in ochre.
 - Correct: snap in with a small overshoot.

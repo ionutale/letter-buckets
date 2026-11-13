@@ -3,25 +3,29 @@
 
 	interface Props {
 		index: number;
-		state: 'closed' | 'open' | 'done';
+		status: 'closed' | 'open' | 'done';
 		word?: string;
+		image?: string;
 		onclick?: () => void;
 	}
 
-	let { index, state, word, onclick }: Props = $props();
+	let { index, status, word, image, onclick }: Props = $props();
+	let clueBroken = $state(false);
 
 	const palette = ['var(--lb-leaf)', 'var(--lb-ochre)', 'var(--lb-berry)'];
 	const color = $derived(palette[index - 1]);
 
 	const label = $derived(
-		state === 'done' ? m.word_done_label({ n: index, word: word ?? '' }) : m.open_word({ n: index })
+		status === 'done'
+			? m.word_done_label({ n: index, word: word ?? '' })
+			: m.open_word({ n: index })
 	);
 </script>
 
 <button
 	type="button"
 	class="bucket"
-	data-state={state}
+	data-state={status}
 	aria-label={label}
 	style={`--bucket-color:${color};--bucket-shadow:color-mix(in srgb, ${color} 55%, #000)`}
 	{onclick}
@@ -39,10 +43,10 @@
 				stroke-width="8"
 				stroke-linecap="round"
 			/>
-			{#if state === 'closed'}
+			{#if status === 'closed'}
 				<path class="lid" d="M12 26h96l-4 18H16z" />
 				<path class="ribbon" d="M58 26h8v18h-8z" />
-			{:else if state === 'open'}
+			{:else if status === 'open'}
 				<path class="lid tipped" d="M100 24h18l-6 18h-18z" />
 				<circle class="glow" cx="60" cy="76" r="22" />
 			{:else}
@@ -50,8 +54,18 @@
 				<path class="star" d="M60 54l5 12 13 1-10 9 3 13-11-7-11 7 3-13-10-9 13-1z" />
 			{/if}
 		</svg>
+		{#if image && !clueBroken}
+			<img
+				class="clue"
+				src={image}
+				alt=""
+				loading="lazy"
+				decoding="async"
+				onerror={() => (clueBroken = true)}
+			/>
+		{/if}
 	</span>
-	{#if state === 'done' && word}
+	{#if status === 'done' && word}
 		<span class="word">{word}</span>
 	{/if}
 </button>
@@ -76,8 +90,9 @@
 		transform: scale(0.97);
 	}
 	.pail {
+		position: relative;
 		display: block;
-		width: clamp(58px, 18vw, 84px);
+		width: clamp(86px, 24vw, 112px);
 		aspect-ratio: 1;
 	}
 	.pail svg {
@@ -87,6 +102,18 @@
 	}
 	.body {
 		fill: var(--bucket-color);
+	}
+	.clue {
+		position: absolute;
+		left: 50%;
+		top: 41%;
+		width: 62%;
+		aspect-ratio: 1;
+		transform: translateX(-50%);
+		border-radius: 10px;
+		object-fit: cover;
+		background: var(--lb-paper);
+		box-shadow: 0 2px 0 color-mix(in srgb, var(--bucket-color) 45%, transparent);
 	}
 	.rim {
 		fill: color-mix(in srgb, var(--bucket-color) 65%, #000);

@@ -16,10 +16,13 @@ walk(ROOT);
 
 const size = files.reduce((sum, file) => sum + statSync(file).size, 0);
 const images = files.filter((file) => /\/art\/levels\/l\d{2}\.webp$/.test(file));
+const wordImages = files.filter((file) => /\/art\/words\/[a-z]{2}\/l\d{2}-w\d\.webp$/.test(file));
 const clips = files.filter((file) => /\/audio\/words\/[a-z]{2}\/l\d{2}-w\d\.mp3$/.test(file));
 
 console.log(`build: ${(size / 1024 / 1024).toFixed(2)} MB`);
-console.log(`images: ${images.length}, word clips: ${clips.length}`);
+console.log(
+	`images: ${images.length}, word images: ${wordImages.length}, word clips: ${clips.length}`
+);
 
 const largest = files
 	.map((file) => ({ file, bytes: statSync(file).size }))
@@ -32,7 +35,11 @@ if (size > 20 * 1024 * 1024) {
 	process.exit(1);
 }
 if (images.length !== 50) {
-	console.error(`expected 50 images, found ${images.length}`);
+	console.error(`expected 50 level images, found ${images.length}`);
+	process.exit(1);
+}
+if (wordImages.length !== 750) {
+	console.error(`expected 750 word images, found ${wordImages.length}`);
 	process.exit(1);
 }
 if (clips.length !== 750) {

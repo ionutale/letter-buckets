@@ -33,7 +33,7 @@ The game is a standalone installable PWA. All art and audio are generated once w
 3. Drag-and-drop plus a tap-only path, both first-class.
 4. Five complete locales, including Cyrillic and Romanian diacritics, with per-locale progress.
 5. A Word Book that keeps every completed word and can speak it again.
-6. Installable, fully offline PWA with all 750 word clips and 50 illustrations cached.
+6. Installable, fully offline PWA with all 750 word clips, 50 theme illustrations, and 750 word clues cached.
 7. Gentle feedback: hints arrive before frustration, wrong letters never punish.
 
 ## 5. Non-goals
@@ -41,7 +41,8 @@ The game is a standalone installable PWA. All art and audio are generated once w
 - Accounts, cloud sync, leaderboards, analytics, or any runtime data/API call. The only network request is the browser fetching an updated app shell.
 - Multiple child profiles. One local profile; multi-kid profiles are a later addition.
 - Handwriting, typing, or free spelling. The puzzle is always fill-in-the-gap.
-- Per-word illustrations. The level illustration sets the scene; the spoken word gives the clue.
+- Per-word audio beyond the single spoken word; the clue image plus audio is the word's identity.
+- A picture for every possible meaning; the image is a concrete clue, not a dictionary illustration.
 - Languages beyond the five in this version.
 - Timers, stars, scores, lives, or a fail state.
 - A level editor or remote CMS. Content is typed and committed.
@@ -65,7 +66,7 @@ The game is a standalone installable PWA. All art and audio are generated once w
 - **Audio:** Qwen3-TTS for English, Italian, and German; Piper `ro_RO` for Romanian and `ru_RU` for Russian. Stable Audio 3 / procedural effects for SFX and one music loop. Shipped as MP3.
 - **Storage:** `localStorage`, versioned and sanitised on load. No cookies beyond the Paraglide locale cookie.
 - **Runtime:** no model calls, no network, no external assets.
-- **Build size:** target under 20 MB precached (≈750 word clips + 50 images + app shell + fonts).
+- **Build size:** target under 20 MB precached (≈750 word clips + 50 theme images + 750 word clues + app shell + fonts).
 - **All-ages safety:** no external links inside the child-facing UI; grown-up settings behind a small "for grown-ups" treatment.
 
 ## 8. Approaches considered
@@ -102,7 +103,7 @@ Chosen: **C**. The level screen is the "three buckets" screen; the word panel is
 
 - Header: back to chapter, "Level {n}" and the localized theme name, sound toggle.
 - One 16:9 illustration banner for the level theme, with `alt=""` (decorative) and the theme name as adjacent text.
-- Three bucket cards in a row. Each card shows its bucket SVG, a number 1–3, and a state:
+- Three bucket cards in a row. Each card shows its word clue image inside the bucket, a number 1–3, and a state:
   - **closed:** lid on, ribbon, word hidden;
   - **open/current:** the child has opened it at least once but not completed it;
   - **done:** lid off, a star or flag, and the completed word shown under the bucket.
@@ -116,6 +117,7 @@ Chosen: **C**. The level screen is the "three buckets" screen; the word panel is
 
 - Opens over the level screen as a full-screen panel with a strong entry animation (respecting reduced motion).
 - Header: back to buckets, "Word {i} of 3", speaker button to replay the word.
+- A large 1:1 word clue image above the word slots; the same image shown on the bucket card.
 - The word is **spoken automatically once** shortly after opening, unless muted.
 - Word row: one large tile per letter. Revealed letters are solid, readable tiles. Missing letters are empty, dashed, rounded slots — never ghost letters.
 - Tray: one tile per missing letter, plus 0–2 decoys depending on the level band. Tiles are shuffled deterministically per level/word so replaying is familiar.
@@ -263,7 +265,7 @@ The 50 themes, in order:
 
 ### 10.4 Word list review
 
-The word lists are authored before assets are generated, and reviewed by the human partner before the audio batch runs. A wrong word costs one audio clip and one re-record, not 750. The review is a table per locale: level, theme, three words, length, gaps, decoys, audio file present.
+The word lists are authored before assets are generated, and reviewed by the human partner before the audio batch runs. A wrong word costs one audio clip and one re-record, not 750. The review is a table per locale: level, theme, three words, length, gaps, decoys, audio file present, clue image present.
 
 ### 10.5 Validation
 
@@ -320,12 +322,14 @@ A unit test validates every locale on every run:
 
 ## 13. Art
 
-### 13.1 Level illustrations
+### 13.1 Level illustrations and word clues
 
-- 50 images, one per level theme, language-agnostic.
+- 50 theme images, one per level, language-agnostic.
+- 750 word clue images, one per locale/level/word, 256×256 WebP. The localized word is the prompt; the same layered-paper language.
 - **Style target:** soft cut-paper storybook diorama; warm cream background; rounded, simple shapes; muted sage, ochre, berry, sky palette; gentle lighting; centered vignette; child-friendly; **no text, no letters**; simple paper-cut people are allowed only where the theme needs them (family, school, doctor, jobs, celebration).
 - Consistent prompt template + fixed palette + fixed negative prompt, generated with FLUX.2-klein. Three style candidates are generated for one theme and reviewed before the other 49.
-- Output: 768×432 WebP, quality ~80, target under 90 KB each. Displayed 16:9 at the top of the level screen.
+- Level output: 768×432 WebP, quality ~80, target under 90 KB each.
+- Word output: 256×256 WebP, quality ~80, target under 30 KB each.
 - A contact sheet of all 50 is reviewed; any image with text, scary shapes, or an off-style look is regenerated.
 - `ART-STYLE.md` records the palette, prompt template, negative prompt, and approved examples.
 
@@ -375,6 +379,7 @@ letter-buckets/
   project.inlang/settings.json
   static/
     art/levels/l01.webp … l50.webp
+    art/words/{ro,it,en,de,ru}/l01-w1.webp … l50-w3.webp
     audio/words/{locale}/…
     audio/sfx/…, audio/music/…
     icons/…, manifest.webmanifest, favicon.svg
@@ -448,7 +453,7 @@ interface SaveData {
 ### 14.5 PWA and offline
 
 - SvelteKit 3 built-in service worker (`src/service-worker.ts`), registered in production only; `serviceWorker: { register: false }` in `vite.config.ts`, manual registration via `src/lib/pwa/client.ts`.
-- Precache the app shell, fonts, 50 illustrations, all 750 word clips, SFX, and music. Cache per deployment version; delete old caches on activate.
+- Precache the app shell, fonts, 50 theme illustrations, 750 word clues, all 750 word clips, SFX, and music. Cache per deployment version; delete old caches on activate.
 - Navigation: **cache-first** with the cached `200.html` as the SPA document, revalidated quietly in the background when online. Route changes stay instant on a weak signal, and the offline promise is true from the first route change after install. Static assets and audio: cache-first, so word audio plays offline (this differs from Cozy Nook's audio bypass).
 - The only network request the game makes is the browser fetching an updated app shell. No game data, no analytics, no third-party call.
 - Precache in small concurrent batches so one missing file cannot fail install, and so 750 requests do not stampede.
@@ -486,12 +491,13 @@ interface SaveData {
 
 - `scripts/generate_audio.mjs`: reads the five content files, calls the local studio API (`http://127.0.0.1:7910`, bearer token from `data/token`) for EN/IT/DE/RU, runs Piper for RO, post-processes with ffmpeg, writes `static/audio/words/…`, and writes a manifest of what was generated.
 - `scripts/generate_art.py`: reads the 50 themes, uses the same mflux FLUX.2-klein pipeline as the local FLUX studio (`Flux2Klein` with `ModelConfig.flux2_klein_4b()`), writes 768×432 WebP to `static/art/levels/…`. A `--style-check` mode generates three candidates for one theme first.
+- `scripts/generate_word_art.py`: reads the typed content, uses the localized word in a single-object paper-cut prompt, writes 256×256 WebP to `static/art/words/{locale}/…`. It is idempotent and reports remaining time.
 - `scripts/validate_assets.mjs`: checks every word has a clip, every level has an image, every file is under its size budget, and no clip is silent or longer than 3 s.
 - The scripts are idempotent and skip existing outputs unless `--force`.
 - Generated assets are committed. The app does not need the studios to build or run.
 - The studio must be running and the GPU free; the script retries `409 BUSY` with `Retry-After`.
 - Review gates: (1) word lists approved by the human partner; (2) three art-style candidates approved by the human partner; (3) contact sheet reviewed by the builder, with outliers regenerated; (4) audio spot-check per locale by the builder, with a short final sample shown to the human partner before release.
-- Placeholder policy: a small local placeholder set may be used while building the engine, but placeholders are never committed to the release branch and never shipped. The release build fails content validation unless all 750 clips and 50 illustrations are present.
+- Placeholder policy: a small local placeholder set may be used while building the engine, but placeholders are never committed to the release branch and never shipped. The release build fails content validation unless all 750 clips, 50 theme illustrations, and 750 word clues are present.
 - If a studio is unavailable, the asset script stops with a clear message; it never writes silent or placeholder files into `static/`.
 
 ## 16. Build shape
@@ -502,7 +508,7 @@ This is a project, not a small change. The work splits into:
 2. **Content authoring** — 50 themes × 3 words × 5 locales, validated; human review.
 3. **Puzzle engine and level flow** — buckets, word panel, drag/tap, hints, completion, save.
 4. **Meta screens** — home, chapters/level map, Word Book, settings, coach marks, install hint.
-5. **Art** — style candidates, 50 illustrations, buckets/UI SVG, icons, contact-sheet review.
+5. **Art** — style candidates, 50 theme illustrations, 750 word clues, buckets/UI SVG, icons, contact-sheet review.
 6. **Audio** — voice selection per locale, 750 clips, SFX, music, pronunciation review.
 7. **Polish and hardening** — reduced motion, keyboard/SR pass, visual snapshots, offline E2E, build-size check.
 8. **Release** — static build, Vercel config, README, licenses.

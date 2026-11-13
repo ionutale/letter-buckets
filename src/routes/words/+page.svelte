@@ -2,7 +2,7 @@
 	import { onMount } from 'svelte';
 	import { m } from '#lib/paraglide/messages.js';
 	import { getLocale, localizeHref } from '#lib/paraglide/runtime.js';
-	import { getLevelContent } from '#lib/content/index.js';
+	import { getLevelContent, getWordArt } from '#lib/content/index.js';
 	import type { Locale } from '#lib/content/schema.js';
 	import { audio } from '#lib/audio/index.js';
 	import { loadSave, wordKey, type SaveData } from '#lib/storage/save.js';
@@ -60,6 +60,7 @@
 							<WordChip
 								word={entry.word}
 								{level}
+								image={getWordArt(locale, level, index)}
 								unlocked={unlocked[wordKey(level, index)] === true}
 								audio={audioPath(level, index)}
 								onplay={() => play(level, index)}

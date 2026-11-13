@@ -2,12 +2,14 @@
 	interface Props {
 		word: string;
 		level: number;
+		image?: string;
 		unlocked: boolean;
 		audio?: string;
 		onplay?: () => void;
 	}
 
-	let { word, level, unlocked, audio, onplay }: Props = $props();
+	let { word, level, image, unlocked, audio, onplay }: Props = $props();
+	let imageBroken = $state(false);
 </script>
 
 {#if unlocked}
@@ -18,6 +20,14 @@
 		aria-label={`Hear ${word}`}
 		onclick={onplay}
 	>
+		{#if image && !imageBroken}<img
+				class="thumb"
+				src={image}
+				alt=""
+				loading="lazy"
+				decoding="async"
+				onerror={() => (imageBroken = true)}
+			/>{/if}
 		<span class="word">{word}</span>
 		<span class="icon" aria-hidden="true">🔊</span>
 	</button>
@@ -57,5 +67,12 @@
 	.icon {
 		font-size: 0.8rem;
 		opacity: 0.7;
+	}
+	.thumb {
+		width: 22px;
+		height: 22px;
+		border-radius: 6px;
+		object-fit: cover;
+		background: var(--lb-paper-2);
 	}
 </style>

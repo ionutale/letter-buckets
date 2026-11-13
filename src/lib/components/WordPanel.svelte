@@ -2,6 +2,7 @@
 	import { onDestroy, onMount } from 'svelte';
 	import { m } from '#lib/paraglide/messages.js';
 	import type { LevelSession } from '#lib/game/session.svelte.js';
+	import { getWordArt } from '#lib/content/index.js';
 	import { isComplete, type Tile } from '#lib/game/puzzle.js';
 	import { audio } from '#lib/audio/index.js';
 	import LetterTile from './LetterTile.svelte';
@@ -36,6 +37,10 @@
 
 	const word = $derived(session.word);
 	const complete = $derived(word ? isComplete(word) : false);
+	const clue = $derived(
+		session.openIndex !== null ? getWordArt(session.locale, session.level, session.openIndex) : ''
+	);
+	let clueBroken = $state(false);
 
 	onMount(() => {
 		const previousFocus = document.activeElement as HTMLElement | null;
@@ -254,20 +259,33 @@
 			>
 		</header>
 
-		<div class="word-row" style="--tile-size: clamp(34px, 9vw, 56px)">
-			{#each [...word.spec.word] as letter, index}
-				{#if word.spec.gaps.includes(index)}
-					<Slot
-						{index}
-						letter={word.spec.word[index]}
-						filled={index in word.placed}
-						suggested={suggestedSlot === index || hintedSlot === index}
-						onplace={() => onSlot(index)}
-					/>
-				{:else}
-					<LetterTile {letter} state="revealed" />
-				{/if}
-			{/each}
+		<div class="word-area">
+			{#if clue && !clueBroken}
+				<img
+					class="clue"
+					src={clue}
+					alt=""
+					data-clue
+					loading="eager"
+					decoding="async"
+					onerror={() => (clueBroken = true)}
+				/>
+			{/if}
+			<div class="word-row" style="--tile-size: clamp(34px, 9vw, 56px)">
+				{#each [...word.spec.word] as letter, index}
+					{#if word.spec.gaps.includes(index)}
+						<Slot
+							{index}
+							letter={word.spec.word[index]}
+							filled={index in word.placed}
+							suggested={suggestedSlot === index || hintedSlot === index}
+							onplace={() => onSlot(index)}
+						/>
+					{:else}
+						<LetterTile {letter} state="revealed" />
+					{/if}
+				{/each}
+			</div>
 		</div>
 
 		{#if complete}
@@ -342,11 +360,25 @@
 		width: 22px;
 		height: 22px;
 	}
+	.word-area {
+		display: grid;
+		justify-items: center;
+		align-content: center;
+		align-self: center;
+		gap: var(--lb-space-3);
+	}
+	.clue {
+		width: clamp(88px, 24vw, 120px);
+		aspect-ratio: 1;
+		border-radius: var(--lb-radius);
+		object-fit: cover;
+		background: var(--lb-paper-2);
+		box-shadow: var(--lb-shadow-1);
+	}
 	.word-row {
 		display: flex;
 		justify-content: center;
 		align-items: center;
-		align-self: center;
 		gap: clamp(4px, 1.2vw, 8px);
 		padding-block: var(--lb-space-4);
 	}
