@@ -1,6 +1,6 @@
 <script lang="ts">
 	interface Props {
-		index: 1 | 2 | 3;
+		index: number;
 		state: 'closed' | 'open' | 'done';
 		word?: string;
 		onclick?: () => void;

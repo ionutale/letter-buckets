@@ -4,6 +4,7 @@
 	"tagline": "Gentle word games for little ones",
 	"play": "Play",
 	"levels": "Levels",
+	"level_number": "Level {n}",
 	"word_book": "Word Book",
 	"settings": "Settings",
 	"back": "Back",
