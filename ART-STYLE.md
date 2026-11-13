@@ -9,7 +9,7 @@ The reference for all 50 level illustrations and the hand-built bucket/UI art.
 - **Readable at a glance.** A child should recognize the theme in under a second.
 - **The letters are sacred.** No generated image may contain text, letters, numbers, signs, or writing of any kind.
 - **Gentle, never scary.** No sharp teeth, weapons, dark silhouettes, or photorealistic faces.
-- **No people.** Scenes are places and objects, with animals as characters when a theme needs a living subject.
+- **No photorealistic faces.** Simple paper-cut people are allowed in family, school, doctor, jobs, and celebration scenes; animals and objects carry the rest.
 
 ## 2. Palette
 
@@ -32,7 +32,7 @@ Every image starts from this template:
 Soft cut-paper storybook illustration of {scene}, warm cream background,
 rounded simple shapes, muted sage ochre and berry palette, gentle warm light,
 centered vignette, child-friendly, cozy, layered paper texture, no text,
-no letters, no words, no signs, no people, no faces
+no letters, no words, no signs, no photorealistic faces
 ```
 
 Negative guidance folded into the prompt: `text, letters, words, signage,

@@ -62,7 +62,7 @@ The game is a standalone installable PWA. All art and audio are generated once w
 - **i18n:** Paraglide.js with `ro`, `it`, `en`, `de`, `ru`. Device language wins; English fallback. URL-prefixed locales for shareable links.
 - **Fonts:** Nunito via Fontsource, with `latin-ext` (Romanian `ă â î ș ț`, German `ä ö ü`) and `cyrillic` subsets. No CDN.
 - **Art:** 50 FLUX.2-klein illustrations, generated locally, reviewed for consistency, shipped as WebP.
-- **Audio:** Qwen3-TTS for English, Italian, German, Russian; Piper `ro_RO` for Romanian. Stable Audio 3 / procedural effects for SFX and one music loop. Shipped as MP3.
+- **Audio:** Qwen3-TTS for English, Italian, and German; Piper `ro_RO` for Romanian and `ru_RU` for Russian. Stable Audio 3 / procedural effects for SFX and one music loop. Shipped as MP3.
 - **Storage:** `localStorage`, versioned and sanitised on load. No cookies beyond the Paraglide locale cookie.
 - **Runtime:** no model calls, no network, no external assets.
 - **Build size:** target under 20 MB precached (≈750 word clips + 50 images + app shell + fonts).
@@ -295,8 +295,8 @@ A unit test validates every locale on every run:
 ### 12.1 Word clips
 
 - One clip per word per locale, **750 clips**.
-- English, Italian, German, Russian: Qwen3-TTS via `music-sfx-voice-studio`'s `/voice` endpoint, one warm voice per locale, instruction "warm, gentle, clear, unhurried, for a young child", language set explicitly.
-- Romanian: Piper `ro_RO` voice, installed only for the asset job.
+- English, Italian, German: Qwen3-TTS via `music-sfx-voice-studio`'s `/voice` endpoint, one warm voice per locale, instruction "warm, gentle, clear, unhurried, for a young child", language set explicitly.
+- Romanian: Piper `ro_RO-mihai-medium`. Russian: Piper `ru_RU-irina-medium`. Both installed only for the asset job.
 - Generation text: `spoken ?? word.toLowerCase()`; the display word stays uppercase.
 - Post-process with ffmpeg: mono, 24 kHz, trim silence, normalise, export MP3 48 kbps. Target under 10 KB per clip.
 - Filenames: `static/audio/words/{locale}/l{level:02}-w{index}.mp3` (1-based). No diacritics in filenames.
@@ -323,7 +323,7 @@ A unit test validates every locale on every run:
 ### 13.1 Level illustrations
 
 - 50 images, one per level theme, language-agnostic.
-- **Style target:** soft cut-paper storybook diorama; warm cream background; rounded, simple shapes; muted sage, ochre, berry, sky palette; gentle lighting; centered vignette; child-friendly; **no text, no letters, no people**.
+- **Style target:** soft cut-paper storybook diorama; warm cream background; rounded, simple shapes; muted sage, ochre, berry, sky palette; gentle lighting; centered vignette; child-friendly; **no text, no letters**; simple paper-cut people are allowed only where the theme needs them (family, school, doctor, jobs, celebration).
 - Consistent prompt template + fixed palette + fixed negative prompt, generated with FLUX.2-klein. Three style candidates are generated for one theme and reviewed before the other 49.
 - Output: 768×432 WebP, quality ~80, target under 90 KB each. Displayed 16:9 at the top of the level screen.
 - A contact sheet of all 50 is reviewed; any image with text, scary shapes, or an off-style look is regenerated.

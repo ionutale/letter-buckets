@@ -27,7 +27,7 @@ GUIDANCE = 1.0
 STYLE_TAIL = (
     "warm cream background, rounded simple shapes, muted sage ochre and berry palette, "
     "gentle warm light, centered vignette, child-friendly, cozy, no text, no letters, "
-    "no words, no signs, no people, no faces"
+    "no words, no signs, no photorealistic faces"
 )
 
 VARIANTS = [
