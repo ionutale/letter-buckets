@@ -3,10 +3,29 @@
 		letter?: string;
 		state: 'revealed' | 'empty' | 'tile' | 'selected' | 'placed';
 		label?: string;
+		dataTile?: string;
+		dataDecoy?: boolean;
 		onclick?: () => void;
+		onpointerdown?: (event: PointerEvent) => void;
+		onpointermove?: (event: PointerEvent) => void;
+		onpointerup?: (event: PointerEvent) => void;
+		onpointercancel?: (event: PointerEvent) => void;
+		onkeydown?: (event: KeyboardEvent) => void;
 	}
 
-	let { letter = '', state, label, onclick }: Props = $props();
+	let {
+		letter = '',
+		state,
+		label,
+		dataTile,
+		dataDecoy,
+		onclick,
+		onpointerdown,
+		onpointermove,
+		onpointerup,
+		onpointercancel,
+		onkeydown
+	}: Props = $props();
 
 	const accessibleLabel = $derived(
 		label ??
@@ -31,8 +50,16 @@
 		class="tile {state}"
 		data-state={state}
 		data-letter={letter}
+		data-tile={dataTile}
+		data-decoy={dataDecoy ? 'true' : undefined}
 		aria-label={accessibleLabel}
+		aria-pressed={state === 'selected'}
 		onclick={onclick}
+		onpointerdown={onpointerdown}
+		onpointermove={onpointermove}
+		onpointerup={onpointerup}
+		onpointercancel={onpointercancel}
+		onkeydown={onkeydown}
 	>
 		{letter}
 	</button>
