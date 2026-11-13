@@ -9,5 +9,13 @@
 	"settings": "Setări",
 	"back": "Înapoi",
 	"next": "Înainte",
-	"close": "Închide"
+	"close": "Închide",
+	"chapters": "Capitole",
+	"chapter_home": "Casa și grădina",
+	"chapter_farm": "Ferma și animale",
+	"chapter_town": "Oraș și drumuri",
+	"chapter_nature": "Natură și vreme",
+	"chapter_world": "Lumea mare",
+	"finish_level_first": "Termină mai întâi nivelul {n}.",
+	"words_unlocked": "{done} din 150 de cuvinte"
 }

@@ -9,5 +9,13 @@
 	"settings": "Einstellungen",
 	"back": "Zurück",
 	"next": "Weiter",
-	"close": "Schließen"
+	"close": "Schließen",
+	"chapters": "Kapitel",
+	"chapter_home": "Haus und Garten",
+	"chapter_farm": "Bauernhof und Tiere",
+	"chapter_town": "Stadt und Reisen",
+	"chapter_nature": "Natur und Wetter",
+	"chapter_world": "Die weite Welt",
+	"finish_level_first": "Beende zuerst Level {n}.",
+	"words_unlocked": "{done} von 150 Wörtern"
 }

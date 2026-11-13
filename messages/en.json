@@ -9,5 +9,13 @@
 	"settings": "Settings",
 	"back": "Back",
 	"next": "Next",
-	"close": "Close"
+	"close": "Close",
+	"chapters": "Chapters",
+	"chapter_home": "Home & Garden",
+	"chapter_farm": "Farm & Animals",
+	"chapter_town": "Town & Journeys",
+	"chapter_nature": "Nature & Weather",
+	"chapter_world": "Big Wide World",
+	"finish_level_first": "Finish level {n} first.",
+	"words_unlocked": "{done} of 150 words"
 }

@@ -9,5 +9,13 @@
 	"settings": "Impostazioni",
 	"back": "Indietro",
 	"next": "Avanti",
-	"close": "Chiudi"
+	"close": "Chiudi",
+	"chapters": "Capitoli",
+	"chapter_home": "Casa e giardino",
+	"chapter_farm": "Fattoria e animali",
+	"chapter_town": "Città e viaggi",
+	"chapter_nature": "Natura e tempo",
+	"chapter_world": "Il mondo grande",
+	"finish_level_first": "Prima finisci il livello {n}.",
+	"words_unlocked": "{done} di 150 parole"
 }

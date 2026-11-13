@@ -1,31 +1,92 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import { m } from '#lib/paraglide/messages.js';
+	import { getLocale, localizeHref } from '#lib/paraglide/runtime.js';
+	import type { Locale } from '#lib/content/schema.js';
+	import { currentLevel, loadSave, type SaveData } from '#lib/storage/save.js';
+
+	let data = $state<SaveData | null>(null);
+	let locale = $state<Locale>('en');
+
+	onMount(() => {
+		data = loadSave(localStorage);
+		locale = getLocale() as Locale;
+	});
+
+	const level = $derived(data ? currentLevel(data, locale) : 1);
+	const words = $derived(data ? Object.keys(data.locales[locale].unlocked).length : 0);
+	const stamps = $derived(data ? data.locales[locale].chapterStamps : []);
 </script>
 
-<main class="home">
+<svelte:head>
+	<title>{m.app_name()}</title>
+</svelte:head>
+
+<main class="home lb-safe">
+	<header class="top">
+		<span class="brand">{m.app_name()}</span>
+		<a class="round" href={localizeHref('/settings')} aria-label={m.settings()}>⚙</a>
+	</header>
+
 	<div class="hero" aria-hidden="true">
 		<span class="tile">L</span>
 		<span class="bucket"></span>
 	</div>
-	<h1>{m.app_name()}</h1>
-	<p class="tagline">{m.tagline()}</p>
-	<a class="play" href="/levels">{m.play()}</a>
+	<h1>{m.tagline()}</h1>
+
+	<a class="play" href={localizeHref(`/levels/${level}`)}>{m.play()}</a>
+
+	<div class="actions">
+		<a href={localizeHref('/levels')}>{m.levels()}</a>
+		<a href={localizeHref('/words')}>
+			{m.word_book()}
+			<small>{m.words_unlocked({ done: words })}</small>
+		</a>
+	</div>
+
+	<div class="stamps" aria-hidden="true">
+		{#each [1, 2, 3, 4, 5] as chapter}
+			<span class:filled={stamps.includes(chapter)}>★</span>
+		{/each}
+	</div>
 </main>
 
 <style>
 	.home {
-		min-height: 100dvh;
 		display: grid;
-		place-content: center;
+		align-content: start;
 		justify-items: center;
 		gap: var(--lb-space-4);
-		padding: var(--lb-space-6) var(--lb-space-5);
+		min-height: 100dvh;
 		text-align: center;
+	}
+	.top {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		width: 100%;
+	}
+	.brand {
+		font-family: var(--lb-font-display);
+		font-weight: 800;
+		color: var(--lb-ink-soft);
+	}
+	.round {
+		display: grid;
+		place-items: center;
+		width: 48px;
+		height: 48px;
+		border-radius: 50%;
+		background: var(--lb-paper-2);
+		color: var(--lb-ink);
+		font-size: 1.2rem;
+		text-decoration: none;
 	}
 	.hero {
 		position: relative;
 		width: 140px;
 		height: 150px;
+		margin-top: var(--lb-space-4);
 	}
 	.tile {
 		position: absolute;
@@ -55,22 +116,20 @@
 		transform: translateX(-50%);
 		border-radius: 14px 14px 26px 26px;
 		background: var(--lb-leaf);
-		box-shadow: inset 0 8px 0 rgba(255, 255, 255, 0.18), var(--lb-shadow-2);
+		box-shadow:
+			inset 0 8px 0 rgba(255, 255, 255, 0.18),
+			var(--lb-shadow-2);
 	}
 	h1 {
-		font-size: var(--lb-text-xl);
-		line-height: 1;
-	}
-	.tagline {
 		max-width: 22ch;
-		margin: 0;
+		font-size: var(--lb-text-lg);
+		line-height: 1.2;
 		color: var(--lb-ink-soft);
-		font-size: var(--lb-text-md);
 	}
 	.play {
 		display: inline-grid;
 		place-items: center;
-		min-width: 200px;
+		min-width: 220px;
 		min-height: 56px;
 		padding: 0 var(--lb-space-6);
 		border-radius: var(--lb-radius-pill);
@@ -85,5 +144,40 @@
 	.play:active {
 		transform: translateY(3px);
 		box-shadow: 0 2px 0 var(--lb-ochre-dark);
+	}
+	.actions {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: var(--lb-space-3);
+		width: 100%;
+		max-width: 420px;
+	}
+	.actions a {
+		display: grid;
+		justify-items: center;
+		gap: 2px;
+		min-height: 64px;
+		padding: var(--lb-space-2);
+		border-radius: var(--lb-radius);
+		background: var(--lb-paper-2);
+		box-shadow: inset 0 0 0 2px var(--lb-border);
+		color: var(--lb-ink);
+		font-weight: 800;
+		text-decoration: none;
+	}
+	.actions small {
+		color: var(--lb-ink-soft);
+		font-size: var(--lb-text-xs);
+		font-weight: 600;
+	}
+	.stamps {
+		display: flex;
+		gap: var(--lb-space-2);
+		margin-top: var(--lb-space-2);
+		color: var(--lb-border);
+		font-size: 1.5rem;
+	}
+	.stamps .filled {
+		color: var(--lb-gold);
 	}
 </style>

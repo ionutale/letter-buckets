@@ -9,5 +9,13 @@
 	"settings": "Настройки",
 	"back": "Назад",
 	"next": "Далее",
-	"close": "Закрыть"
+	"close": "Закрыть",
+	"chapters": "Главы",
+	"chapter_home": "Дом и сад",
+	"chapter_farm": "Ферма и животные",
+	"chapter_town": "Город и путь",
+	"chapter_nature": "Природа и погода",
+	"chapter_world": "Большой мир",
+	"finish_level_first": "Сначала пройди уровень {n}.",
+	"words_unlocked": "{done} из 150 слов"
 }
