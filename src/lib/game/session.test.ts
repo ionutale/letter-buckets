@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { LevelSession } from './session.svelte.js';
 import { createLevelSession } from './session.svelte.js';
+import { defaultLocaleProgress } from '../storage/save.js';
 import { isComplete } from './puzzle.js';
 
 function solveCurrentWord(session: LevelSession): void {
@@ -64,10 +65,9 @@ describe('level session', () => {
 	it('restores completed buckets from saved progress', () => {
 		const session = createLevelSession(1, 'en', {
 			progress: {
-				clearedThrough: 0,
+				...defaultLocaleProgress(),
 				levelWords: { 1: [0, 1] },
-				unlocked: {},
-				chapterStamps: []
+				unlocked: {}
 			}
 		});
 		expect(session.buckets.map((bucket) => bucket.status)).toEqual(['done', 'done', 'closed']);
@@ -77,10 +77,9 @@ describe('level session', () => {
 	it('opens a completed bucket for review', () => {
 		const session = createLevelSession(1, 'en', {
 			progress: {
-				clearedThrough: 0,
+				...defaultLocaleProgress(),
 				levelWords: { 1: [0] },
-				unlocked: {},
-				chapterStamps: []
+				unlocked: {}
 			}
 		});
 		session.openBucket(0);
@@ -149,5 +148,84 @@ describe('level session', () => {
 		session.hint();
 		session.hint();
 		expect(Object.keys(session.word?.placed ?? {}).length).toBe(placed);
+	});
+});
+
+describe('metrics and hint callbacks', () => {
+	it('reports attempts and whether the word was solved first try', () => {
+		const attempts: boolean[] = [];
+		const firstTry: boolean[] = [];
+		const session = createLevelSession(5, 'en', {
+			onAttempt: (_level, _wordIndex, correct) => attempts.push(correct),
+			onWordComplete: (_level, _wordIndex, clean) => firstTry.push(clean)
+		});
+		session.openBucket(0);
+		const gaps = session.word!.spec.gaps;
+		const wrongTile = session.word!.remaining.find(
+			(tile) => tile.letter === session.word!.spec.word[gaps[1]]
+		)!;
+		session.place(wrongTile.id, gaps[0]);
+		solveCurrentWord(session);
+
+		expect(attempts[0]).toBe(false);
+		expect(attempts.some((value) => value)).toBe(true);
+		expect(firstTry).toEqual([false]);
+	});
+
+	it('tracks first-try per word, not per level', () => {
+		const firstTry: boolean[] = [];
+		const session = createLevelSession(5, 'en', {
+			onWordComplete: (_level, _wordIndex, clean) => firstTry.push(clean)
+		});
+
+		session.openBucket(0);
+		const gaps = session.word!.spec.gaps;
+		const wrongTile = session.word!.remaining.find(
+			(tile) => tile.letter === session.word!.spec.word[gaps[1]]
+		)!;
+		session.place(wrongTile.id, gaps[0]);
+		solveCurrentWord(session);
+		session.closeWord();
+
+		session.openBucket(1);
+		solveCurrentWord(session);
+
+		expect(firstTry).toEqual([false, true]);
+	});
+
+	it('blocks manual hints when the budget is empty and spends only when allowed', () => {
+		let allowed = true;
+		let used = 0;
+		const session = createLevelSession(1, 'en', {
+			canHint: () => allowed,
+			onHintUsed: () => used++
+		});
+		session.openBucket(0);
+		session.hint();
+		expect(used).toBe(1);
+		allowed = false;
+		session.hint();
+		expect(used).toBe(1);
+	});
+
+	it('spends one hint per manual press, not one per three-step chain', () => {
+		let used = 0;
+		const session = createLevelSession(25, 'en', { onHintUsed: () => used++ });
+		session.openBucket(0);
+		for (let press = 0; press < 4; press++) session.hint();
+		expect(used).toBe(4);
+	});
+
+	it('neither spends nor advances the chain when the reserve is empty', () => {
+		let used = 0;
+		const session = createLevelSession(25, 'en', {
+			canHint: () => false,
+			onHintUsed: () => used++
+		});
+		session.openBucket(0);
+		session.hint();
+		expect(used).toBe(0);
+		expect(session.hintStep).toBe(0);
+		expect(session.lastHint).toBeNull();
 	});
 });

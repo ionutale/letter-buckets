@@ -19,4 +19,8 @@ export function getLevelArt(level: number): string {
 	return `/art/levels/l${String(level).padStart(2, '0')}.webp`;
 }
 
+export function getWordArt(locale: Locale, level: number, index: number): string {
+	return `/art/words/${locale}/l${String(level).padStart(2, '0')}-w${index + 1}.webp`;
+}
+
 export * from './schema.js';

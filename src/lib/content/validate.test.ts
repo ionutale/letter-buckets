@@ -11,6 +11,12 @@ describe('content', () => {
 			expect(CONTENT[locale].levels).toHaveLength(LEVEL_COUNT);
 		}
 	});
+	it('rejects a word that is too short for the level gaps', () => {
+		const broken = structuredClone(CONTENT);
+		broken.en.levels[9].words[0].word = 'HOUSE';
+		const issues = validateContent(broken);
+		expect(issues.some((i) => i.message.includes('too short'))).toBe(true);
+	});
 	it('rejects a word outside the locale alphabet', () => {
 		const broken = structuredClone(CONTENT);
 		broken.de.levels[0].words[0].word = 'STRAßE';

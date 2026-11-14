@@ -1,7 +1,7 @@
 import type { Locale } from './schema.js';
 
 export const MIN_WORD_LENGTH = 3;
-export const MAX_WORD_LENGTH = 6;
+export const MAX_WORD_LENGTH = 8;
 
 /**
  * Uppercase alphabets accepted for each locale. Italian is deliberately
@@ -33,11 +33,21 @@ export function isAllowedWord(locale: Locale, word: string): boolean {
 }
 
 /**
- * The single source of truth for how many letters a level hides.
- * Words shorter than five letters stay at two gaps so at least two letters
- * remain visible as a scaffold for the youngest players.
+ * The single source of truth for how many letters a level hides. Every
+ * chapter of ten levels repeats the same ramp: 1, 1, 1, 1, 2, 2, 2, 3, 3, 4.
  */
-export function gapCountForLevel(level: number, wordLength: number): number {
-	const band = level <= 20 ? 1 : level <= 40 ? 2 : wordLength >= 5 ? 3 : 2;
-	return Math.min(band, Math.max(0, wordLength - 2), 3);
+export function gapCountForLevel(level: number): number {
+	const position = ((level - 1) % 10) + 1;
+	if (position <= 4) return 1;
+	if (position <= 7) return 2;
+	if (position <= 9) return 3;
+	return 4;
+}
+
+/**
+ * The shortest word that still shows two revealed letters at this level.
+ * A word must be at least gaps + 2 letters long.
+ */
+export function minWordLengthForLevel(level: number): number {
+	return gapCountForLevel(level) + 2;
 }

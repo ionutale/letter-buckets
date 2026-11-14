@@ -3,27 +3,32 @@
 
 	interface Props {
 		index: number;
-		state: 'closed' | 'open' | 'done';
+		status: 'closed' | 'open' | 'done';
 		word?: string;
+		image?: string;
 		onclick?: () => void;
 	}
 
-	let { index, state, word, onclick }: Props = $props();
+	let { index, status, word, image, onclick }: Props = $props();
+	let failedImage = $state<string | null>(null);
+	const clueBroken = $derived(failedImage !== null && failedImage === image);
 
 	const palette = ['var(--lb-leaf)', 'var(--lb-ochre)', 'var(--lb-berry)'];
 	const color = $derived(palette[index - 1]);
 
 	const label = $derived(
-		state === 'done' ? m.word_done_label({ n: index, word: word ?? '' }) : m.open_word({ n: index })
+		status === 'done'
+			? m.word_done_label({ n: index, word: word ?? '' })
+			: m.open_word({ n: index })
 	);
 </script>
 
 <button
 	type="button"
 	class="bucket"
-	data-state={state}
+	data-state={status}
 	aria-label={label}
-	style={`--bucket-color:${color};--bucket-shadow:color-mix(in srgb, ${color} 55%, #000)`}
+	style={`--bucket-color:${color};--bucket-shadow:color-mix(in srgb, ${color} 55%, #000);--i:${index - 1}`}
 	{onclick}
 >
 	<span class="number" aria-hidden="true">{index}</span>
@@ -39,19 +44,50 @@
 				stroke-width="8"
 				stroke-linecap="round"
 			/>
-			{#if state === 'closed'}
+			{#if status === 'closed'}
 				<path class="lid" d="M12 26h96l-4 18H16z" />
 				<path class="ribbon" d="M58 26h8v18h-8z" />
-			{:else if state === 'open'}
+			{:else if status === 'open'}
 				<path class="lid tipped" d="M100 24h18l-6 18h-18z" />
 				<circle class="glow" cx="60" cy="76" r="22" />
 			{:else}
-				<path class="lid off" d="M104 16l14 8-10 16-14-8z" />
-				<path class="star" d="M60 54l5 12 13 1-10 9 3 13-11-7-11 7 3-13-10-9 13-1z" />
+				<path class="lid off" d="M12 26h96l-4 18H16z" />
+				<path
+					class="check"
+					d="M42 74l12 12 24-28"
+					fill="none"
+					stroke-width="9"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+				/>
 			{/if}
 		</svg>
+		{#if image && !clueBroken && status !== 'done'}
+			<img
+				class="clue"
+				src={image}
+				alt=""
+				loading="lazy"
+				decoding="async"
+				onerror={() => (failedImage = image ?? null)}
+			/>
+		{/if}
 	</span>
-	{#if state === 'done' && word}
+	{#if status === 'done'}
+		<span class="done-badge" aria-hidden="true">
+			<svg viewBox="0 0 24 24">
+				<path
+					d="M5 12.5l4.5 4.5L19 7.5"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="3"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+				/>
+			</svg>
+		</span>
+	{/if}
+	{#if status === 'done' && word}
 		<span class="word">{word}</span>
 	{/if}
 </button>
@@ -71,13 +107,38 @@
 		transition:
 			transform var(--lb-t-med) var(--lb-ease),
 			background var(--lb-t-med) var(--lb-ease);
+		animation: arrive 480ms var(--lb-ease-overshoot) backwards;
+		animation-delay: calc(var(--i) * var(--lb-stagger));
+	}
+	.bucket[data-state='closed'] .pail {
+		animation: float 5s ease-in-out 1.2s infinite;
+	}
+	@keyframes arrive {
+		from {
+			opacity: 0;
+			transform: translateY(10px) scale(0.96);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0) scale(1);
+		}
+	}
+	@keyframes float {
+		0%,
+		100% {
+			transform: translateY(0);
+		}
+		50% {
+			transform: translateY(-3px);
+		}
 	}
 	.bucket:active {
 		transform: scale(0.97);
 	}
 	.pail {
+		position: relative;
 		display: block;
-		width: clamp(58px, 18vw, 84px);
+		width: clamp(86px, 24vw, 112px);
 		aspect-ratio: 1;
 	}
 	.pail svg {
@@ -88,6 +149,18 @@
 	.body {
 		fill: var(--bucket-color);
 	}
+	.clue {
+		position: absolute;
+		left: 50%;
+		top: 41%;
+		width: 62%;
+		aspect-ratio: 1;
+		transform: translateX(-50%);
+		border-radius: 10px;
+		object-fit: cover;
+		background: var(--lb-paper);
+		box-shadow: 0 2px 0 color-mix(in srgb, var(--bucket-color) 45%, transparent);
+	}
 	.rim {
 		fill: color-mix(in srgb, var(--bucket-color) 65%, #000);
 	}
@@ -96,9 +169,20 @@
 		transform-origin: 12px 44px;
 		transition: transform var(--lb-t-arrive) var(--lb-ease-overshoot);
 	}
-	.lid.tipped,
+	.lid.tipped {
+		transform: translate(26px, -14px) rotate(18deg);
+	}
 	.lid.off {
 		transform: translate(26px, -14px) rotate(18deg);
+		animation: lid-pop var(--lb-t-arrive) var(--lb-ease-overshoot) both;
+	}
+	@keyframes lid-pop {
+		from {
+			transform: none;
+		}
+		to {
+			transform: translate(26px, -14px) rotate(18deg);
+		}
 	}
 	.handle {
 		opacity: 0.8;
@@ -109,10 +193,46 @@
 	.glow {
 		fill: color-mix(in srgb, var(--lb-gold) 55%, transparent);
 	}
-	.star {
-		fill: var(--lb-gold);
-		stroke: var(--lb-ochre-dark);
-		stroke-width: 2;
+	.check {
+		stroke: var(--lb-gold);
+		stroke-dasharray: 52;
+		stroke-dashoffset: 52;
+		animation: draw-check 420ms var(--lb-ease) 120ms forwards;
+	}
+	@keyframes draw-check {
+		to {
+			stroke-dashoffset: 0;
+		}
+	}
+	.done-badge {
+		position: absolute;
+		top: var(--lb-space-2);
+		right: var(--lb-space-2);
+		display: grid;
+		place-items: center;
+		width: 30px;
+		height: 30px;
+		border-radius: 50%;
+		background: var(--lb-leaf-dark);
+		color: #fff;
+		box-shadow: var(--lb-shadow-1);
+	}
+	.done-badge svg {
+		width: 18px;
+		height: 18px;
+	}
+	.done-badge {
+		animation: badge-pop 420ms var(--lb-ease-overshoot) both;
+	}
+	@keyframes badge-pop {
+		from {
+			opacity: 0;
+			transform: scale(0.6);
+		}
+		to {
+			opacity: 1;
+			transform: scale(1);
+		}
 	}
 	.number {
 		position: absolute;
@@ -130,6 +250,7 @@
 	}
 	.word {
 		max-width: 100%;
+		animation: word-in 360ms var(--lb-ease-overshoot) 120ms both;
 		overflow-wrap: anywhere;
 		font-size: var(--lb-text-sm);
 		font-weight: 800;
@@ -138,5 +259,19 @@
 	}
 	.bucket[data-state='done'] {
 		background: color-mix(in srgb, var(--bucket-color) 20%, var(--lb-paper));
+		box-shadow: inset 0 0 0 3px color-mix(in srgb, var(--bucket-color) 60%, transparent);
+	}
+	.bucket[data-state='done'] .word {
+		color: var(--lb-leaf-dark);
+	}
+	@keyframes word-in {
+		from {
+			opacity: 0;
+			transform: translateY(6px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
 	}
 </style>

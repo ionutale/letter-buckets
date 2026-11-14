@@ -11,3 +11,4 @@ scripts/themes.json
 .venv-piper
 src/lib/paraglide
 project.inlang/cache
+scripts/__pycache__/

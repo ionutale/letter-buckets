@@ -43,6 +43,7 @@
 			{m.word_book()}
 			<small>{m.words_unlocked({ done: words })}</small>
 		</a>
+		<a href={localizeHref('/progress')}>{m.progress()}</a>
 	</div>
 
 	<div class="stamps" aria-hidden="true">

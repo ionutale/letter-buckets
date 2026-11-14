@@ -2,6 +2,7 @@
 	import { onDestroy, onMount } from 'svelte';
 	import { m } from '#lib/paraglide/messages.js';
 	import type { LevelSession } from '#lib/game/session.svelte.js';
+	import { getWordArt } from '#lib/content/index.js';
 	import { isComplete, type Tile } from '#lib/game/puzzle.js';
 	import { audio } from '#lib/audio/index.js';
 	import LetterTile from './LetterTile.svelte';
@@ -9,6 +10,7 @@
 
 	interface Props {
 		session: LevelSession;
+		hintsLeft?: number;
 		onclose: () => void;
 	}
 
@@ -22,7 +24,7 @@
 		moved: boolean;
 	}
 
-	let { session, onclose }: Props = $props();
+	let { session, hintsLeft = Number.POSITIVE_INFINITY, onclose }: Props = $props();
 
 	let selectedId = $state<string | null>(null);
 	let suggestedSlot = $state<number | null>(null);
@@ -36,6 +38,11 @@
 
 	const word = $derived(session.word);
 	const complete = $derived(word ? isComplete(word) : false);
+	const clue = $derived(
+		session.openIndex !== null ? getWordArt(session.locale, session.level, session.openIndex) : ''
+	);
+	let failedClue = $state<string | null>(null);
+	const clueBroken = $derived(failedClue !== null && failedClue === clue);
 
 	onMount(() => {
 		const previousFocus = document.activeElement as HTMLElement | null;
@@ -217,7 +224,12 @@
 		<header class="panel-head">
 			<button type="button" class="icon" aria-label="Close" onclick={close}>×</button>
 			<p>{m.word_of({ i: session.openIndex! + 1 })}</p>
-			<button type="button" class="icon hint" aria-label={m.hint()} onclick={() => session.hint()}
+			<button
+				type="button"
+				class="icon hint"
+				aria-label={`${m.hint()}${Number.isFinite(hintsLeft) ? ` (${hintsLeft})` : ''}`}
+				disabled={hintsLeft === 0}
+				onclick={() => session.hint()}
 				><svg class="glyph" viewBox="0 0 24 24" aria-hidden="true"
 					><path
 						d="M9 18h6M10 21h4M8 14a5 5 0 1 1 8 0c-.8.8-1.2 1.8-1.2 3H9.2c0-1.2-.4-2.2-1.2-3z"
@@ -229,6 +241,9 @@
 					/></svg
 				></button
 			>
+			{#if Number.isFinite(hintsLeft)}
+				<span class="hint-count" aria-hidden="true">{hintsLeft}</span>
+			{/if}
 			<button
 				type="button"
 				class="icon"
@@ -254,24 +269,66 @@
 			>
 		</header>
 
-		<div class="word-row" style="--tile-size: clamp(34px, 9vw, 56px)">
-			{#each [...word.spec.word] as letter, index}
-				{#if word.spec.gaps.includes(index)}
-					<Slot
-						{index}
-						letter={word.spec.word[index]}
-						filled={index in word.placed}
-						suggested={suggestedSlot === index || hintedSlot === index}
-						onplace={() => onSlot(index)}
-					/>
-				{:else}
-					<LetterTile {letter} state="revealed" />
-				{/if}
-			{/each}
+		<div class="word-area">
+			{#if clue && !clueBroken}
+				<img
+					class="clue"
+					src={clue}
+					alt=""
+					data-clue
+					loading="eager"
+					decoding="async"
+					onerror={() => (failedClue = clue || null)}
+				/>
+			{/if}
+			<button
+				type="button"
+				class="hear"
+				onclick={() =>
+					session.openIndex !== null &&
+					audio.playWord(session.locale, session.level, session.openIndex)}
+			>
+				<svg class="glyph" viewBox="0 0 24 24" aria-hidden="true"
+					><path
+						d="M4 9h4l5-4v14l-5-4H4z"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linejoin="round"
+					/><path
+						d="M16 8a5 5 0 0 1 0 8"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+					/></svg
+				>
+				<span>{m.hear_word()}</span>
+			</button>
+			<div class="word-row" style="--tile-size: clamp(28px, calc((100vw - 68px) / 8), 56px)">
+				{#each [...word.spec.word] as letter, index}
+					{#if word.spec.gaps.includes(index)}
+						<Slot
+							{index}
+							letter={word.spec.word[index]}
+							filled={index in word.placed}
+							suggested={suggestedSlot === index || hintedSlot === index}
+							onplace={() => onSlot(index)}
+						/>
+					{:else}
+						<LetterTile {letter} state="revealed" />
+					{/if}
+				{/each}
+			</div>
 		</div>
 
 		{#if complete}
 			<div class="done-card">
+				<div class="confetti" aria-hidden="true">
+					{#each Array(10) as _, index}
+						<span style={`--i:${index}`}></span>
+					{/each}
+				</div>
 				<p class="done-title">{m.word_complete()}</p>
 				<button type="button" class="back" onclick={close}>{m.back_to_buckets()}</button>
 			</div>
@@ -329,6 +386,24 @@
 		font-weight: 700;
 		color: var(--lb-ink-soft);
 	}
+	.icon.hint {
+		position: relative;
+	}
+	.icon:disabled {
+		opacity: 0.4;
+	}
+	.hint-count {
+		display: grid;
+		place-items: center;
+		min-width: 26px;
+		height: 26px;
+		padding: 0 5px;
+		border-radius: 13px;
+		background: var(--lb-ink);
+		color: var(--lb-paper);
+		font-size: var(--lb-text-xs);
+		font-weight: 800;
+	}
 	.icon {
 		display: grid;
 		place-items: center;
@@ -342,11 +417,42 @@
 		width: 22px;
 		height: 22px;
 	}
+	.word-area {
+		display: grid;
+		justify-items: center;
+		align-content: center;
+		align-self: center;
+		gap: var(--lb-space-3);
+	}
+	.clue {
+		width: clamp(88px, 24vw, 120px);
+		aspect-ratio: 1;
+		border-radius: var(--lb-radius);
+		object-fit: cover;
+		background: var(--lb-paper-2);
+		box-shadow: var(--lb-shadow-1);
+	}
+	.hear {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: var(--lb-space-2);
+		min-height: 44px;
+		padding: 0 var(--lb-space-4);
+		border-radius: var(--lb-radius-pill);
+		background: var(--lb-paper-2);
+		box-shadow: inset 0 0 0 2px var(--lb-border);
+		font-weight: 800;
+		color: var(--lb-ink);
+	}
+	.hear .glyph {
+		width: 20px;
+		height: 20px;
+	}
 	.word-row {
 		display: flex;
 		justify-content: center;
 		align-items: center;
-		align-self: center;
 		gap: clamp(4px, 1.2vw, 8px);
 		padding-block: var(--lb-space-4);
 	}
@@ -364,12 +470,53 @@
 		background: color-mix(in srgb, var(--lb-paper-2) 70%, transparent);
 	}
 	.done-card {
+		position: relative;
 		display: grid;
 		justify-items: center;
 		gap: var(--lb-space-4);
 		padding: var(--lb-space-5);
 		border-radius: var(--lb-radius);
 		background: color-mix(in srgb, var(--lb-leaf) 14%, var(--lb-paper));
+	}
+	.confetti {
+		position: absolute;
+		inset: 50% auto auto 50%;
+		width: 0;
+		height: 0;
+		pointer-events: none;
+	}
+	.confetti span {
+		position: absolute;
+		width: 8px;
+		height: 12px;
+		border-radius: 2px;
+		background: var(--lb-gold);
+		animation: confetti 620ms var(--lb-ease) both;
+		transform: rotate(calc(var(--i) * 36deg)) translateY(0);
+	}
+	.confetti span:nth-child(3n) {
+		background: var(--lb-berry);
+	}
+	.confetti span:nth-child(3n + 1) {
+		background: var(--lb-leaf);
+	}
+	@keyframes confetti {
+		from {
+			opacity: 0;
+			transform: rotate(calc(var(--i) * 36deg)) translateY(0) scale(0.6);
+		}
+		30% {
+			opacity: 1;
+		}
+		to {
+			opacity: 0;
+			transform: rotate(calc(var(--i) * 36deg)) translateY(-48px) scale(1);
+		}
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.confetti {
+			display: none;
+		}
 	}
 	.done-title {
 		margin: 0;

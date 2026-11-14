@@ -221,13 +221,11 @@ function shuffle<T>(items: readonly T[], random: () => number): T[] {
 }
 
 function chooseGaps(level: number, wordLength: number, random: () => number): number[] {
-	const count = gapCountForLevel(level, wordLength);
+	const count = Math.min(gapCountForLevel(level), Math.max(0, wordLength - 2));
 	if (count === 0) return [];
 
-	// The first ten levels hide the final letter: onset plus rime is the
-	// easiest place to start reading a word.
-	if (level <= 10) return [wordLength - 1];
-
+	// Random but seeded per locale, level, word index, and word, so a word
+	// always hides the same slots on replay.
 	const positions = Array.from({ length: wordLength }, (_, index) => index);
 	return shuffle(positions, random)
 		.slice(0, count)

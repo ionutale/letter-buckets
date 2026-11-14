@@ -4,18 +4,22 @@
 	import { page } from '$app/state';
 	import { m } from '#lib/paraglide/messages.js';
 	import { getLocale, localizeHref } from '#lib/paraglide/runtime.js';
-	import { getLevelArt } from '#lib/content/index.js';
+	import { getLevelArt, getWordArt } from '#lib/content/index.js';
 	import type { Locale } from '#lib/content/schema.js';
 	import { createLevelSession } from '#lib/game/session.svelte.js';
 	import type { LevelSession } from '#lib/game/session.svelte.js';
 	import { audio } from '#lib/audio/index.js';
 	import {
 		getLocaleProgress,
+		hintsRemaining,
 		isLevelOpen,
 		loadSave,
 		markWordComplete,
 		persistSave,
+		recordAttempt,
 		resetLevelWords,
+		spendHint,
+		type GameMode,
 		type SaveData
 	} from '#lib/storage/save.js';
 	import Bucket from '#lib/components/Bucket.svelte';
@@ -29,6 +33,7 @@
 	let artBroken = $state(false);
 	let coachStep = $state<1 | 2 | null>(null);
 	let muted = $state(false);
+	let mode = $state<GameMode>('easy');
 
 	const paramLevel = $derived(Number.parseInt(page.params.level ?? '', 10));
 	const content = $derived(session?.content ?? null);
@@ -36,11 +41,15 @@
 		session?.buckets.filter((bucket) => bucket.status === 'done').length ?? 0
 	);
 	const allDone = $derived(doneCount === 3);
+	const hintsLeft = $derived(
+		data ? hintsRemaining(data, locale, mode, paramLevel) : Number.POSITIVE_INFINITY
+	);
 
 	onMount(() => {
 		data = loadSave(localStorage);
 		locale = getLocale() as Locale;
 		muted = data.settings.muted;
+		mode = data.settings.mode;
 		audio.setMuted(muted);
 		audio.preloadLevel(locale, paramLevel);
 		if (paramLevel === 1 && !data.settings.coachDone) coachStep = 1;
@@ -65,10 +74,20 @@
 		session?.closeWord();
 		session = createLevelSession(level, locale, {
 			progress: getLocaleProgress(data, locale),
-			onWordComplete: (completedLevel, wordIndex) => {
+			onWordComplete: (completedLevel, wordIndex, firstTry) => {
 				if (!data) return;
-				markWordComplete(data, locale, completedLevel, wordIndex);
+				markWordComplete(data, locale, completedLevel, wordIndex, firstTry);
 				persistSave(data, localStorage);
+			},
+			onAttempt: (completedLevel, _wordIndex, correct) => {
+				if (!data) return;
+				recordAttempt(data, locale, completedLevel, correct);
+				persistSave(data, localStorage);
+			},
+			canHint: () => hintsLeft > 0,
+			onHintUsed: () => {
+				if (!data) return;
+				if (spendHint(data, locale, mode, paramLevel)) persistSave(data, localStorage);
 			},
 			onLevelComplete: () => {
 				if (!data) return;
@@ -188,8 +207,9 @@
 			{#each session.buckets as bucket (bucket.index)}
 				<Bucket
 					index={bucket.index + 1}
-					state={bucket.status}
+					status={bucket.status}
 					word={bucket.word}
+					image={getWordArt(locale, paramLevel, bucket.index)}
 					onclick={() => openBucket(bucket.index)}
 				/>
 			{/each}
@@ -203,7 +223,7 @@
 	{/if}
 
 	{#if session && session.openIndex !== null}
-		<WordPanel {session} onclose={() => session?.closeWord()} />
+		<WordPanel {session} {hintsLeft} onclose={() => session?.closeWord()} />
 	{/if}
 
 	{#if session && session.complete && session.openIndex === null}

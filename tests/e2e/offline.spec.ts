@@ -28,8 +28,10 @@ test('works offline after install, including real word playback and art', async 
 
 	const audio = await page.evaluate(async () => (await fetch('/audio/words/en/l01-w1.mp3')).status);
 	const image = await page.evaluate(async () => (await fetch('/art/levels/l01.webp')).status);
+	const clue = await page.evaluate(async () => (await fetch('/art/words/ro/l01-w1.webp')).status);
 	expect(audio).toBe(200);
 	expect(image).toBe(200);
+	expect(clue).toBe(200);
 
 	await page.goto('/en/levels/1');
 	await page.locator('button.bucket').first().click();

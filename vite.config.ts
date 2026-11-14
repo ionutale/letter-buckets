@@ -43,7 +43,7 @@ export default defineConfig({
 					name: 'server',
 					environment: 'node',
 					include: ['src/**/*.test.ts'],
-					exclude: ['src/**/*.svelte.test.ts']
+					exclude: ['src/**/*.svelte.test.ts', 'src/**/*.dom.test.ts']
 				}
 			},
 			{

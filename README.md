@@ -4,7 +4,7 @@ A calm, offline word game for children aged 4–8, in **Romanian, Italian, Engli
 
 Each level is a place with **three buckets**. Tap a bucket to open its word: some letters are already in place, the missing ones are empty slots, and the tray below holds the missing letter tiles. Drag a tile into a slot — or tap the tile and then the slot — until the word is complete. All three completed words unlock the level and add their words to the Word Book.
 
-50 levels · 5 chapters · 150 words per language · no timers · no losing · no ads · no tracking.
+50 levels · 5 chapters · 150 words per language · a clue image for every bucket · no timers · no losing · no ads · no tracking.
 
 ## Play
 
@@ -38,7 +38,7 @@ All art and audio are generated once and committed; the app makes no runtime mod
 
 - **Word audio:** Qwen3-TTS (via `music-sfx-voice-studio`) for English, Italian, and German; Piper `ro_RO-mihai-medium` for Romanian and `ru_RU-irina-medium` for Russian.
 - **Effects and music:** Stable Audio 3 and the studio's procedural effects.
-- **Illustrations:** FLUX.2-klein 4B through mflux, layered-paper direction.
+- **Illustrations:** 50 theme images and 750 per-word clue icons, FLUX.2-klein through mflux, layered-paper direction.
 
 Regenerate:
 
@@ -46,7 +46,8 @@ Regenerate:
 pnpm content:export                         # scripts/content.json + scripts/themes.json
 /Users/ionutale/developer-playground/flux2-klein-mlx-studio/.venv/bin/python scripts/generate_art.py --all
 node scripts/generate_audio.mjs --all       # starts from the local studio; see below
-node scripts/validate_assets.mjs            # 50 images, 750 clips, effects, music
+/Users/ionutale/developer-playground/flux2-klein-mlx-studio/.venv/bin/python scripts/generate_word_art.py --all
+node scripts/validate_assets.mjs            # 50 theme images, 750 word clues, 750 clips, effects, music
 ```
 
 `PIPER_BIN` can point at the local Piper virtualenv, for example

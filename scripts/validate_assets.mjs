@@ -21,6 +21,12 @@ if (!imagesOnly) {
 	for (const locale of locales) {
 		for (const level of content[locale].levels) {
 			for (let index = 0; index < 3; index++) {
+				const clue = `static/art/words/${locale}/l${pad(level.id)}-w${index + 1}.webp`;
+				if (!existsSync(clue)) {
+					issues.push(`missing word illustration ${clue}`);
+				} else if (statSync(clue).size > 30 * 1024) {
+					issues.push(`word illustration over 30 KB: ${clue}`);
+				}
 				const clip = `static/audio/words/${locale}/l${pad(level.id)}-w${index + 1}.mp3`;
 				if (!existsSync(clip)) {
 					issues.push(`missing clip ${clip}`);

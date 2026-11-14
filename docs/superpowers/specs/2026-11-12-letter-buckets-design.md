@@ -33,7 +33,7 @@ The game is a standalone installable PWA. All art and audio are generated once w
 3. Drag-and-drop plus a tap-only path, both first-class.
 4. Five complete locales, including Cyrillic and Romanian diacritics, with per-locale progress.
 5. A Word Book that keeps every completed word and can speak it again.
-6. Installable, fully offline PWA with all 750 word clips and 50 illustrations cached.
+6. Installable, fully offline PWA with all 750 word clips, 50 theme illustrations, and 750 word clues cached.
 7. Gentle feedback: hints arrive before frustration, wrong letters never punish.
 
 ## 5. Non-goals
@@ -41,7 +41,8 @@ The game is a standalone installable PWA. All art and audio are generated once w
 - Accounts, cloud sync, leaderboards, analytics, or any runtime data/API call. The only network request is the browser fetching an updated app shell.
 - Multiple child profiles. One local profile; multi-kid profiles are a later addition.
 - Handwriting, typing, or free spelling. The puzzle is always fill-in-the-gap.
-- Per-word illustrations. The level illustration sets the scene; the spoken word gives the clue.
+- Per-word audio beyond the single spoken word; the clue image plus audio is the word's identity.
+- A picture for every possible meaning; the image is a concrete clue, not a dictionary illustration.
 - Languages beyond the five in this version.
 - Timers, stars, scores, lives, or a fail state.
 - A level editor or remote CMS. Content is typed and committed.
@@ -65,7 +66,7 @@ The game is a standalone installable PWA. All art and audio are generated once w
 - **Audio:** Qwen3-TTS for English, Italian, and German; Piper `ro_RO` for Romanian and `ru_RU` for Russian. Stable Audio 3 / procedural effects for SFX and one music loop. Shipped as MP3.
 - **Storage:** `localStorage`, versioned and sanitised on load. No cookies beyond the Paraglide locale cookie.
 - **Runtime:** no model calls, no network, no external assets.
-- **Build size:** target under 20 MB precached (≈750 word clips + 50 images + app shell + fonts).
+- **Build size:** target under 20 MB precached (≈750 word clips + 50 theme images + 750 word clues + app shell + fonts).
 - **All-ages safety:** no external links inside the child-facing UI; grown-up settings behind a small "for grown-ups" treatment.
 
 ## 8. Approaches considered
@@ -102,7 +103,7 @@ Chosen: **C**. The level screen is the "three buckets" screen; the word panel is
 
 - Header: back to chapter, "Level {n}" and the localized theme name, sound toggle.
 - One 16:9 illustration banner for the level theme, with `alt=""` (decorative) and the theme name as adjacent text.
-- Three bucket cards in a row. Each card shows its bucket SVG, a number 1–3, and a state:
+- Three bucket cards in a row. Each card shows its word clue image inside the bucket, a number 1–3, and a state:
   - **closed:** lid on, ribbon, word hidden;
   - **open/current:** the child has opened it at least once but not completed it;
   - **done:** lid off, a star or flag, and the completed word shown under the bucket.
@@ -116,6 +117,7 @@ Chosen: **C**. The level screen is the "three buckets" screen; the word panel is
 
 - Opens over the level screen as a full-screen panel with a strong entry animation (respecting reduced motion).
 - Header: back to buckets, "Word {i} of 3", speaker button to replay the word.
+- A large 1:1 word clue image above the word slots; the same image shown on the bucket card.
 - The word is **spoken automatically once** shortly after opening, unless muted.
 - Word row: one large tile per letter. Revealed letters are solid, readable tiles. Missing letters are empty, dashed, rounded slots — never ghost letters.
 - Tray: one tile per missing letter, plus 0–2 decoys depending on the level band. Tiles are shuffled deterministically per level/word so replaying is familiar.
@@ -127,25 +129,26 @@ Chosen: **C**. The level screen is the "three buckets" screen; the word panel is
 
 ### 9.3 Difficulty curve
 
-The dial is the number of gaps and decoys, not the length of the word. Word length is 3–6 letters and varies naturally by language.
+Every chapter of ten levels repeats the same ramp. The dial is the number of gaps and decoys, supported by a minimum word length that always leaves two revealed letters.
 
-| Levels | Gaps per word | Decoys | Intent                                                            |
-| ------ | ------------- | ------ | ----------------------------------------------------------------- |
-| 1–10   | 1             | 0      | One missing letter; usually the final letter. Learn the tap/drag. |
-| 11–20  | 1             | 0      | One gap anywhere; longer, less familiar words.                    |
-| 21–30  | 2             | 0      | Two gaps; hold two letters in mind.                               |
-| 31–40  | 2             | 1      | One lookalike distractor.                                         |
-| 41–50  | 2–3           | 2      | Three gaps on longer words; two distractors.                      |
+| Position in chapter | Levels  | Gaps | Minimum letters | Decoys |
+| ------------------- | ------- | ---- | --------------- | ------ |
+| 1–4                 | 1–4, …  | 1    | 3               | 0      |
+| 5–7                 | 5–7, …  | 2    | 4               | 0      |
+| 8–9                 | 8–9, …  | 3    | 5               | 0      |
+| 10                  | 10, 20… | 4    | 6               | 0–2    |
+
+Decoys appear from level 31: one at 31–40 and two at 41–50. Word length is 3–8 letters, and the gap count must leave at least two revealed letters.
 
 Validation constraints:
 
-- At least one letter is revealed, always.
-- A 3-letter word has at most 1 gap; a 4-letter word at most 2; 5–6 letters at most 3.
+- At least two letters are revealed, always.
+- The word is at least `gaps + 2` letters long.
 - Gaps never include the same slot twice.
 - Decoy letters are visually confusable with a letter in the word and are **not** present in the word. Confusable sets are per script/locale (e.g. `B/D`, `P/Q`, `M/N`, `Ș/S`, `Ä/A`, `Ш/Щ`).
 - The tray contains exactly one tile per gap, so repeated letters get repeated tiles.
 
-The gap placement algorithm is deterministic from the level id and word index, and is left to the builder within these constraints. The first levels prefer the final letter; later levels can open the first letter and interior letters.
+Gap positions are chosen pseudorandomly and are stable per locale, level, word index, and word. The same word hides the same slots on replay, while different words get different layouts. The final-letter shortcut is gone.
 
 ### 9.4 Hints
 
@@ -235,7 +238,7 @@ interface LocaleContent {
 - 50 levels × 3 words × 5 locales = **750 entries**.
 - Level ids and themes align across locales. The actual words are chosen per language to fit the theme and the letter limit; they are not literal translations.
 - Words are concrete, child-friendly nouns or very familiar words. No verbs that need conjugation, no abstract words, no proper names.
-- Length 3–6 letters. No spaces, hyphens, apostrophes, or digits.
+- Length 3–8 letters, with the per-position minimums in 9.3. No spaces, hyphens, apostrophes, or digits.
 
 ### 10.2 Allowed letters
 
@@ -263,7 +266,7 @@ The 50 themes, in order:
 
 ### 10.4 Word list review
 
-The word lists are authored before assets are generated, and reviewed by the human partner before the audio batch runs. A wrong word costs one audio clip and one re-record, not 750. The review is a table per locale: level, theme, three words, length, gaps, decoys, audio file present.
+The word lists are authored before assets are generated, and reviewed by the human partner before the audio batch runs. A wrong word costs one audio clip and one re-record, not 750. The review is a table per locale: level, theme, three words, length, gaps, decoys, audio file present, clue image present.
 
 ### 10.5 Validation
 
@@ -271,9 +274,9 @@ A unit test validates every locale on every run:
 
 - exactly 50 levels, ids 1–50, no duplicates;
 - exactly 3 words per level, unique within the level;
-- 3–6 letters, only the locale's allowed letters;
-- gap counts match the level band and the length constraint;
-- at least one revealed letter;
+- 3–8 letters, only the locale's allowed letters;
+- each word meets the minimum length for its level and the gap count;
+- at least two revealed letters;
 - decoys are not in the word and are confusable with a letter that is;
 - every word has an audio file and every level has an illustration;
 - every Paraglide key exists in all five locales, with no empty values.
@@ -320,12 +323,14 @@ A unit test validates every locale on every run:
 
 ## 13. Art
 
-### 13.1 Level illustrations
+### 13.1 Level illustrations and word clues
 
-- 50 images, one per level theme, language-agnostic.
+- 50 theme images, one per level, language-agnostic.
+- 750 word clue images, one per locale/level/word, 256×256 WebP. Every word has a reviewed English gloss so the image shows the right object; the same layered-paper language.
 - **Style target:** soft cut-paper storybook diorama; warm cream background; rounded, simple shapes; muted sage, ochre, berry, sky palette; gentle lighting; centered vignette; child-friendly; **no text, no letters**; simple paper-cut people are allowed only where the theme needs them (family, school, doctor, jobs, celebration).
 - Consistent prompt template + fixed palette + fixed negative prompt, generated with FLUX.2-klein. Three style candidates are generated for one theme and reviewed before the other 49.
-- Output: 768×432 WebP, quality ~80, target under 90 KB each. Displayed 16:9 at the top of the level screen.
+- Level output: 768×432 WebP, quality ~80, target under 90 KB each.
+- Word output: 256×256 WebP, quality ~80, target under 30 KB each.
 - A contact sheet of all 50 is reviewed; any image with text, scary shapes, or an off-style look is regenerated.
 - `ART-STYLE.md` records the palette, prompt template, negative prompt, and approved examples.
 
@@ -375,6 +380,7 @@ letter-buckets/
   project.inlang/settings.json
   static/
     art/levels/l01.webp … l50.webp
+    art/words/{ro,it,en,de,ru}/l01-w1.webp … l50-w3.webp
     audio/words/{locale}/…
     audio/sfx/…, audio/music/…
     icons/…, manifest.webmanifest, favicon.svg
@@ -448,7 +454,7 @@ interface SaveData {
 ### 14.5 PWA and offline
 
 - SvelteKit 3 built-in service worker (`src/service-worker.ts`), registered in production only; `serviceWorker: { register: false }` in `vite.config.ts`, manual registration via `src/lib/pwa/client.ts`.
-- Precache the app shell, fonts, 50 illustrations, all 750 word clips, SFX, and music. Cache per deployment version; delete old caches on activate.
+- Precache the app shell, fonts, 50 theme illustrations, 750 word clues, all 750 word clips, SFX, and music. Cache per deployment version; delete old caches on activate.
 - Navigation: **cache-first** with the cached `200.html` as the SPA document, revalidated quietly in the background when online. Route changes stay instant on a weak signal, and the offline promise is true from the first route change after install. Static assets and audio: cache-first, so word audio plays offline (this differs from Cozy Nook's audio bypass).
 - The only network request the game makes is the browser fetching an updated app shell. No game data, no analytics, no third-party call.
 - Precache in small concurrent batches so one missing file cannot fail install, and so 750 requests do not stampede.
@@ -486,12 +492,13 @@ interface SaveData {
 
 - `scripts/generate_audio.mjs`: reads the five content files, calls the local studio API (`http://127.0.0.1:7910`, bearer token from `data/token`) for EN/IT/DE/RU, runs Piper for RO, post-processes with ffmpeg, writes `static/audio/words/…`, and writes a manifest of what was generated.
 - `scripts/generate_art.py`: reads the 50 themes, uses the same mflux FLUX.2-klein pipeline as the local FLUX studio (`Flux2Klein` with `ModelConfig.flux2_klein_4b()`), writes 768×432 WebP to `static/art/levels/…`. A `--style-check` mode generates three candidates for one theme first.
+- `scripts/generate_word_art.py`: reads the typed content and `scripts/word_glosses.json`, uses a bilingual `localized word (English gloss)` single-object paper-cut prompt, and writes 256×256 WebP to `static/art/words/{locale}/…`. It is idempotent and reports remaining time. `scripts/contact_sheet.mjs` builds the per-locale review sheets.
 - `scripts/validate_assets.mjs`: checks every word has a clip, every level has an image, every file is under its size budget, and no clip is silent or longer than 3 s.
 - The scripts are idempotent and skip existing outputs unless `--force`.
 - Generated assets are committed. The app does not need the studios to build or run.
 - The studio must be running and the GPU free; the script retries `409 BUSY` with `Retry-After`.
 - Review gates: (1) word lists approved by the human partner; (2) three art-style candidates approved by the human partner; (3) contact sheet reviewed by the builder, with outliers regenerated; (4) audio spot-check per locale by the builder, with a short final sample shown to the human partner before release.
-- Placeholder policy: a small local placeholder set may be used while building the engine, but placeholders are never committed to the release branch and never shipped. The release build fails content validation unless all 750 clips and 50 illustrations are present.
+- Placeholder policy: a small local placeholder set may be used while building the engine, but placeholders are never committed to the release branch and never shipped. The release build fails content validation unless all 750 clips, 50 theme illustrations, and 750 word clues are present.
 - If a studio is unavailable, the asset script stops with a clear message; it never writes silent or placeholder files into `static/`.
 
 ## 16. Build shape
@@ -502,7 +509,7 @@ This is a project, not a small change. The work splits into:
 2. **Content authoring** — 50 themes × 3 words × 5 locales, validated; human review.
 3. **Puzzle engine and level flow** — buckets, word panel, drag/tap, hints, completion, save.
 4. **Meta screens** — home, chapters/level map, Word Book, settings, coach marks, install hint.
-5. **Art** — style candidates, 50 illustrations, buckets/UI SVG, icons, contact-sheet review.
+5. **Art** — style candidates, 50 theme illustrations, 750 word clues, buckets/UI SVG, icons, contact-sheet review.
 6. **Audio** — voice selection per locale, 750 clips, SFX, music, pronunciation review.
 7. **Polish and hardening** — reduced motion, keyboard/SR pass, visual snapshots, offline E2E, build-size check.
 8. **Release** — static build, Vercel config, README, licenses.
@@ -511,18 +518,18 @@ Content and art can run in parallel with the engine once the schema is frozen. A
 
 ## 17. Risks and mitigations
 
-| Risk                                                  | Mitigation                                                                                              |
-| ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| 750 clips make install heavy or slow                  | 48 kbps mono MP3, <10 KB each; batch precache; size budget test in CI.                                  |
-| Generated art drifts in style                         | Fixed prompt/palette/negative prompt, 3 candidates first, contact-sheet review, regenerate outliers.    |
-| Romanian audio sounds different from the other four   | One voice per locale is expected; keep loudness and pacing matched; a child hears one locale at a time. |
-| Diacritics or Cyrillic break a font                   | Nunito latin-ext + cyrillic, glyph smoke test, visual snapshots in RO and RU.                           |
-| A 4-year-old cannot parse a 5-letter word with 2 gaps | Max gaps by length, at least one revealed letter, hint chain, tap path, coach marks.                    |
-| Localization lengths break layouts                    | No fixed-width text containers; test longest strings (German/Romanian) in snapshots.                    |
-| Language switch looks like lost progress              | Per-locale progress is explicit in the UI; show the current locale's count everywhere.                  |
-| Dragging fights scrolling on touch                    | Play area never scrolls; `touch-action: none` on tiles; tap path always available.                      |
-| Generated images contain accidental text              | Negative prompt "text, letters, words, signage"; contact-sheet review; regenerate.                      |
-| Service worker serves stale audio                     | Versioned cache, delete old caches on activate, update toast.                                           |
+| Risk                                                  | Mitigation                                                                                                  |
+| ----------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| 750 clips make install heavy or slow                  | 48 kbps mono MP3, <10 KB each; batch precache; size budget test in CI.                                      |
+| Generated art drifts in style                         | Fixed prompt/palette/negative prompt, 3 candidates first, contact-sheet review, regenerate outliers.        |
+| Romanian audio sounds different from the other four   | One voice per locale is expected; keep loudness and pacing matched; a child hears one locale at a time.     |
+| Diacritics or Cyrillic break a font                   | Nunito latin-ext + cyrillic, glyph smoke test, visual snapshots in RO and RU.                               |
+| A 4-year-old cannot parse a 5-letter word with 2 gaps | Exact gap ramp with minimum word lengths, at least two revealed letters, hint chain, tap path, coach marks. |
+| Localization lengths break layouts                    | No fixed-width text containers; test longest strings (German/Romanian) in snapshots.                        |
+| Language switch looks like lost progress              | Per-locale progress is explicit in the UI; show the current locale's count everywhere.                      |
+| Dragging fights scrolling on touch                    | Play area never scrolls; `touch-action: none` on tiles; tap path always available.                          |
+| Generated images contain accidental text              | Negative prompt "text, letters, words, signage"; contact-sheet review; regenerate.                          |
+| Service worker serves stale audio                     | Versioned cache, delete old caches on activate, update toast.                                               |
 
 ## 18. What's left to the builder
 
@@ -530,7 +537,7 @@ Content and art can run in parallel with the engine once the schema is frozen. A
 - The exact copy for every UI string, within the tone rules.
 - The bucket SVG proportions, panel transitions, and celebration choreography.
 - The exact voice preset per locale and any `spoken` overrides after listening.
-- The FLUX prompt wording beyond the style target, and the final 50 images.
+- The FLUX prompt wording beyond the style target, and the final 50 theme images plus 750 word clues.
 - The level-map and Word Book visual layout details within the rules above.
 - CI wiring and the Vercel project.
 

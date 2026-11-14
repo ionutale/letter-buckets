@@ -5,7 +5,7 @@ The reference for all 50 level illustrations and the hand-built bucket/UI art.
 ## 1. Principles
 
 - **Cozy picture-book diorama.** Warm cream paper, rounded shapes, calm saturation. The game is a toy, not a poster.
-- **One hand.** All 50 illustrations share the same palette, line weight, and level of detail.
+- **One hand.** All 50 theme scenes and 750 word clues share the same palette, line weight, and level of detail.
 - **Readable at a glance.** A child should recognize the theme in under a second.
 - **The letters are sacred.** No generated image may contain text, letters, numbers, signs, or writing of any kind.
 - **Gentle, never scary.** No sharp teeth, weapons, dark silhouettes, or photorealistic faces.
@@ -53,7 +53,23 @@ The chosen direction is **layered paper**, recorded as `VARIANTS[0]` in
 `scripts/generate_art.py`. The other two candidates stay in `candidates/` for
 reference but are not used for the batch.
 
-## 5. Buckets and UI
+## 5. Word clue icons
+
+Each bucket carries a 256×256 clue of its own word. The same icon appears above the word slots. Prompt:
+
+```
+Soft cut-paper storybook icon of {localized word} ({English gloss}), one clear
+centered subject, colorful layered paper cutout, warm cream background, rounded
+simple shapes, muted sage ochre and berry palette, gentle light, no text, no
+letters, no people, no extra objects
+```
+
+One icon per locale/level/word, 256×256 WebP, target under 30 KB. Every word has
+a reviewed English gloss in `scripts/word_glosses.json`; the bilingual prompt
+keeps the local word visible while giving the model an unambiguous subject.
+Abstract words get a concrete override (seasons, colors, feelings, actions).
+
+## 6. Buckets and UI
 
 - Buckets are hand-built SVG, not generated: one shared pail shape, handle, rim,
   and lid, in leaf, ochre, and berry. Closed = lid and ribbon; open = lid tipped
@@ -64,7 +80,7 @@ reference but are not used for the batch.
   `static/favicon.svg`.
 - No gradient or shadow may reduce glyph contrast.
 
-## 6. Motion
+## 7. Motion
 
 - Tile pick: lift 4 px and ring in ochre.
 - Correct: snap in with a small overshoot.

@@ -23,6 +23,7 @@ test('shows unlocked words and hides the rest', async ({ page }) => {
 	await expect(page.getByText('2 of 150 words')).toBeVisible();
 	await expect(page.locator('.chip')).toHaveCount(150);
 	await expect(page.locator('.chip.unlocked')).toHaveCount(2);
+	await expect(page.locator('.chip.unlocked img.thumb')).toHaveCount(2);
 
 	const cat = page.getByRole('button', { name: 'Hear CAT', exact: true });
 	await expect(cat).toHaveAttribute('data-audio', '/audio/words/en/l01-w1.mp3');

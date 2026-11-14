@@ -1,12 +1,30 @@
 import { describe, expect, it } from 'vitest';
 import type { PuzzleSpec } from './puzzle.js';
+import { gapCountForLevel } from '../content/rules.js';
 import { buildPuzzle, createPuzzleState, hintTarget, isComplete, placeTile } from './puzzle.js';
 
 describe('buildPuzzle', () => {
-	it('puts the only gap on the final letter at level 1', () => {
+	it('hides exactly one random letter at level 1', () => {
 		const spec = buildPuzzle({ level: 1, wordIndex: 0, word: 'CAT', locale: 'en' });
-		expect(spec.gaps).toEqual([2]);
+		expect(spec.gaps).toHaveLength(1);
+		expect(spec.gaps[0]).toBeGreaterThanOrEqual(0);
+		expect(spec.gaps[0]).toBeLessThan(3);
 		expect(spec.decoys).toEqual([]);
+	});
+
+	it('keeps the same gaps when the same word is rebuilt', () => {
+		const a = buildPuzzle({ level: 9, wordIndex: 2, word: 'TIGAIE', locale: 'ro' });
+		const b = buildPuzzle({ level: 9, wordIndex: 2, word: 'TIGAIE', locale: 'ro' });
+		expect(a.gaps).toEqual(b.gaps);
+	});
+
+	it('varies the gap positions across words', () => {
+		const layouts = new Set(
+			[0, 1, 2].map((wordIndex) =>
+				buildPuzzle({ level: 2, wordIndex, word: 'JUICE', locale: 'en' }).gaps.join(',')
+			)
+		);
+		expect(layouts.size).toBeGreaterThan(1);
 	});
 
 	it('is deterministic for the same level, word and locale', () => {
@@ -16,10 +34,12 @@ describe('buildPuzzle', () => {
 	});
 
 	it('never leaves fewer than two revealed letters', () => {
-		for (const word of ['CAT', 'BALL', 'HOUSE', 'FLOWER']) {
+		for (const word of ['CAT', 'BALL', 'HOUSE', 'FLOWER', 'ELEPHANT']) {
 			for (let level = 1; level <= 50; level++) {
 				const spec = buildPuzzle({ level, wordIndex: 0, word, locale: 'en' });
-				expect(spec.gaps.length).toBeLessThanOrEqual(Math.min(3, word.length - 2));
+				expect(spec.gaps.length).toBe(
+					Math.min(gapCountForLevel(level), Math.max(0, word.length - 2))
+				);
 				expect(new Set(spec.gaps).size).toBe(spec.gaps.length);
 				expect(spec.gaps.length).toBeGreaterThan(0);
 			}
@@ -34,28 +54,33 @@ describe('buildPuzzle', () => {
 		for (const decoy of late.decoys) expect(late.word).not.toContain(decoy);
 	});
 
-	it('uses the level band for the gap count', () => {
-		expect(buildPuzzle({ level: 10, wordIndex: 0, word: 'HOUSE', locale: 'en' }).gaps).toHaveLength(
-			1
-		);
-		expect(buildPuzzle({ level: 25, wordIndex: 0, word: 'HOUSE', locale: 'en' }).gaps).toHaveLength(
-			2
-		);
-		expect(buildPuzzle({ level: 45, wordIndex: 0, word: 'HOUSE', locale: 'en' }).gaps).toHaveLength(
-			3
-		);
-		expect(buildPuzzle({ level: 45, wordIndex: 0, word: 'BALL', locale: 'en' }).gaps).toHaveLength(
-			2
-		);
+	it('repeats the 1/2/3/4 gap ramp in every chapter', () => {
+		for (const [level, count] of [
+			[1, 1],
+			[4, 1],
+			[5, 2],
+			[7, 2],
+			[8, 3],
+			[9, 3],
+			[10, 4],
+			[11, 1],
+			[20, 4],
+			[50, 4]
+		] as const) {
+			expect(
+				buildPuzzle({ level, wordIndex: 0, word: 'ELEPHANT', locale: 'en' }).gaps
+			).toHaveLength(count);
+		}
 	});
 });
 
 describe('placeTile', () => {
 	it('places the correct letter and completes the word', () => {
 		const spec = buildPuzzle({ level: 1, wordIndex: 0, word: 'CAT', locale: 'en' });
+		const slot = spec.gaps[0];
 		const state = createPuzzleState(spec);
-		const tile = state.remaining.find((t) => t.letter === 'T')!;
-		const result = placeTile(state, tile.id, 2);
+		const tile = state.remaining.find((t) => t.letter === spec.word[slot])!;
+		const result = placeTile(state, tile.id, slot);
 		expect(result.outcome).toBe('placed');
 		expect(isComplete(result.state)).toBe(true);
 	});
@@ -96,10 +121,11 @@ describe('placeTile', () => {
 
 	it('does not place into a filled slot', () => {
 		const spec = buildPuzzle({ level: 1, wordIndex: 0, word: 'CAT', locale: 'en' });
+		const slot = spec.gaps[0];
 		const state = createPuzzleState(spec);
-		const t = state.remaining.find((tile) => tile.letter === 'T')!;
-		const placed = placeTile(state, t.id, 2).state;
-		const again = placeTile(placed, t.id, 2);
+		const t = state.remaining.find((tile) => tile.letter === spec.word[slot])!;
+		const placed = placeTile(state, t.id, slot).state;
+		const again = placeTile(placed, t.id, slot);
 		expect(again.outcome).toBe('wrong');
 	});
 });
@@ -109,7 +135,9 @@ describe('hintTarget', () => {
 		const spec = buildPuzzle({ level: 1, wordIndex: 0, word: 'CAT', locale: 'en' });
 		const state = createPuzzleState(spec);
 		const target = hintTarget(state);
-		expect(target?.slot).toBe(2);
-		expect(state.remaining.find((t) => t.id === target?.tileId)?.letter).toBe('T');
+		expect(target?.slot).toBe(spec.gaps[0]);
+		expect(state.remaining.find((t) => t.id === target?.tileId)?.letter).toBe(
+			spec.word[spec.gaps[0]]
+		);
 	});
 });
