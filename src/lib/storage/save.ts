@@ -25,11 +25,18 @@ export interface LocaleProgress {
 	metrics: LocaleMetrics;
 }
 
+export interface VolumeSettings {
+	music: number;
+	sfx: number;
+	voice: number;
+}
+
 export interface SaveSettings {
 	muted: boolean;
 	coachDone: boolean;
 	installHintDismissed: boolean;
 	mode: GameMode;
+	volumes: VolumeSettings;
 }
 
 export interface SaveData {
@@ -82,7 +89,13 @@ export function defaultLocaleProgress(): LocaleProgress {
 export function defaultSave(): SaveData {
 	return {
 		version: 1,
-		settings: { muted: false, coachDone: false, installHintDismissed: false, mode: 'easy' },
+		settings: {
+			muted: false,
+			coachDone: false,
+			installHintDismissed: false,
+			mode: 'easy',
+			volumes: { music: 1, sfx: 1, voice: 1 }
+		},
 		locales: Object.fromEntries(
 			LOCALES.map((locale) => [locale, defaultLocaleProgress()])
 		) as Record<Locale, LocaleProgress>
@@ -231,6 +244,14 @@ export function loadSave(storage?: KeyValueStorage | null): SaveData {
 			parsed.settings.mode === 'hard'
 		) {
 			data.settings.mode = parsed.settings.mode;
+		}
+		if (isPlainObject(parsed.settings.volumes)) {
+			for (const channel of ['music', 'sfx', 'voice'] as const) {
+				const value = parsed.settings.volumes[channel];
+				if (typeof value === 'number' && Number.isFinite(value)) {
+					data.settings.volumes[channel] = clamp(value, 0, 1);
+				}
+			}
 		}
 	}
 	if (isPlainObject(parsed.locales)) {

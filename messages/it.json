@@ -72,5 +72,8 @@
 	"accuracy": "Precisione",
 	"per_chapter": "Per capitolo",
 	"chapter_n": "Capitolo {n}",
-	"no_progress_yet": "Nessuna parola completata."
+	"no_progress_yet": "Nessuna parola completata.",
+	"music": "Musica",
+	"sfx": "Effetti sonori",
+	"voice": "Voce"
 }

@@ -72,5 +72,8 @@
 	"accuracy": "Precizie",
 	"per_chapter": "Pe capitol",
 	"chapter_n": "Capitolul {n}",
-	"no_progress_yet": "Niciun cuvânt completat încă."
+	"no_progress_yet": "Niciun cuvânt completat încă.",
+	"music": "Muzică",
+	"sfx": "Efecte sonore",
+	"voice": "Voce"
 }

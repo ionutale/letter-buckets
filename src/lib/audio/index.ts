@@ -8,10 +8,21 @@ export type SfxName =
 	| 'level-complete'
 	| 'coin';
 
+export type VolumeChannel = 'music' | 'sfx' | 'voice';
+
+export interface AudioVolumes {
+	music: number;
+	sfx: number;
+	voice: number;
+}
+
 export interface AudioController {
 	readonly muted: boolean;
+	readonly volumes: AudioVolumes;
 	unlock(): void;
 	setMuted(muted: boolean): void;
+	setVolume(channel: VolumeChannel, value: number): void;
+	setVolumes(volumes: Partial<AudioVolumes>): void;
 	playWord(locale: string, level: number, index: number): void;
 	preloadLevel(locale: string, level: number): void;
 	playSfx(name: SfxName): void;
@@ -33,6 +44,7 @@ export function createAudioController(options: AudioOptions = {}): AudioControll
 	const make = options.createAudio ?? (() => new Audio());
 	let unlocked = false;
 	let muted = false;
+	let volumes: AudioVolumes = { music: 1, sfx: 1, voice: 1 };
 	let word: HTMLAudioElement | null = null;
 	let sfx: HTMLAudioElement | null = null;
 	let music: HTMLAudioElement | null = null;
@@ -51,22 +63,33 @@ export function createAudioController(options: AudioOptions = {}): AudioControll
 		if (!muted) playMusic();
 	}
 
+	function clampVolume(value: number): number {
+		if (!Number.isFinite(value)) return 1;
+		return Math.min(1, Math.max(0, value));
+	}
+
+	function syncMusicVolume(): void {
+		if (music && !muted) {
+			music.volume = (duckTimer === null ? MUSIC_VOLUME : DUCKED_VOLUME) * volumes.music;
+		}
+	}
+
 	function restoreMusic(): void {
 		if (duckTimer !== null && typeof window !== 'undefined') {
 			window.clearTimeout(duckTimer);
 			duckTimer = null;
 		}
-		if (music && !muted) music.volume = MUSIC_VOLUME;
+		syncMusicVolume();
 	}
 
 	function duckMusic(): void {
 		if (!music || muted) return;
-		music.volume = DUCKED_VOLUME;
+		music.volume = DUCKED_VOLUME * volumes.music;
 		if (typeof window === 'undefined') return;
 		if (duckTimer !== null) window.clearTimeout(duckTimer);
 		duckTimer = window.setTimeout(() => {
 			duckTimer = null;
-			if (music && !muted) music.volume = MUSIC_VOLUME;
+			syncMusicVolume();
 		}, 1200);
 	}
 
@@ -100,7 +123,7 @@ export function createAudioController(options: AudioOptions = {}): AudioControll
 		duckMusic();
 		const audio = make();
 		audio.src = wordAudioPath(locale, level, index);
-		audio.volume = 0.9;
+		audio.volume = 0.9 * volumes.voice;
 		word = audio;
 		playQuietly(audio);
 	}
@@ -123,7 +146,7 @@ export function createAudioController(options: AudioOptions = {}): AudioControll
 		duckMusic();
 		const audio = make();
 		audio.src = `/audio/sfx/${name}.mp3`;
-		audio.volume = 0.55;
+		audio.volume = 0.55 * volumes.sfx;
 		sfx = audio;
 		audio.addEventListener('ended', restoreMusic);
 		playQuietly(audio);
@@ -135,17 +158,36 @@ export function createAudioController(options: AudioOptions = {}): AudioControll
 			music = make();
 			music.src = '/audio/music/loop.mp3';
 			music.loop = true;
-			music.volume = MUSIC_VOLUME;
+			music.volume = MUSIC_VOLUME * volumes.music;
 		}
 		if (music.paused) playQuietly(music);
+	}
+
+	function setVolume(channel: VolumeChannel, value: number): void {
+		volumes = { ...volumes, [channel]: clampVolume(value) };
+		if (channel === 'music') syncMusicVolume();
+	}
+
+	function setVolumes(next: Partial<AudioVolumes>): void {
+		volumes = {
+			music: clampVolume(next.music ?? volumes.music),
+			sfx: clampVolume(next.sfx ?? volumes.sfx),
+			voice: clampVolume(next.voice ?? volumes.voice)
+		};
+		syncMusicVolume();
 	}
 
 	return {
 		get muted() {
 			return muted;
 		},
+		get volumes() {
+			return volumes;
+		},
 		unlock,
 		setMuted,
+		setVolume,
+		setVolumes,
 		playWord,
 		preloadLevel,
 		playSfx,

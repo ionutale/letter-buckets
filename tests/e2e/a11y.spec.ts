@@ -82,6 +82,12 @@ test('a solved word bursts confetti unless reduced motion is on', async ({ page 
 		await slot.click();
 	}
 	await expect(page.locator('.done-title')).toBeVisible();
+	await expect(page.locator('.word-row.complete')).toBeVisible();
+	const letterAnimation = await page
+		.locator('.word-row.complete > *')
+		.first()
+		.evaluate((element) => getComputedStyle(element).animationName);
+	expect(letterAnimation).toContain('letter-settle');
 
 	const burst = page.locator('.confetti span').first();
 	const animation = await burst.evaluate((element) => getComputedStyle(element).animationName);

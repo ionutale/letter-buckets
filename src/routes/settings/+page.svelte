@@ -11,7 +11,8 @@
 		persistSave,
 		resetLocale,
 		type GameMode,
-		type SaveData
+		type SaveData,
+		type VolumeSettings
 	} from '#lib/storage/save.js';
 
 	const LOCALE_NAMES: Record<Locale, string> = {
@@ -38,6 +39,7 @@
 		locale = getLocale() as Locale;
 		muted = data.settings.muted;
 		mode = data.settings.mode;
+		audio.setVolumes(data.settings.volumes);
 		audio.setMuted(muted);
 	});
 
@@ -70,6 +72,20 @@
 		audio.playSfx('ui-tap');
 		mode = next;
 		data.settings.mode = next;
+		persist();
+	}
+
+	const volumes = [
+		{ id: 'music' as const, label: m.music },
+		{ id: 'sfx' as const, label: m.sfx },
+		{ id: 'voice' as const, label: m.voice }
+	];
+
+	function setVolume(channel: keyof VolumeSettings, percent: number): void {
+		if (!data) return;
+		const value = Math.min(100, Math.max(0, percent)) / 100;
+		data.settings.volumes[channel] = value;
+		audio.setVolume(channel, value);
 		persist();
 	}
 
@@ -191,6 +207,26 @@
 			<span class="dot" class:on={!muted}></span>
 			{muted ? m.off() : m.on()}
 		</button>
+		<div class="volumes">
+			{#each volumes as item (item.id)}
+				{@const percent = Math.round((data?.settings.volumes[item.id] ?? 1) * 100)}
+				<label class="volume" for={`volume-${item.id}`}>
+					<span>{item.label()}</span>
+					<input
+						id={`volume-${item.id}`}
+						type="range"
+						min="0"
+						max="100"
+						step="1"
+						value={percent}
+						aria-label={item.label()}
+						oninput={(event) =>
+							setVolume(item.id, Number((event.currentTarget as HTMLInputElement).value))}
+					/>
+					<output for={`volume-${item.id}`}>{percent}%</output>
+				</label>
+			{/each}
+		</div>
 	</section>
 
 	<section class="card grown" aria-label={m.for_grownups()}>
@@ -323,6 +359,61 @@
 	}
 	.dot.on {
 		background: var(--lb-leaf);
+	}
+	.volumes {
+		display: grid;
+		gap: var(--lb-space-1);
+		margin-top: var(--lb-space-2);
+	}
+	.volume {
+		display: grid;
+		grid-template-columns: 88px minmax(0, 1fr) 46px;
+		align-items: center;
+		gap: var(--lb-space-2);
+		min-height: 44px;
+		font-size: var(--lb-text-sm);
+		font-weight: 700;
+	}
+	.volume input[type='range'] {
+		width: 100%;
+		height: 44px;
+		margin: 0;
+		appearance: none;
+		background: transparent;
+		accent-color: var(--lb-ochre-deep);
+	}
+	.volume input[type='range']::-webkit-slider-runnable-track {
+		height: 6px;
+		border-radius: 3px;
+		background: var(--lb-border);
+	}
+	.volume input[type='range']::-webkit-slider-thumb {
+		width: 22px;
+		height: 22px;
+		margin-top: -8px;
+		appearance: none;
+		border-radius: 50%;
+		background: var(--lb-ochre-deep);
+		box-shadow: 0 2px 0 #6f360b;
+	}
+	.volume input[type='range']::-moz-range-track {
+		height: 6px;
+		border-radius: 3px;
+		background: var(--lb-border);
+	}
+	.volume input[type='range']::-moz-range-thumb {
+		width: 22px;
+		height: 22px;
+		border: 0;
+		border-radius: 50%;
+		background: var(--lb-ochre-deep);
+		box-shadow: 0 2px 0 #6f360b;
+	}
+	.volume output {
+		color: var(--lb-ink-soft);
+		font-size: var(--lb-text-xs);
+		font-variant-numeric: tabular-nums;
+		text-align: right;
 	}
 	.hint,
 	.note,

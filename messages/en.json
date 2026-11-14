@@ -72,5 +72,8 @@
 	"accuracy": "Accuracy",
 	"per_chapter": "By chapter",
 	"chapter_n": "Chapter {n}",
-	"no_progress_yet": "No words completed yet."
+	"no_progress_yet": "No words completed yet.",
+	"music": "Music",
+	"sfx": "Sound effects",
+	"voice": "Voice"
 }

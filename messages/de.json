@@ -72,5 +72,8 @@
 	"accuracy": "Genauigkeit",
 	"per_chapter": "Nach Kapitel",
 	"chapter_n": "Kapitel {n}",
-	"no_progress_yet": "Noch keine Wörter geschafft."
+	"no_progress_yet": "Noch keine Wörter geschafft.",
+	"music": "Musik",
+	"sfx": "Effekte",
+	"voice": "Stimme"
 }

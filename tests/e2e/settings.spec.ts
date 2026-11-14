@@ -88,14 +88,14 @@ test('a three-second hold resets only the current language', async ({ page }) =>
 	await page.mouse.down();
 	await page.waitForTimeout(600);
 	await page.mouse.up();
-	await expect(page.getByRole('status')).toHaveCount(0);
+	await expect(page.locator('.toast')).toHaveCount(0);
 
 	await page.mouse.move(centerX, centerY);
 	await page.mouse.down();
 	await page.waitForTimeout(3200);
 	await page.mouse.up();
 
-	await expect(page.getByRole('status')).toHaveText('Progress reset.');
+	await expect(page.locator('.toast')).toHaveText('Progress reset.');
 
 	await page.goto('/en/');
 	await expect(page.locator('a.play')).toHaveAttribute('href', '/en/levels/1');
@@ -177,4 +177,21 @@ test('hard mode locks the hint control at zero but keeps play and nudges working
 	await page.locator('button.bucket').nth(2).click();
 	await expect(page.locator('button.icon.hint')).toHaveAttribute('aria-label', 'Hint (0)');
 	await expect(page.locator('button.icon.hint')).toBeDisabled();
+});
+
+test('adjusts and persists music, effects and voice volumes', async ({ page }) => {
+	await seedSave(page, { locale: 'en' });
+	await page.goto('/en/settings');
+
+	await expect(page.locator('input[type="range"]')).toHaveCount(3);
+	const music = page.locator('#volume-music');
+	await music.evaluate((element) => {
+		const input = element as HTMLInputElement;
+		input.value = '40';
+		input.dispatchEvent(new Event('input', { bubbles: true }));
+	});
+	await expect(page.locator('output[for="volume-music"]')).toHaveText('40%');
+
+	await page.reload();
+	await expect(page.locator('#volume-music')).toHaveValue('40');
 });

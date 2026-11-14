@@ -98,3 +98,44 @@ describe('audio controller', () => {
 		]);
 	});
 });
+
+describe('channel volumes', () => {
+	it('scales music, effects and voice independently', () => {
+		class FakeAudio {
+			src = '';
+			volume = 1;
+			loop = false;
+			preload = '';
+			paused = true;
+			play = vi.fn(async () => {
+				this.paused = false;
+			});
+			pause = vi.fn(() => {
+				this.paused = true;
+			});
+			addEventListener = vi.fn();
+		}
+		const created: InstanceType<typeof FakeAudio>[] = [];
+		const controller = createAudioController({
+			createAudio: () => {
+				const audio = new FakeAudio();
+				created.push(audio);
+				return audio as unknown as HTMLAudioElement;
+			}
+		});
+
+		controller.setVolumes({ music: 0.5, sfx: 0.5, voice: 0.5 });
+		controller.unlock();
+		expect(created[0].volume).toBeCloseTo(0.08);
+
+		controller.playWord('en', 1, 0);
+		expect(created.at(-1)!.volume).toBeCloseTo(0.45);
+
+		controller.playSfx('tile-pick');
+		expect(created.at(-1)!.volume).toBeCloseTo(0.275);
+
+		controller.setVolume('music', 0);
+		expect(created[0].volume).toBe(0);
+		expect(controller.volumes).toEqual({ music: 0, sfx: 0.5, voice: 0.5 });
+	});
+});

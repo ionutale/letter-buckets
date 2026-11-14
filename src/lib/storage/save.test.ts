@@ -420,3 +420,15 @@ describe('hint budgets', () => {
 		expect(loadSave(storage(medium)).settings.mode).toBe('medium');
 	});
 });
+
+describe('sound volumes', () => {
+	it('defaults to full volume and sanitises stored values', () => {
+		expect(defaultSave().settings.volumes).toEqual({ music: 1, sfx: 1, voice: 1 });
+		const raw = JSON.stringify({
+			version: 1,
+			settings: { volumes: { music: 0.4, sfx: -3, voice: 2 } }
+		});
+		const data = loadSave(storage(raw));
+		expect(data.settings.volumes).toEqual({ music: 0.4, sfx: 0, voice: 1 });
+	});
+});

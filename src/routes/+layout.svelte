@@ -18,7 +18,9 @@
 			// Locale resolution failed: keep the app.html default.
 		}
 		try {
-			audio.setMuted(loadSave(localStorage).settings.muted);
+			const settings = loadSave(localStorage).settings;
+			audio.setVolumes(settings.volumes);
+			audio.setMuted(settings.muted);
 		} catch {
 			// Private mode: the game still works, unmuted, for this session.
 		}

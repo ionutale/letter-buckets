@@ -269,7 +269,7 @@
 			>
 		</header>
 
-		<div class="word-area">
+		<div class="word-area" class:complete>
 			{#if clue && !clueBroken}
 				<img
 					class="clue"
@@ -305,7 +305,11 @@
 				>
 				<span>{m.hear_word()}</span>
 			</button>
-			<div class="word-row" style="--tile-size: clamp(28px, calc((100vw - 68px) / 8), 56px)">
+			<div
+				class="word-row"
+				class:complete
+				style="--tile-size: clamp(28px, calc((100vw - 68px) / 8), 56px)"
+			>
 				{#each [...word.spec.word] as letter, index}
 					{#if word.spec.gaps.includes(index)}
 						<Slot
@@ -450,11 +454,79 @@
 		height: 20px;
 	}
 	.word-row {
+		position: relative;
 		display: flex;
 		justify-content: center;
 		align-items: center;
 		gap: clamp(4px, 1.2vw, 8px);
 		padding-block: var(--lb-space-4);
+	}
+	.word-row.complete {
+		animation: row-glow 760ms var(--lb-ease) both;
+	}
+	.word-row.complete::after {
+		position: absolute;
+		bottom: 8px;
+		left: 50%;
+		width: min(80%, 340px);
+		height: 4px;
+		border-radius: 2px;
+		background: var(--lb-gold);
+		content: '';
+		transform: translateX(-50%) scaleX(0);
+		transform-origin: 50% 50%;
+		animation: underline-draw 480ms var(--lb-ease) 260ms forwards;
+	}
+	.word-row.complete :global(> *) {
+		position: relative;
+		z-index: 1;
+		animation: letter-settle 560ms var(--lb-ease-overshoot) both;
+	}
+	.word-row.complete :global(> :nth-child(2)) {
+		animation-delay: 35ms;
+	}
+	.word-row.complete :global(> :nth-child(3)) {
+		animation-delay: 70ms;
+	}
+	.word-row.complete :global(> :nth-child(4)) {
+		animation-delay: 105ms;
+	}
+	.word-row.complete :global(> :nth-child(5)) {
+		animation-delay: 140ms;
+	}
+	.word-row.complete :global(> :nth-child(6)) {
+		animation-delay: 175ms;
+	}
+	.word-row.complete :global(> :nth-child(7)) {
+		animation-delay: 210ms;
+	}
+	.word-row.complete :global(> :nth-child(8)) {
+		animation-delay: 245ms;
+	}
+	@keyframes row-glow {
+		0%,
+		100% {
+			filter: drop-shadow(0 0 0 transparent);
+		}
+		45% {
+			filter: drop-shadow(0 0 10px color-mix(in srgb, var(--lb-gold) 60%, transparent));
+		}
+	}
+	@keyframes underline-draw {
+		to {
+			transform: translateX(-50%) scaleX(1);
+		}
+	}
+	@keyframes letter-settle {
+		0% {
+			transform: translateY(9px) scale(0.92);
+		}
+		55% {
+			transform: translateY(-6px) scale(1.08);
+		}
+		100% {
+			transform: translateY(0) scale(1);
+		}
 	}
 	.tray,
 	.done-card {
@@ -472,6 +544,7 @@
 	.done-card {
 		position: relative;
 		display: grid;
+		animation: done-in 420ms var(--lb-ease-overshoot) 120ms both;
 		justify-items: center;
 		gap: var(--lb-space-4);
 		padding: var(--lb-space-5);
@@ -500,6 +573,12 @@
 	.confetti span:nth-child(3n + 1) {
 		background: var(--lb-leaf);
 	}
+	@keyframes done-in {
+		from {
+			opacity: 0;
+			transform: translateY(10px) scale(0.97);
+		}
+	}
 	@keyframes confetti {
 		from {
 			opacity: 0;
@@ -516,6 +595,15 @@
 	@media (prefers-reduced-motion: reduce) {
 		.confetti {
 			display: none;
+		}
+		.word-row.complete,
+		.word-row.complete :global(> *),
+		.done-card {
+			animation-delay: 0ms !important;
+		}
+		.word-row.complete::after {
+			transform: translateX(-50%) scaleX(1);
+			animation: none;
 		}
 	}
 	.done-title {
