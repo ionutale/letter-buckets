@@ -10,6 +10,7 @@
 	"scripts": {
 		"dev": "vite dev",
 		"build": "vite build",
+		"postbuild": "node scripts/spa-fallback.mjs",
 		"preview": "node scripts/serve-preview.mjs",
 		"preview:vite": "vite preview",
 		"prepare": "paraglide-js compile --project ./project.inlang --outdir ./src/lib/paraglide --emit-ts-declarations && svelte-kit sync",

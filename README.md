@@ -8,6 +8,9 @@ Each level is a place with **three buckets**. Tap a bucket to open its word: som
 
 ## Play
 
+- Live: <https://letter-buckets.pages.dev>
+- Source: <https://github.com/ionutale/letter-buckets>
+
 ```bash
 pnpm install
 pnpm dev
@@ -27,6 +30,14 @@ pnpm test:visual  # macOS visual baselines, Chromium only
 ```
 
 `pnpm preview` runs `scripts/serve-preview.mjs` so client-side routes resolve to `200.html`. Vercel does the same through `vercel.json`.
+
+Cloudflare Pages deploys `build/` directly:
+
+```bash
+pnpm dlx wrangler@latest pages deploy build --project-name letter-buckets --branch main
+```
+
+`pnpm build` also runs `scripts/spa-fallback.mjs`, which copies the `200.html` shell to `index.html` — Pages serves `index.html` for unknown paths, so deep links and locale routes work without a redirect rule.
 
 ## Languages
 
