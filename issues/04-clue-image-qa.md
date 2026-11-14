@@ -4,10 +4,10 @@
 
 **Blocked by:** None (can start immediately).
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] All five locale contact sheets are reviewed after the last regeneration.
-- [ ] No image contains letters or text.
-- [ ] Plural words show multiples; people words show people; platform/station words are not carriages; abstract words use a concrete visual.
-- [ ] Each correction is expressed as a gloss override and the affected image is regenerated.
-- [ ] The word-art test and asset validation pass for all 750 images.
+- [x] All five locale contact sheets are reviewed after the last regeneration.
+- [x] No image contains letters or text.
+- [x] Plural words show multiples; people words show people; platform/station words are not carriages; abstract words use a concrete visual.
+- [x] Each correction is expressed as a gloss override and the affected image is regenerated.
+- [x] The word-art test and asset validation pass for all 750 images.

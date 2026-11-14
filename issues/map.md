@@ -10,7 +10,7 @@ repository.
 
 - [01 — Interaction polish acceptance](01-interaction-polish-acceptance.md)
 - [02 — Progress metrics](02-progress-metrics.md)
-- [03 — Game modes and hint budgets](03-game-modes-and-hint-budgets.md) (blocked by 02)
+- [03 — Game modes and hint budgets](03-game-modes-and-hint-budgets.md)
 - [04 — Clue-image QA](04-clue-image-qa.md)
 - [05 — Release validation](05-release-validation.md) (blocked by 01–04)
 - [06 — Publish to Cloudflare and a public repo](06-publish.md) (blocked by 05)

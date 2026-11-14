@@ -4,12 +4,12 @@
 
 **Blocked by:** None (can start immediately).
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] The session reports every placement attempt and whether a completed word was first-try.
-- [ ] The local save stores totals and per-chapter metrics additively, and sanitises old or corrupt saves without losing progress.
-- [ ] Replaying a completed word does not double-count word totals; attempts still count.
-- [ ] The Progressi view shows words completed, first-try words, words with mistakes, correct letters, wrong letters, accuracy and a five-chapter breakdown.
-- [ ] The view has an empty state and is reachable from the home screen.
-- [ ] Unit tests cover metrics accounting and an E2E test proves the view after a mistake.
-- [ ] All new copy exists in all five locales.
+- [x] The session reports every placement attempt and whether a completed word was first-try.
+- [x] The local save stores totals and per-chapter metrics additively, and sanitises old or corrupt saves without losing progress.
+- [x] Replaying a completed word does not double-count word totals; attempts still count.
+- [x] The Progressi view shows words completed, first-try words, words with mistakes, correct letters, wrong letters, accuracy and a five-chapter breakdown.
+- [x] The view has an empty state and is reachable from the home screen.
+- [x] Unit tests cover metrics accounting and an E2E test proves the view after a mistake.
+- [x] All new copy exists in all five locales.
