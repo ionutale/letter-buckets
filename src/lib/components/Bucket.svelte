@@ -27,7 +27,7 @@
 	class="bucket"
 	data-state={status}
 	aria-label={label}
-	style={`--bucket-color:${color};--bucket-shadow:color-mix(in srgb, ${color} 55%, #000)`}
+	style={`--bucket-color:${color};--bucket-shadow:color-mix(in srgb, ${color} 55%, #000);--i:${index - 1}`}
 	{onclick}
 >
 	<span class="number" aria-hidden="true">{index}</span>
@@ -50,11 +50,17 @@
 				<path class="lid tipped" d="M100 24h18l-6 18h-18z" />
 				<circle class="glow" cx="60" cy="76" r="22" />
 			{:else}
-				<path class="lid off" d="M104 16l14 8-10 16-14-8z" />
-				<path class="star" d="M60 54l5 12 13 1-10 9 3 13-11-7-11 7 3-13-10-9 13-1z" />
+				<path
+					class="check"
+					d="M42 74l12 12 24-28"
+					fill="none"
+					stroke-width="9"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+				/>
 			{/if}
 		</svg>
-		{#if image && !clueBroken}
+		{#if image && !clueBroken && status !== 'done'}
 			<img
 				class="clue"
 				src={image}
@@ -65,6 +71,20 @@
 			/>
 		{/if}
 	</span>
+	{#if status === 'done'}
+		<span class="done-badge" aria-hidden="true">
+			<svg viewBox="0 0 24 24">
+				<path
+					d="M5 12.5l4.5 4.5L19 7.5"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="3"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+				/>
+			</svg>
+		</span>
+	{/if}
 	{#if status === 'done' && word}
 		<span class="word">{word}</span>
 	{/if}
@@ -85,6 +105,30 @@
 		transition:
 			transform var(--lb-t-med) var(--lb-ease),
 			background var(--lb-t-med) var(--lb-ease);
+		animation: arrive 480ms var(--lb-ease-overshoot) both;
+		animation-delay: calc(var(--i) * 80ms);
+	}
+	.bucket[data-state='closed'] .pail {
+		animation: float 5s ease-in-out 1.2s infinite;
+	}
+	@keyframes arrive {
+		from {
+			opacity: 0;
+			transform: translateY(10px) scale(0.96);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0) scale(1);
+		}
+	}
+	@keyframes float {
+		0%,
+		100% {
+			transform: translateY(0);
+		}
+		50% {
+			transform: translateY(-3px);
+		}
 	}
 	.bucket:active {
 		transform: scale(0.97);
@@ -136,10 +180,46 @@
 	.glow {
 		fill: color-mix(in srgb, var(--lb-gold) 55%, transparent);
 	}
-	.star {
-		fill: var(--lb-gold);
-		stroke: var(--lb-ochre-dark);
-		stroke-width: 2;
+	.check {
+		stroke: var(--lb-gold);
+		stroke-dasharray: 52;
+		stroke-dashoffset: 52;
+		animation: draw-check 420ms var(--lb-ease) 120ms forwards;
+	}
+	@keyframes draw-check {
+		to {
+			stroke-dashoffset: 0;
+		}
+	}
+	.done-badge {
+		position: absolute;
+		top: var(--lb-space-2);
+		right: var(--lb-space-2);
+		display: grid;
+		place-items: center;
+		width: 30px;
+		height: 30px;
+		border-radius: 50%;
+		background: var(--lb-leaf-dark);
+		color: #fff;
+		box-shadow: var(--lb-shadow-1);
+	}
+	.done-badge svg {
+		width: 18px;
+		height: 18px;
+	}
+	.done-badge {
+		animation: badge-pop 420ms var(--lb-ease-overshoot) both;
+	}
+	@keyframes badge-pop {
+		from {
+			opacity: 0;
+			transform: scale(0.6);
+		}
+		to {
+			opacity: 1;
+			transform: scale(1);
+		}
 	}
 	.number {
 		position: absolute;
@@ -157,6 +237,7 @@
 	}
 	.word {
 		max-width: 100%;
+		animation: word-in 360ms var(--lb-ease-overshoot) 120ms both;
 		overflow-wrap: anywhere;
 		font-size: var(--lb-text-sm);
 		font-weight: 800;
@@ -165,5 +246,19 @@
 	}
 	.bucket[data-state='done'] {
 		background: color-mix(in srgb, var(--bucket-color) 20%, var(--lb-paper));
+		box-shadow: inset 0 0 0 3px color-mix(in srgb, var(--bucket-color) 60%, transparent);
+	}
+	.bucket[data-state='done'] .word {
+		color: var(--lb-leaf-dark);
+	}
+	@keyframes word-in {
+		from {
+			opacity: 0;
+			transform: translateY(6px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
 	}
 </style>

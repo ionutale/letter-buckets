@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { seedSave } from './helpers.js';
+import { seedSave, solveOpenWord } from './helpers.js';
 
 test('opens a bucket into a word panel', async ({ page }) => {
 	await page.goto('/en/levels/1');
@@ -40,4 +40,18 @@ test('fits an eight-letter word without overflow at 320px', async ({ page }) => 
 	expect(box).not.toBeNull();
 	expect(box!.x).toBeGreaterThanOrEqual(0);
 	expect(box!.x + box!.width).toBeLessThanOrEqual(320);
+});
+
+test('a solved bucket becomes an empty checked bucket', async ({ page }) => {
+	await seedSave(page);
+	await page.goto('/en/levels/1');
+
+	const first = page.locator('button.bucket').first();
+	await first.click();
+	await solveOpenWord(page);
+
+	await expect(first.locator('.done-badge')).toBeVisible();
+	await expect(first.locator('img.clue')).toHaveCount(0);
+	await expect(first.locator('.word')).toHaveText('CAT');
+	await expect(page.locator('button.bucket').nth(1).locator('img.clue')).toHaveCount(1);
 });

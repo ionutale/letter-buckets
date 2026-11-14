@@ -271,6 +271,30 @@
 					onerror={() => (clueBroken = true)}
 				/>
 			{/if}
+			<button
+				type="button"
+				class="hear"
+				onclick={() =>
+					session.openIndex !== null &&
+					audio.playWord(session.locale, session.level, session.openIndex)}
+			>
+				<svg class="glyph" viewBox="0 0 24 24" aria-hidden="true"
+					><path
+						d="M4 9h4l5-4v14l-5-4H4z"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linejoin="round"
+					/><path
+						d="M16 8a5 5 0 0 1 0 8"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+					/></svg
+				>
+				<span>{m.hear_word()}</span>
+			</button>
 			<div class="word-row" style="--tile-size: clamp(28px, calc((100vw - 68px) / 8), 56px)">
 				{#each [...word.spec.word] as letter, index}
 					{#if word.spec.gaps.includes(index)}
@@ -290,6 +314,11 @@
 
 		{#if complete}
 			<div class="done-card">
+				<div class="confetti" aria-hidden="true">
+					{#each Array(10) as _, index}
+						<span style={`--i:${index}`}></span>
+					{/each}
+				</div>
 				<p class="done-title">{m.word_complete()}</p>
 				<button type="button" class="back" onclick={close}>{m.back_to_buckets()}</button>
 			</div>
@@ -375,6 +404,23 @@
 		background: var(--lb-paper-2);
 		box-shadow: var(--lb-shadow-1);
 	}
+	.hear {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: var(--lb-space-2);
+		min-height: 44px;
+		padding: 0 var(--lb-space-4);
+		border-radius: var(--lb-radius-pill);
+		background: var(--lb-paper-2);
+		box-shadow: inset 0 0 0 2px var(--lb-border);
+		font-weight: 800;
+		color: var(--lb-ink);
+	}
+	.hear .glyph {
+		width: 20px;
+		height: 20px;
+	}
 	.word-row {
 		display: flex;
 		justify-content: center;
@@ -396,12 +442,48 @@
 		background: color-mix(in srgb, var(--lb-paper-2) 70%, transparent);
 	}
 	.done-card {
+		position: relative;
 		display: grid;
 		justify-items: center;
 		gap: var(--lb-space-4);
 		padding: var(--lb-space-5);
 		border-radius: var(--lb-radius);
 		background: color-mix(in srgb, var(--lb-leaf) 14%, var(--lb-paper));
+	}
+	.confetti {
+		position: absolute;
+		inset: 50% auto auto 50%;
+		width: 0;
+		height: 0;
+		pointer-events: none;
+	}
+	.confetti span {
+		position: absolute;
+		width: 8px;
+		height: 12px;
+		border-radius: 2px;
+		background: var(--lb-gold);
+		animation: confetti 620ms var(--lb-ease) both;
+		transform: rotate(calc(var(--i) * 36deg)) translateY(0);
+	}
+	.confetti span:nth-child(3n) {
+		background: var(--lb-berry);
+	}
+	.confetti span:nth-child(3n + 1) {
+		background: var(--lb-leaf);
+	}
+	@keyframes confetti {
+		from {
+			opacity: 0;
+			transform: rotate(calc(var(--i) * 36deg)) translateY(0) scale(0.6);
+		}
+		30% {
+			opacity: 1;
+		}
+		to {
+			opacity: 0;
+			transform: rotate(calc(var(--i) * 36deg)) translateY(-48px) scale(1);
+		}
 	}
 	.done-title {
 		margin: 0;

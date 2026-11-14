@@ -21,6 +21,7 @@ const PIPER_VOICE =
 	process.env.PIPER_VOICE ?? resolve(homedir(), 'piper-voices/ro_RO-mihai-medium.onnx');
 const PIPER_VOICE_RU =
 	process.env.PIPER_VOICE_RU ?? resolve(homedir(), 'piper-voices/ru_RU-irina-medium.onnx');
+const PIPER_LENGTH_SCALE = process.env.PIPER_LENGTH_SCALE ?? '1.2';
 const CONTENT = JSON.parse(readFileSync('scripts/content.json', 'utf8'));
 const TMP = resolve('candidates/audio-tmp');
 mkdirSync(TMP, { recursive: true });
@@ -30,6 +31,16 @@ const LANGUAGES = {
 	it: 'Italian',
 	de: 'German',
 	ru: 'Russian'
+};
+
+// Qwen follows the accent in the instruction. Piper voices are fixed native
+// models, so they are configured by voice and slowed with --length_scale.
+const VOICE_STYLE = {
+	en: 'a soft Southern English',
+	it: 'a gentle Tuscan',
+	de: 'a gentle Bavarian',
+	ru: 'a soft Moscow',
+	ro: 'a gentle Transylvanian'
 };
 
 const pad = (value) => String(value).padStart(2, '0');
@@ -79,10 +90,11 @@ function convert(input, output, { music = false, sfx = false } = {}) {
 
 function piperWav(text, voice) {
 	const output = resolve(TMP, `piper-${Date.now()}-${Math.random().toString(16).slice(2)}.wav`);
-	const result = spawnSync(PIPER_BIN, ['--model', voice, '--output_file', output], {
-		input: text,
-		encoding: 'utf8'
-	});
+	const result = spawnSync(
+		PIPER_BIN,
+		['--model', voice, '--length_scale', PIPER_LENGTH_SCALE, '--output_file', output],
+		{ input: text, encoding: 'utf8' }
+	);
 	if (result.status !== 0 || !existsSync(output)) {
 		throw new Error(`Piper failed for ${voice}. Install piper-tts and the voice model.`);
 	}
@@ -92,12 +104,13 @@ function piperWav(text, voice) {
 async function qwenWav(text, locale) {
 	const language = LANGUAGES[locale];
 	if (!language) throw new Error(`No Qwen language for ${locale}`);
+	const style = VOICE_STYLE[locale];
 	const result = await studio('/voice', {
 		text,
 		voice: 'serena',
-		instruct: 'warm, gentle, clear, unhurried, for a young child',
+		instruct: `Speak slowly and clearly in ${language} with ${style} accent, warm and unhurried, for a young child`,
 		language,
-		seconds: 3
+		seconds: 4
 	});
 	const data = await take(result.url);
 	const output = resolve(TMP, `qwen-${Date.now()}-${Math.random().toString(16).slice(2)}.wav`);
