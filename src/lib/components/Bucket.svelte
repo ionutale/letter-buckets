@@ -10,7 +10,8 @@
 	}
 
 	let { index, status, word, image, onclick }: Props = $props();
-	let clueBroken = $state(false);
+	let failedImage = $state<string | null>(null);
+	const clueBroken = $derived(failedImage !== null && failedImage === image);
 
 	const palette = ['var(--lb-leaf)', 'var(--lb-ochre)', 'var(--lb-berry)'];
 	const color = $derived(palette[index - 1]);
@@ -50,6 +51,7 @@
 				<path class="lid tipped" d="M100 24h18l-6 18h-18z" />
 				<circle class="glow" cx="60" cy="76" r="22" />
 			{:else}
+				<path class="lid off" d="M12 26h96l-4 18H16z" />
 				<path
 					class="check"
 					d="M42 74l12 12 24-28"
@@ -67,7 +69,7 @@
 				alt=""
 				loading="lazy"
 				decoding="async"
-				onerror={() => (clueBroken = true)}
+				onerror={() => (failedImage = image ?? null)}
 			/>
 		{/if}
 	</span>
@@ -105,8 +107,8 @@
 		transition:
 			transform var(--lb-t-med) var(--lb-ease),
 			background var(--lb-t-med) var(--lb-ease);
-		animation: arrive 480ms var(--lb-ease-overshoot) both;
-		animation-delay: calc(var(--i) * 80ms);
+		animation: arrive 480ms var(--lb-ease-overshoot) backwards;
+		animation-delay: calc(var(--i) * var(--lb-stagger));
 	}
 	.bucket[data-state='closed'] .pail {
 		animation: float 5s ease-in-out 1.2s infinite;
@@ -167,9 +169,20 @@
 		transform-origin: 12px 44px;
 		transition: transform var(--lb-t-arrive) var(--lb-ease-overshoot);
 	}
-	.lid.tipped,
+	.lid.tipped {
+		transform: translate(26px, -14px) rotate(18deg);
+	}
 	.lid.off {
 		transform: translate(26px, -14px) rotate(18deg);
+		animation: lid-pop var(--lb-t-arrive) var(--lb-ease-overshoot) both;
+	}
+	@keyframes lid-pop {
+		from {
+			transform: none;
+		}
+		to {
+			transform: translate(26px, -14px) rotate(18deg);
+		}
 	}
 	.handle {
 		opacity: 0.8;

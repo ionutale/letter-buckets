@@ -42,6 +42,53 @@ test('fits an eight-letter word without overflow at 320px', async ({ page }) => 
 	expect(box!.x + box!.width).toBeLessThanOrEqual(320);
 });
 
+test('the repeat-word button and the header speaker replay the current word', async ({ page }) => {
+	await page.addInitScript(() => {
+		const played: string[] = [];
+		(window as unknown as { __playedWords: string[] }).__playedWords = played;
+		HTMLMediaElement.prototype.play = function play(this: HTMLMediaElement) {
+			played.push(new URL(this.src).pathname);
+			return Promise.resolve();
+		};
+	});
+	await seedSave(page, { locale: 'en', muted: false });
+	await page.goto('/en/levels/1');
+	await page.getByRole('button', { name: /open word 1/i }).click();
+	await expect(page.getByRole('dialog')).toBeVisible();
+
+	const playedWords = () =>
+		page.evaluate(
+			() => (window as unknown as { __playedWords: string[] }).__playedWords as string[]
+		);
+	const wordPath = '/audio/words/en/l01-w1.mp3';
+	const clearPlayed = () =>
+		page.evaluate(() => {
+			(window as unknown as { __playedWords: string[] }).__playedWords.length = 0;
+		});
+
+	const clue = page.locator('img[data-clue]');
+	await expect(clue).toBeVisible();
+	const repeat = page.locator('.word-area button.hear');
+	await expect(repeat).toHaveText(/hear the word/i);
+
+	const clueBox = await clue.boundingBox();
+	const repeatBox = await repeat.boundingBox();
+	expect(clueBox).not.toBeNull();
+	expect(repeatBox).not.toBeNull();
+	if (!clueBox || !repeatBox) return;
+	// Labelled control under the clue image, with a full-size touch target.
+	expect(repeatBox.y).toBeGreaterThanOrEqual(clueBox.y + clueBox.height);
+	expect(repeatBox.height).toBeGreaterThanOrEqual(44);
+
+	await clearPlayed();
+	await repeat.click();
+	await expect.poll(async () => (await playedWords()).at(-1)).toBe(wordPath);
+
+	await clearPlayed();
+	await page.locator('button[aria-label="Hear the word"]').click();
+	await expect.poll(async () => (await playedWords()).at(-1)).toBe(wordPath);
+});
+
 test('a solved bucket becomes an empty checked bucket', async ({ page }) => {
 	await seedSave(page);
 	await page.goto('/en/levels/1');

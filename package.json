@@ -25,7 +25,8 @@
 		"assets:art": "python3 scripts/generate_art.py",
 		"validate:assets": "node scripts/validate_assets.mjs",
 		"size": "node scripts/check_build_size.mjs",
-		"assets:words": "python3 scripts/generate_word_art.py --all"
+		"assets:words": "python3 scripts/generate_word_art.py --all",
+		"deploy:cf": "pnpm build && pnpm dlx wrangler@latest pages deploy build --project-name letter-buckets"
 	},
 	"dependencies": {
 		"@fontsource/nunito": "^5.2.5"

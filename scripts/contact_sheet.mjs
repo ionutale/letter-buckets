@@ -8,16 +8,24 @@ const locales = process.argv.slice(2).filter((value) => value in content);
 const targets = locales.length > 0 ? locales : Object.keys(content);
 
 const browser = await chromium.launch();
-const page = await browser.newPage({ viewport: { width: 1660, height: 1200 }, deviceScaleFactor: 1 });
+const page = await browser.newPage({
+	viewport: { width: 1660, height: 1200 },
+	deviceScaleFactor: 1
+});
 
 for (const locale of targets) {
 	const cells = [];
 	for (const level of content[locale].levels) {
 		level.words.forEach((entry, index) => {
 			const word = typeof entry === 'string' ? entry : entry.word;
-			const path = resolve(root, `static/art/words/${locale}/l${String(level.id).padStart(2, '0')}-w${index + 1}.webp`);
+			const path = resolve(
+				root,
+				`static/art/words/${locale}/l${String(level.id).padStart(2, '0')}-w${index + 1}.webp`
+			);
 			if (!existsSync(path)) {
-				cells.push(`<figure><div class="missing">missing</div><figcaption>L${level.id}·${index + 1} ${word}</figcaption></figure>`);
+				cells.push(
+					`<figure><div class="missing">missing</div><figcaption>L${level.id}·${index + 1} ${word}</figcaption></figure>`
+				);
 				return;
 			}
 			const data = readFileSync(path).toString('base64');

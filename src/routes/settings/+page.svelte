@@ -10,6 +10,7 @@
 		loadSave,
 		persistSave,
 		resetLocale,
+		type GameMode,
 		type SaveData
 	} from '#lib/storage/save.js';
 
@@ -24,20 +25,24 @@
 	let data = $state<SaveData | null>(null);
 	let locale = $state<Locale>('en');
 	let muted = $state(false);
+	let mode = $state<GameMode>('easy');
 	let holdProgress = $state(0);
 	let toast = $state('');
 	let holdTimer: number | null = null;
 	let toastTimer: number | null = null;
 
+	const HOLD_MS = 3000;
+
 	onMount(() => {
 		data = loadSave(localStorage);
 		locale = getLocale() as Locale;
 		muted = data.settings.muted;
+		mode = data.settings.mode;
 		audio.setMuted(muted);
 	});
 
 	onDestroy(() => {
-		if (holdTimer !== null) window.clearInterval(holdTimer);
+		stopHoldTimer();
 		if (toastTimer !== null) window.clearTimeout(toastTimer);
 	});
 
@@ -52,6 +57,20 @@
 		setLocale(target);
 		document.documentElement.lang = target;
 		void goto(localizeHref('/settings', { locale: target }));
+	}
+
+	const modes = [
+		{ id: 'easy' as const, label: m.mode_easy, desc: m.mode_easy_desc },
+		{ id: 'medium' as const, label: m.mode_medium, desc: m.mode_medium_desc },
+		{ id: 'hard' as const, label: m.mode_hard, desc: m.mode_hard_desc }
+	];
+
+	function setMode(next: GameMode): void {
+		if (!data || next === mode) return;
+		audio.playSfx('ui-tap');
+		mode = next;
+		data.settings.mode = next;
+		persist();
 	}
 
 	function toggleMute(): void {
@@ -76,26 +95,39 @@
 		}, 2600);
 	}
 
-	function cancelHold(): void {
+	function stopHoldTimer(): void {
 		if (holdTimer !== null) {
 			window.clearInterval(holdTimer);
 			holdTimer = null;
 		}
-		holdProgress = 0;
+	}
+
+	function cancelHold(): void {
+		stopHoldTimer();
+		// A completed reset keeps the bar full: the toast can slide under the
+		// pointer and fire a leave event right as the hold finishes.
+		if (holdProgress < 1) holdProgress = 0;
+	}
+
+	function completeHold(): void {
+		stopHoldTimer();
+		// Keep the bar full until the finger lifts so the reset does not look cancelled.
+		holdProgress = 1;
+		if (!data) return;
+		resetLocale(data, locale);
+		data.settings.coachDone = false;
+		persist();
+		showToast(m.reset_done());
 	}
 
 	function startHold(): void {
 		if (!data) return;
-		cancelHold();
+		stopHoldTimer();
+		holdProgress = 0;
 		const started = Date.now();
 		holdTimer = window.setInterval(() => {
-			holdProgress = Math.min(1, (Date.now() - started) / 3000);
-			if (holdProgress < 1) return;
-			cancelHold();
-			resetLocale(data!, locale);
-			data!.settings.coachDone = false;
-			persist();
-			showToast(m.reset_done());
+			holdProgress = Math.min(1, (Date.now() - started) / HOLD_MS);
+			if (holdProgress >= 1) completeHold();
 		}, 50);
 	}
 
@@ -134,6 +166,25 @@
 		</div>
 	</section>
 
+	<section class="card" aria-label={m.mode()}>
+		<h2>{m.mode()}</h2>
+		<div class="mode-grid">
+			{#each modes as item (item.id)}
+				<button
+					type="button"
+					class="mode"
+					class:selected={mode === item.id}
+					aria-pressed={mode === item.id}
+					onclick={() => setMode(item.id)}
+				>
+					<strong>{item.label()}</strong>
+					<small>{item.desc()}</small>
+				</button>
+			{/each}
+		</div>
+		<p class="note">{m.hints_automatic_free()}</p>
+	</section>
+
 	<section class="card" aria-label={m.sound()}>
 		<h2>{m.sound()}</h2>
 		<button type="button" class="toggle" aria-pressed={!muted} onclick={toggleMute}>
@@ -152,6 +203,7 @@
 			onpointerup={cancelHold}
 			onpointerleave={cancelHold}
 			onpointercancel={cancelHold}
+			oncontextmenu={(event) => event.preventDefault()}
 		>
 			<span class="bar" style={`width:${Math.round(holdProgress * 100)}%`}></span>
 			<span class="reset-label">{m.reset_progress()}</span>
@@ -225,6 +277,37 @@
 		color: var(--lb-ink);
 		box-shadow: inset 0 0 0 3px var(--lb-ochre);
 	}
+	.mode-grid {
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		gap: var(--lb-space-2);
+	}
+	.mode {
+		display: grid;
+		gap: 2px;
+		min-height: 64px;
+		padding: var(--lb-space-2);
+		border-radius: var(--lb-radius-sm);
+		background: var(--lb-paper);
+		box-shadow: inset 0 0 0 2px var(--lb-border);
+		text-align: left;
+	}
+	.mode strong {
+		font-size: var(--lb-text-sm);
+	}
+	.mode small {
+		color: var(--lb-ink-soft);
+		font-size: var(--lb-text-xs);
+		line-height: 1.25;
+	}
+	.mode.selected {
+		box-shadow: inset 0 0 0 3px var(--lb-ochre);
+	}
+	@media (max-width: 430px) {
+		.mode-grid {
+			grid-template-columns: 1fr;
+		}
+	}
 	.toggle {
 		display: flex;
 		align-items: center;
@@ -242,6 +325,7 @@
 		background: var(--lb-leaf);
 	}
 	.hint,
+	.note,
 	.grown p,
 	.about p {
 		margin: 0;
@@ -257,6 +341,9 @@
 		box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--lb-berry) 35%, transparent);
 		font-weight: 800;
 		touch-action: none;
+		-webkit-user-select: none;
+		user-select: none;
+		-webkit-touch-callout: none;
 	}
 	.bar {
 		position: absolute;

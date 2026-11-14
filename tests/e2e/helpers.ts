@@ -6,6 +6,8 @@ export interface SeedOptions {
 	levelWords?: Record<number, number[]>;
 	unlocked?: Record<string, true>;
 	chapterStamps?: number[];
+	hintUsage?: Record<string, number>;
+	mode?: 'easy' | 'medium' | 'hard';
 	muted?: boolean;
 	coachDone?: boolean;
 	installHintDismissed?: boolean;
@@ -22,14 +24,15 @@ export async function seedSave(page: Page, options: SeedOptions = {}): Promise<v
 				clearedThrough: options.clearedThrough ?? 0,
 				levelWords: options.levelWords ?? {},
 				unlocked: options.unlocked ?? {},
-				chapterStamps: options.chapterStamps ?? []
+				chapterStamps: options.chapterStamps ?? [],
+				hintUsage: options.hintUsage ?? {}
 			};
 			const all = {};
 			for (const key of locales) {
 				all[key] =
 					key === target
 						? progress
-						: { clearedThrough: 0, levelWords: {}, unlocked: {}, chapterStamps: [] };
+						: { clearedThrough: 0, levelWords: {}, unlocked: {}, chapterStamps: [], hintUsage: {} };
 			}
 			localStorage.setItem(
 				'letter-buckets-save',
@@ -38,7 +41,8 @@ export async function seedSave(page: Page, options: SeedOptions = {}): Promise<v
 					settings: {
 						muted: options.muted ?? true,
 						coachDone: options.coachDone ?? true,
-						installHintDismissed: options.installHintDismissed ?? true
+						installHintDismissed: options.installHintDismissed ?? true,
+						mode: options.mode ?? 'easy'
 					},
 					locales: all
 				})

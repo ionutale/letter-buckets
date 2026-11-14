@@ -74,11 +74,12 @@ async function take(url) {
 	return Buffer.from(await response.arrayBuffer());
 }
 
-function convert(input, output, { music = false, sfx = false } = {}) {
+function convert(input, output, { music = false, sfx = false, speech = false } = {}) {
 	mkdirSync(dirname(output), { recursive: true });
 	const filter =
 		'silenceremove=start_periods=1:start_threshold=-45dB,areverse,' +
 		'silenceremove=start_periods=1:start_threshold=-45dB,areverse,' +
+		(speech ? 'atempo=0.85,' : '') +
 		'loudnorm=I=-18:TP=-3';
 	const ff = ['-y', '-loglevel', 'error', '-i', input, '-ac', '1', '-ar', '24000'];
 	if (!music) ff.push('-af', filter);
@@ -131,7 +132,7 @@ async function wordClip(locale, level, index, output) {
 			: locale === 'ru'
 				? piperWav(text, PIPER_VOICE_RU)
 				: await qwenWav(text, locale);
-	convert(wav, output);
+	convert(wav, output, { speech: true });
 	rmSync(wav, { force: true });
 	console.log(`wrote ${output}`);
 }

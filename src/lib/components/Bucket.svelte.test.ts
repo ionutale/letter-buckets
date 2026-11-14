@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/svelte';
+import { fireEvent, render, screen } from '@testing-library/svelte';
 import { describe, expect, it } from 'vitest';
 import Bucket from './Bucket.svelte';
 
@@ -26,5 +26,17 @@ describe('Bucket', () => {
 		});
 		expect(container.querySelector('.clue')).toBeTruthy();
 		expect(container.querySelector('.done-badge')).toBeNull();
+	});
+	it('shows the clue again when the next word has its own image', async () => {
+		const { container, rerender } = render(Bucket, {
+			index: 1,
+			status: 'closed',
+			image: '/art/words/en/l01-w1.webp'
+		});
+		await fireEvent.error(container.querySelector('img.clue')!);
+		expect(container.querySelector('.clue')).toBeNull();
+
+		await rerender({ index: 1, status: 'closed', image: '/art/words/en/l02-w1.webp' });
+		expect(container.querySelector('.clue')).toBeTruthy();
 	});
 });

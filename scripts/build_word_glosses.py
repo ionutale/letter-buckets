@@ -198,6 +198,80 @@ OVERRIDES = {
     "ru:48:2": "багаж (a suitcase and travel bag)",
     "ru:50:1": "танцор (a child dancing)",
     "ru:50:2": "хоровод (children in a circle dance)",
+
+    # Review pass 3: final QA of all five locale sheets
+    # English
+    "en:6:1": "a pair of socks",
+    "en:16:2": "a purple plum fruit",
+    "en:24:0": "a basket of mixed fruit",
+    "en:30:1": "an empty train platform with a yellow safety line",
+    "en:49:0": "a wrapped gift box with a ribbon and bow",
+    # Romanian
+    "ro:6:2": "a long striped winter scarf",
+    "ro:9:0": "a cooking pot with two handles",
+    "ro:10:1": "two pillows on a bed",
+    "ro:12:1": "a blue jay bird",
+    "ro:16:2": "a purple plum fruit",
+    "ro:19:2": "a maple tree with broad leaves",
+    "ro:23:1": "a ring-shaped pretzel bread",
+    "ro:24:2": "three red tomatoes",
+    "ro:29:0": "two woven baskets",
+    "ro:29:1": "a bookcase with several shelves",
+    "ro:30:0": "two paper tickets side by side",
+    "ro:30:1": "an empty train platform with a yellow safety line",
+    "ro:32:0": "a blue sky with clouds",
+    "ro:38:0": "a dark night sky with a crescent moon and stars",
+    "ro:38:2": "a night sky full of many stars",
+    "ro:41:1": "a planet with rings and stars",
+    "ro:45:2": "a child's crayon drawing of a house and a sun",
+    "ro:48:0": "a folded paper map with a red route",
+    "ro:49:1": "two frosted cakes side by side",
+    "ro:50:0": "two board games with dice",
+    "ro:50:2": "children dancing",
+    # Italian
+    "it:6:1": "a pair of shoes",
+    "it:18:1": "a violet flower",
+    "it:24:1": "several colorful flowers",
+    "it:26:1": "a ballpoint pen",
+    "it:28:2": "a man holding a theatrical mask",
+    "it:30:1": "a steel railway rail on wooden sleepers",
+    "it:32:0": "a blue sky with clouds",
+    "it:41:2": "a planet with rings and stars",
+    "it:48:0": "a folded paper map with a red route",
+    "it:49:2": "a colorful board game with playing pieces and a dice",
+    # German
+    "de:3:0": "a small pile of brown sunflower seeds",
+    "de:6:1": "a pair of socks",
+    "de:6:2": "a pair of shoes",
+    "de:9:2": "a metal spoon",
+    "de:18:2": "a cluster of small purple crocus flowers",
+    "de:20:1": "two young calves standing side by side",
+    "de:21:2": "a steam locomotive with a passenger car",
+    "de:22:2": "a glowing light bulb",
+    "de:25:0": "a wooden park bench",
+    "de:29:1": "two woven baskets",
+    "de:30:1": "a train station building with a clock",
+    "de:31:2": "a dark storm cloud with lightning",
+    "de:38:0": "a dark night sky with a crescent moon and stars",
+    "de:38:1": "a child sleeping in bed under a blanket",
+    "de:38:2": "a night sky full of many stars",
+    "de:44:0": "several colorful musical notes",
+    "de:45:2": "a blank white artist canvas on a wooden easel",
+    "de:48:0": "a folded paper map with a red route",
+    "de:48:2": "a suitcase with a camera and a sun hat",
+    "de:49:1": "colorful balloons and party bunting",
+    # Russian
+    "ru:13:2": "a badger with a striped face",
+    "ru:29:1": "a cash register with a drawer and buttons",
+    "ru:30:0": "two paper tickets side by side",
+    "ru:30:1": "an empty train platform with a yellow safety line",
+    "ru:30:2": "a train station building with a clock",
+    "ru:31:2": "a dark storm cloud with lightning",
+    "ru:35:1": "a tall grey rock cliff",
+    "ru:38:2": "a dark night sky with a crescent moon and stars",
+    "ru:41:2": "a planet with rings and stars",
+    "ru:45:0": "colorful paint splashes",
+    "ru:49:2": "two small round cakes with candles",
 }
 
 
@@ -221,7 +295,8 @@ def main() -> None:
                 else:
                     glosses[key] = f"{word.lower()} ({translation})"
 
-    OUT.write_text(json.dumps(glosses, ensure_ascii=False, indent=1) + "\n")
+    # Tab indentation keeps the generated file stable under Prettier's checked formatting.
+    OUT.write_text(json.dumps(glosses, ensure_ascii=False, indent="\t") + "\n")
     print(f"wrote {len(glosses)} glosses to {OUT.relative_to(ROOT)}")
 
 

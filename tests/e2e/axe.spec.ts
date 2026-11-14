@@ -26,6 +26,9 @@ test('home, map and settings have no serious axe violations', async ({ page }) =
 
 	await page.goto('/en/settings');
 	await assertNoSeriousViolations(page);
+
+	await page.goto('/en/progress');
+	await assertNoSeriousViolations(page);
 });
 
 test('the level, word panel and Word Book have no serious axe violations', async ({ page }) => {

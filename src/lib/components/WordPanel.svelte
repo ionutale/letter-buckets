@@ -10,6 +10,7 @@
 
 	interface Props {
 		session: LevelSession;
+		hintsLeft?: number;
 		onclose: () => void;
 	}
 
@@ -23,7 +24,7 @@
 		moved: boolean;
 	}
 
-	let { session, onclose }: Props = $props();
+	let { session, hintsLeft = Number.POSITIVE_INFINITY, onclose }: Props = $props();
 
 	let selectedId = $state<string | null>(null);
 	let suggestedSlot = $state<number | null>(null);
@@ -40,7 +41,8 @@
 	const clue = $derived(
 		session.openIndex !== null ? getWordArt(session.locale, session.level, session.openIndex) : ''
 	);
-	let clueBroken = $state(false);
+	let failedClue = $state<string | null>(null);
+	const clueBroken = $derived(failedClue !== null && failedClue === clue);
 
 	onMount(() => {
 		const previousFocus = document.activeElement as HTMLElement | null;
@@ -222,7 +224,12 @@
 		<header class="panel-head">
 			<button type="button" class="icon" aria-label="Close" onclick={close}>×</button>
 			<p>{m.word_of({ i: session.openIndex! + 1 })}</p>
-			<button type="button" class="icon hint" aria-label={m.hint()} onclick={() => session.hint()}
+			<button
+				type="button"
+				class="icon hint"
+				aria-label={`${m.hint()}${Number.isFinite(hintsLeft) ? ` (${hintsLeft})` : ''}`}
+				disabled={hintsLeft === 0}
+				onclick={() => session.hint()}
 				><svg class="glyph" viewBox="0 0 24 24" aria-hidden="true"
 					><path
 						d="M9 18h6M10 21h4M8 14a5 5 0 1 1 8 0c-.8.8-1.2 1.8-1.2 3H9.2c0-1.2-.4-2.2-1.2-3z"
@@ -234,6 +241,9 @@
 					/></svg
 				></button
 			>
+			{#if Number.isFinite(hintsLeft)}
+				<span class="hint-count" aria-hidden="true">{hintsLeft}</span>
+			{/if}
 			<button
 				type="button"
 				class="icon"
@@ -268,7 +278,7 @@
 					data-clue
 					loading="eager"
 					decoding="async"
-					onerror={() => (clueBroken = true)}
+					onerror={() => (failedClue = clue || null)}
 				/>
 			{/if}
 			<button
@@ -375,6 +385,24 @@
 		margin: 0;
 		font-weight: 700;
 		color: var(--lb-ink-soft);
+	}
+	.icon.hint {
+		position: relative;
+	}
+	.icon:disabled {
+		opacity: 0.4;
+	}
+	.hint-count {
+		display: grid;
+		place-items: center;
+		min-width: 26px;
+		height: 26px;
+		padding: 0 5px;
+		border-radius: 13px;
+		background: var(--lb-ink);
+		color: var(--lb-paper);
+		font-size: var(--lb-text-xs);
+		font-weight: 800;
 	}
 	.icon {
 		display: grid;
@@ -483,6 +511,11 @@
 		to {
 			opacity: 0;
 			transform: rotate(calc(var(--i) * 36deg)) translateY(-48px) scale(1);
+		}
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.confetti {
+			display: none;
 		}
 	}
 	.done-title {

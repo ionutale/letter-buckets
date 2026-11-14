@@ -20,8 +20,11 @@ export interface BucketState {
 
 export interface LevelSessionOptions {
 	progress?: LocaleProgress;
-	onWordComplete?: (level: number, wordIndex: number) => void;
+	onWordComplete?: (level: number, wordIndex: number, firstTry: boolean) => void;
 	onLevelComplete?: (level: number) => void;
+	onAttempt?: (level: number, wordIndex: number, correct: boolean) => void;
+	canHint?: () => boolean;
+	onHintUsed?: () => void;
 }
 
 export interface LevelSession {
@@ -69,6 +72,7 @@ export function createLevelSession(
 	let lastHint = $state<HintAction | null>(null);
 	let hintsPaused = false;
 	let hintTimer: number | null = null;
+	let mistakesThisWord = false;
 
 	function clearHintTimer(): void {
 		if (hintTimer !== null) {
@@ -87,21 +91,21 @@ export function createLevelSession(
 		}, HINT_MS);
 	}
 
-	function advanceHint(): void {
-		if (!word || openIndex === null) return;
+	function advanceHint(): HintAction | null {
+		if (!word || openIndex === null) return null;
 		const action = nextHintAction(word, hintStep);
 		lastHint = action;
 
 		if (action.kind === 'pulse-slot') {
 			hintStep = 1;
 			armHintTimer();
-			return;
+			return action;
 		}
 
 		if (action.kind === 'pulse-tile') {
 			hintStep = 2;
 			armHintTimer();
-			return;
+			return action;
 		}
 
 		if (action.kind === 'auto-place') {
@@ -113,11 +117,12 @@ export function createLevelSession(
 			hintStep = 3;
 			lastHint = action;
 			clearHintTimer();
-			return;
+			return action;
 		}
 
 		hintStep = 3;
 		clearHintTimer();
+		return action;
 	}
 
 	function openBucket(index: number): void {
@@ -125,6 +130,7 @@ export function createLevelSession(
 		openIndex = index;
 		hintStep = 0;
 		lastHint = null;
+		mistakesThisWord = false;
 
 		const entry = content.words[index];
 		const spec = buildPuzzle({ level, wordIndex: index, word: entry.word, locale });
@@ -150,6 +156,7 @@ export function createLevelSession(
 		word = null;
 		hintStep = 0;
 		lastHint = null;
+		mistakesThisWord = false;
 	}
 
 	function place(tileId: string, slot: number): PlaceResult {
@@ -157,10 +164,13 @@ export function createLevelSession(
 			return { state: word as PuzzleState, outcome: 'wrong' };
 		}
 
+		const index = openIndex;
 		const result = placeTile(word, tileId, slot);
 		word = result.state;
 		hintStep = 0;
 		lastHint = null;
+		if (result.outcome !== 'placed') mistakesThisWord = true;
+		options.onAttempt?.(level, index, result.outcome === 'placed');
 		armHintTimer();
 
 		if (result.outcome === 'placed' && isComplete(word)) {
@@ -171,7 +181,7 @@ export function createLevelSession(
 
 			if (!notified.has(index)) {
 				notified.add(index);
-				options.onWordComplete?.(level, index);
+				options.onWordComplete?.(level, index, !mistakesThisWord);
 			}
 
 			if (buckets.every((bucket) => bucket.status === 'done')) {
@@ -184,13 +194,15 @@ export function createLevelSession(
 	}
 
 	function hint(): void {
+		if (options.canHint && !options.canHint()) return;
 		// A deliberate press is an interaction: it reopens the chain after an
 		// automatic placement, while an idle tablet still cannot chain.
 		if (hintStep === 3) {
 			hintStep = 0;
 			lastHint = null;
 		}
-		advanceHint();
+		const action = advanceHint();
+		if (action && action.kind !== 'locked') options.onHintUsed?.();
 	}
 
 	function noteInteraction(): void {

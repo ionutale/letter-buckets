@@ -68,3 +68,26 @@ test('reduced motion removes long transitions', async ({ page }) => {
 		.evaluate((element) => getComputedStyle(element).transitionDuration);
 	expect(Number.parseFloat(duration)).toBeLessThan(0.02);
 });
+
+test('a solved word bursts confetti unless reduced motion is on', async ({ page }) => {
+	await seedSave(page);
+	await page.goto('/en/levels/1');
+	await page.locator('button.bucket').first().click();
+
+	for (let guard = 0; guard < 5; guard++) {
+		const slot = page.locator('[data-slot]:not([data-filled="true"])').first();
+		if ((await slot.count()) === 0) break;
+		const letter = await slot.getAttribute('data-letter');
+		await page.locator(`[data-tile][data-letter="${letter}"]`).first().click();
+		await slot.click();
+	}
+	await expect(page.locator('.done-title')).toBeVisible();
+
+	const burst = page.locator('.confetti span').first();
+	const animation = await burst.evaluate((element) => getComputedStyle(element).animationName);
+	expect(animation).toContain('confetti');
+
+	await page.emulateMedia({ reducedMotion: 'reduce' });
+	const confetti = page.locator('.confetti');
+	expect(await confetti.evaluate((element) => getComputedStyle(element).display)).toBe('none');
+});
