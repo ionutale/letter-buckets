@@ -26,7 +26,10 @@ export default defineConfig({
 		}
 	],
 	webServer: {
-		command: 'pnpm build && pnpm preview',
+		// `exec` hands the shell over to the preview server so Playwright's
+		// shutdown signal reaches node instead of a parent that leaves an
+		// orphan holding stdout open (which hangs CI after the last test).
+		command: 'pnpm build && exec node scripts/serve-preview.mjs',
 		url: 'http://127.0.0.1:4173',
 		reuseExistingServer: !process.env.CI,
 		timeout: 120_000
