@@ -20,4 +20,5 @@
 ## Notes
 
 - Cloudflare Pages has no SPA fallback for `adapter-static`'s `200.html`, so `pnpm build` now runs `scripts/spa-fallback.mjs` to publish the same shell as `index.html`. Pages serves it for unknown paths; deep links, locale routes, and the installed PWA resolve through it.
+- Offline was verified in Chrome with the service worker active (1626 cached entries): after emulating offline, `/ro/levels/1` reloaded from cache, clue WebP files loaded, and the word MP3 played. Installing the app as a standalone window was not exercised.
 - Deploy command: `pnpm dlx wrangler@latest pages deploy build --project-name letter-buckets --branch main` (no `--force`).
