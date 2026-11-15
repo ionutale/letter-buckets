@@ -136,8 +136,12 @@
 		showToast(m.reset_done());
 	}
 
-	function startHold(): void {
+	function startHold(event: PointerEvent): void {
 		if (!data) return;
+		const element = event.currentTarget as HTMLElement;
+		// Keep receiving the move/up events even if the finger drifts off the
+		// button during the three-second press (common on iOS).
+		element.setPointerCapture?.(event.pointerId);
 		stopHoldTimer();
 		holdProgress = 0;
 		const started = Date.now();
@@ -145,6 +149,14 @@
 			holdProgress = Math.min(1, (Date.now() - started) / HOLD_MS);
 			if (holdProgress >= 1) completeHold();
 		}, 50);
+	}
+
+	function endHold(event: PointerEvent): void {
+		const element = event.currentTarget as HTMLElement;
+		if (element.hasPointerCapture?.(event.pointerId)) {
+			element.releasePointerCapture(event.pointerId);
+		}
+		cancelHold();
 	}
 
 	function howToPlay(): void {
@@ -236,9 +248,9 @@
 			type="button"
 			class="reset"
 			onpointerdown={startHold}
-			onpointerup={cancelHold}
+			onpointerup={endHold}
 			onpointerleave={cancelHold}
-			onpointercancel={cancelHold}
+			onpointercancel={endHold}
 			oncontextmenu={(event) => event.preventDefault()}
 		>
 			<span class="bar" style={`width:${Math.round(holdProgress * 100)}%`}></span>

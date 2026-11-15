@@ -75,5 +75,7 @@ describe('audio lifecycle', () => {
 
 		window.dispatchEvent(new Event('pagehide'));
 		expect(music.paused).toBe(true);
+		window.dispatchEvent(new Event('pageshow'));
+		expect(music.paused).toBe(false);
 	});
 });

@@ -432,3 +432,20 @@ describe('sound volumes', () => {
 		expect(data.settings.volumes).toEqual({ music: 0.4, sfx: 0, voice: 1 });
 	});
 });
+
+describe('reset', () => {
+	it('clears progress, metrics and hint usage for the locale', () => {
+		const data = defaultSave();
+		markWordComplete(data, 'en', 1, 0, false);
+		recordAttempt(data, 'en', 1, false);
+		spendHint(data, 'en', 'medium', 1);
+		resetLocale(data, 'en');
+
+		expect(data.locales.en.clearedThrough).toBe(0);
+		expect(data.locales.en.levelWords).toEqual({});
+		expect(data.locales.en.unlocked).toEqual({});
+		expect(data.locales.en.metrics.wordsCompleted).toBe(0);
+		expect(data.locales.en.metrics.chapters).toEqual({});
+		expect(data.locales.en.hintUsage).toEqual({});
+	});
+});

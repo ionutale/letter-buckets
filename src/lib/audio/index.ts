@@ -50,6 +50,9 @@ export function createAudioController(options: AudioOptions = {}): AudioControll
 	let music: HTMLAudioElement | null = null;
 	let duckTimer: number | null = null;
 	let resumeMusicWhenVisible = false;
+	let context: AudioContext | null = null;
+	let gains: Record<VolumeChannel, GainNode> | null = null;
+	const sources = new WeakMap<HTMLAudioElement, MediaElementAudioSourceNode>();
 	const preloads = new Map<string, HTMLAudioElement>();
 
 	function playQuietly(audio: HTMLAudioElement): void {
@@ -58,9 +61,72 @@ export function createAudioController(options: AudioOptions = {}): AudioControll
 		});
 	}
 
+	function ensureGraph(): boolean {
+		if (context && gains) return true;
+		if (typeof window === 'undefined') return false;
+		const Ctor =
+			window.AudioContext ??
+			(window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+		if (!Ctor) return false;
+		try {
+			context = new Ctor();
+			gains = {
+				music: context.createGain(),
+				sfx: context.createGain(),
+				voice: context.createGain()
+			};
+			for (const gain of Object.values(gains)) gain.connect(context.destination);
+			applyGain('music');
+			applyGain('sfx');
+			applyGain('voice');
+			return true;
+		} catch {
+			context = null;
+			gains = null;
+			return false;
+		}
+	}
+
+	function resumeContext(): void {
+		if (context?.state === 'suspended') void context.resume().catch(() => undefined);
+	}
+
+	function connectElement(audio: HTMLAudioElement, channel: VolumeChannel): boolean {
+		if (!ensureGraph() || !context || !gains) return false;
+		resumeContext();
+		if (sources.has(audio)) return true;
+		try {
+			const source = context.createMediaElementSource(audio);
+			source.connect(gains[channel]);
+			sources.set(audio, source);
+			return true;
+		} catch {
+			return false;
+		}
+	}
+
+	function targetGain(channel: VolumeChannel): number {
+		if (muted) return 0;
+		if (channel === 'music') {
+			return (duckTimer === null ? MUSIC_VOLUME : DUCKED_VOLUME) * volumes.music;
+		}
+		if (channel === 'sfx') return 0.55 * volumes.sfx;
+		return 0.9 * volumes.voice;
+	}
+
+	function applyGain(channel: VolumeChannel): void {
+		if (!gains || !context) return;
+		const gain = gains[channel];
+		const target = targetGain(channel);
+		gain.gain.cancelScheduledValues(context.currentTime);
+		gain.gain.setTargetAtTime(target, context.currentTime, 0.04);
+	}
+
 	function unlock(): void {
 		if (unlocked) return;
 		unlocked = true;
+		ensureGraph();
+		resumeContext();
 		if (!muted) playMusic();
 	}
 
@@ -70,7 +136,8 @@ export function createAudioController(options: AudioOptions = {}): AudioControll
 	}
 
 	function syncMusicVolume(): void {
-		if (music && !muted) {
+		applyGain('music');
+		if (music && !gains && !muted) {
 			music.volume = (duckTimer === null ? MUSIC_VOLUME : DUCKED_VOLUME) * volumes.music;
 		}
 	}
@@ -85,18 +152,20 @@ export function createAudioController(options: AudioOptions = {}): AudioControll
 
 	function duckMusic(holdForVoice = false): void {
 		if (!music || muted) return;
-		music.volume = DUCKED_VOLUME * volumes.music;
-		if (typeof window === 'undefined') return;
-		if (duckTimer !== null) window.clearTimeout(duckTimer);
-		// A word clip can run for several seconds. Hold the duck until the clip
-		// ends (with a fallback) instead of restoring under the voice.
-		duckTimer = window.setTimeout(
-			() => {
-				duckTimer = null;
-				syncMusicVolume();
-			},
-			holdForVoice ? 6000 : 1200
-		);
+		if (!gains) music.volume = DUCKED_VOLUME * volumes.music;
+		if (typeof window !== 'undefined') {
+			if (duckTimer !== null) window.clearTimeout(duckTimer);
+			// A word clip can run for several seconds. Hold the duck until the clip
+			// ends (with a fallback) instead of restoring under the voice.
+			duckTimer = window.setTimeout(
+				() => {
+					duckTimer = null;
+					syncMusicVolume();
+				},
+				holdForVoice ? 6000 : 1200
+			);
+		}
+		if (gains) applyGain('music');
 	}
 
 	function stopSfx(): void {
@@ -105,7 +174,7 @@ export function createAudioController(options: AudioOptions = {}): AudioControll
 	}
 
 	function suspend(): void {
-		resumeMusicWhenVisible = Boolean(music && !music.paused && !muted);
+		resumeMusicWhenVisible = resumeMusicWhenVisible || Boolean(music && !music.paused && !muted);
 		if (duckTimer !== null && typeof window !== 'undefined') {
 			window.clearTimeout(duckTimer);
 			duckTimer = null;
@@ -113,10 +182,12 @@ export function createAudioController(options: AudioOptions = {}): AudioControll
 		stopWord();
 		stopSfx();
 		music?.pause();
+		void context?.suspend().catch(() => undefined);
 	}
 
 	function resume(): void {
 		if (document.visibilityState === 'hidden' || muted) return;
+		resumeContext();
 		if (!resumeMusicWhenVisible) return;
 		resumeMusicWhenVisible = false;
 		playMusic();
@@ -135,8 +206,13 @@ export function createAudioController(options: AudioOptions = {}): AudioControll
 			stopSfx();
 			music?.pause();
 			restoreMusic();
+			void context?.suspend().catch(() => undefined);
 			return;
 		}
+		resumeContext();
+		applyGain('music');
+		applyGain('sfx');
+		applyGain('voice');
 		if (unlocked) playMusic();
 	}
 
@@ -153,7 +229,8 @@ export function createAudioController(options: AudioOptions = {}): AudioControll
 		duckMusic(true);
 		const audio = make();
 		audio.src = wordAudioPath(locale, level, index);
-		audio.volume = 0.9 * volumes.voice;
+		const routed = connectElement(audio, 'voice');
+		audio.volume = routed ? 1 : 0.9 * volumes.voice;
 		audio.addEventListener('ended', restoreMusic, { once: true });
 		audio.addEventListener('error', restoreMusic, { once: true });
 		word = audio;
@@ -178,7 +255,8 @@ export function createAudioController(options: AudioOptions = {}): AudioControll
 		duckMusic();
 		const audio = make();
 		audio.src = `/audio/sfx/${name}.mp3`;
-		audio.volume = 0.55 * volumes.sfx;
+		const routed = connectElement(audio, 'sfx');
+		audio.volume = routed ? 1 : 0.55 * volumes.sfx;
 		sfx = audio;
 		audio.addEventListener('ended', restoreMusic);
 		playQuietly(audio);
@@ -190,13 +268,17 @@ export function createAudioController(options: AudioOptions = {}): AudioControll
 			music = make();
 			music.src = '/audio/music/loop.mp3';
 			music.loop = true;
-			music.volume = MUSIC_VOLUME * volumes.music;
+			const routed = connectElement(music, 'music');
+			music.volume = routed ? 1 : MUSIC_VOLUME * volumes.music;
+			applyGain('music');
 		}
+		resumeContext();
 		if (music.paused) playQuietly(music);
 	}
 
 	function setVolume(channel: VolumeChannel, value: number): void {
 		volumes = { ...volumes, [channel]: clampVolume(value) };
+		applyGain(channel);
 		if (channel === 'music') syncMusicVolume();
 	}
 
@@ -212,6 +294,9 @@ export function createAudioController(options: AudioOptions = {}): AudioControll
 			sfx: clampVolume(next.sfx ?? volumes.sfx),
 			voice: clampVolume(next.voice ?? volumes.voice)
 		};
+		applyGain('music');
+		applyGain('sfx');
+		applyGain('voice');
 		syncMusicVolume();
 	}
 
