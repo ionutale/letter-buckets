@@ -49,6 +49,7 @@ export function createAudioController(options: AudioOptions = {}): AudioControll
 	let sfx: HTMLAudioElement | null = null;
 	let music: HTMLAudioElement | null = null;
 	let duckTimer: number | null = null;
+	let resumeMusicWhenVisible = false;
 	const preloads = new Map<string, HTMLAudioElement>();
 
 	function playQuietly(audio: HTMLAudioElement): void {
@@ -98,9 +99,33 @@ export function createAudioController(options: AudioOptions = {}): AudioControll
 		sfx = null;
 	}
 
+	function suspend(): void {
+		resumeMusicWhenVisible = Boolean(music && !music.paused && !muted);
+		if (duckTimer !== null && typeof window !== 'undefined') {
+			window.clearTimeout(duckTimer);
+			duckTimer = null;
+		}
+		stopWord();
+		stopSfx();
+		music?.pause();
+	}
+
+	function resume(): void {
+		if (document.visibilityState === 'hidden' || muted) return;
+		if (!resumeMusicWhenVisible) return;
+		resumeMusicWhenVisible = false;
+		playMusic();
+	}
+
+	function onVisibilityChange(): void {
+		if (document.visibilityState === 'hidden') suspend();
+		else resume();
+	}
+
 	function setMuted(next: boolean): void {
 		muted = next;
 		if (muted) {
+			resumeMusicWhenVisible = false;
 			stopWord();
 			stopSfx();
 			music?.pause();
@@ -166,6 +191,12 @@ export function createAudioController(options: AudioOptions = {}): AudioControll
 	function setVolume(channel: VolumeChannel, value: number): void {
 		volumes = { ...volumes, [channel]: clampVolume(value) };
 		if (channel === 'music') syncMusicVolume();
+	}
+
+	if (typeof document !== 'undefined') {
+		document.addEventListener('visibilitychange', onVisibilityChange);
+		window.addEventListener('pagehide', suspend);
+		window.addEventListener('pageshow', resume);
 	}
 
 	function setVolumes(next: Partial<AudioVolumes>): void {
