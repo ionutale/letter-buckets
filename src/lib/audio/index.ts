@@ -83,15 +83,20 @@ export function createAudioController(options: AudioOptions = {}): AudioControll
 		syncMusicVolume();
 	}
 
-	function duckMusic(): void {
+	function duckMusic(holdForVoice = false): void {
 		if (!music || muted) return;
 		music.volume = DUCKED_VOLUME * volumes.music;
 		if (typeof window === 'undefined') return;
 		if (duckTimer !== null) window.clearTimeout(duckTimer);
-		duckTimer = window.setTimeout(() => {
-			duckTimer = null;
-			syncMusicVolume();
-		}, 1200);
+		// A word clip can run for several seconds. Hold the duck until the clip
+		// ends (with a fallback) instead of restoring under the voice.
+		duckTimer = window.setTimeout(
+			() => {
+				duckTimer = null;
+				syncMusicVolume();
+			},
+			holdForVoice ? 6000 : 1200
+		);
 	}
 
 	function stopSfx(): void {
@@ -145,10 +150,12 @@ export function createAudioController(options: AudioOptions = {}): AudioControll
 		if (muted) return;
 		stopSfx();
 		stopWord();
-		duckMusic();
+		duckMusic(true);
 		const audio = make();
 		audio.src = wordAudioPath(locale, level, index);
 		audio.volume = 0.9 * volumes.voice;
+		audio.addEventListener('ended', restoreMusic, { once: true });
+		audio.addEventListener('error', restoreMusic, { once: true });
 		word = audio;
 		playQuietly(audio);
 	}

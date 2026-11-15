@@ -69,6 +69,8 @@ describe('audio controller', () => {
 
 		controller.playWord('en', 1, 0);
 		expect(music.volume).toBeLessThan(0.16);
+		controller.stopWord();
+		expect(music.volume).toBeCloseTo(0.16);
 
 		controller.playSfx('tile-pick');
 		const firstSfx = created.at(-1)!;
