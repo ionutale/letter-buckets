@@ -53,6 +53,7 @@ export interface KeyValueStorage {
 
 export const SAVE_KEY = 'letter-buckets-save';
 export const SAVE_KEY_P2 = 'letter-buckets-save-p2';
+export const SAVE_KEY_P3 = 'letter-buckets-save-p3';
 export const MAX_LEVEL = 50;
 export const WORDS_PER_LEVEL = 3;
 
@@ -213,7 +214,9 @@ function sanitizeLocale(value: unknown): LocaleProgress {
 }
 
 export function saveKey(packageId: PackageId = 'p1'): string {
-	return packageId === 'p2' ? SAVE_KEY_P2 : SAVE_KEY;
+	if (packageId === 'p3') return SAVE_KEY_P3;
+	if (packageId === 'p2') return SAVE_KEY_P2;
+	return SAVE_KEY;
 }
 
 function applySharedSettings(
@@ -221,8 +224,27 @@ function applySharedSettings(
 	storage: KeyValueStorage,
 	packageId: PackageId
 ): SaveData {
-	if (packageId === 'p2') data.settings = loadSave(storage, 'p1').settings;
+	if (packageId !== 'p1') data.settings = loadSave(storage, 'p1').settings;
 	return data;
+}
+
+/**
+ * Resolve the active package from settings, falling back if the requested
+ * package is still locked. `isPackageUnlocked` receives the previous package's
+ * save: p1 for p2, p2 for p3.
+ */
+export function resolveActivePackage(storage: KeyValueStorage, locale: Locale): PackageId {
+	const p1 = loadSave(storage, 'p1');
+	const requested = p1.settings.activePackage;
+	if (requested === 'p1') return 'p1';
+	if (requested === 'p3') {
+		const p2 = loadSave(storage, 'p2');
+		if (isPackageUnlocked(p2, locale, 'p3')) return 'p3';
+	}
+	if (requested === 'p2' || requested === 'p3') {
+		if (isPackageUnlocked(p1, locale, 'p2')) return 'p2';
+	}
+	return 'p1';
 }
 
 export function loadSave(storage?: KeyValueStorage | null, packageId: PackageId = 'p1'): SaveData {
@@ -265,7 +287,11 @@ export function loadSave(storage?: KeyValueStorage | null, packageId: PackageId 
 		) {
 			data.settings.mode = parsed.settings.mode;
 		}
-		if (parsed.settings.activePackage === 'p1' || parsed.settings.activePackage === 'p2') {
+		if (
+			parsed.settings.activePackage === 'p1' ||
+			parsed.settings.activePackage === 'p2' ||
+			parsed.settings.activePackage === 'p3'
+		) {
 			data.settings.activePackage = parsed.settings.activePackage;
 		}
 		if (isPlainObject(parsed.settings.volumes)) {

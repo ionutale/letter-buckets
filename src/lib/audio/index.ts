@@ -42,7 +42,12 @@ export function wordAudioPath(
 	index: number,
 	packageId: PackageId = 'p1'
 ): string {
-	const folder = packageId === 'p2' ? '/audio/p2/words' : '/audio/words';
+	const folder =
+		packageId === 'p3'
+			? '/audio/p3/words'
+			: packageId === 'p2'
+				? '/audio/p2/words'
+				: '/audio/words';
 	return `${folder}/${locale}/l${String(level).padStart(2, '0')}-w${index + 1}.mp3`;
 }
 

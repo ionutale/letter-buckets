@@ -6,7 +6,12 @@
 	import { getLocale, localizeHref } from '#lib/paraglide/runtime.js';
 	import { getLevelContent } from '#lib/content/index.js';
 	import type { Locale, PackageId } from '#lib/content/schema.js';
-	import { currentLevel, isPackageUnlocked, loadSave, type SaveData } from '#lib/storage/save.js';
+	import {
+		currentLevel,
+		loadSave,
+		resolveActivePackage,
+		type SaveData
+	} from '#lib/storage/save.js';
 	import ChapterTabs from '#lib/components/ChapterTabs.svelte';
 
 	let data = $state<SaveData | null>(null);
@@ -18,9 +23,7 @@
 
 	onMount(() => {
 		locale = getLocale() as Locale;
-		const main = loadSave(localStorage);
-		packageId =
-			main.settings.activePackage === 'p2' && isPackageUnlocked(main, locale, 'p2') ? 'p2' : 'p1';
+		packageId = resolveActivePackage(localStorage, locale);
 		data = loadSave(localStorage, packageId);
 		active = Math.ceil(currentLevel(data, locale) / 10);
 		active = Math.min(5, Math.max(1, active));

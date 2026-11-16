@@ -1,5 +1,5 @@
 export type Locale = 'ro' | 'it' | 'en' | 'de' | 'ru';
-export type PackageId = 'p1' | 'p2';
+export type PackageId = 'p1' | 'p2' | 'p3';
 
 export interface WordEntry {
 	/** Display and puzzle form, uppercase, letters only. */

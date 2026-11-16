@@ -13,8 +13,8 @@
 		getLocaleProgress,
 		hintsRemaining,
 		isLevelOpen,
-		isPackageUnlocked,
 		loadSave,
+		resolveActivePackage,
 		markWordComplete,
 		persistSave,
 		recordAttempt,
@@ -49,9 +49,7 @@
 
 	onMount(() => {
 		locale = getLocale() as Locale;
-		const main = loadSave(localStorage);
-		packageId =
-			main.settings.activePackage === 'p2' && isPackageUnlocked(main, locale, 'p2') ? 'p2' : 'p1';
+		packageId = resolveActivePackage(localStorage, locale);
 		data = loadSave(localStorage, packageId);
 		muted = data.settings.muted;
 		mode = data.settings.mode;

@@ -9,12 +9,14 @@
 		isPackageUnlocked,
 		loadSave,
 		persistSave,
+		resolveActivePackage,
 		type SaveData
 	} from '#lib/storage/save.js';
 	import InstallHint from '#lib/components/InstallHint.svelte';
 
 	let data = $state<SaveData | null>(null);
 	let mainData = $state<SaveData | null>(null);
+	let package2Data = $state<SaveData | null>(null);
 	let locale = $state<Locale>('en');
 	let packageId = $state<PackageId>('p1');
 	let broken = $state<Record<number, boolean>>({});
@@ -22,16 +24,15 @@
 	onMount(() => {
 		locale = getLocale() as Locale;
 		mainData = loadSave(localStorage);
-		packageId =
-			mainData.settings.activePackage === 'p2' && isPackageUnlocked(mainData, locale, 'p2')
-				? 'p2'
-				: 'p1';
+		package2Data = loadSave(localStorage, 'p2');
+		packageId = resolveActivePackage(localStorage, locale);
 		data = loadSave(localStorage, packageId);
 	});
 
 	function selectPackage(next: PackageId): void {
 		if (!mainData || next === packageId) return;
 		if (next === 'p2' && !isPackageUnlocked(mainData, locale, 'p2')) return;
+		if (next === 'p3' && (!package2Data || !isPackageUnlocked(package2Data, locale, 'p3'))) return;
 		packageId = next;
 		mainData.settings.activePackage = next;
 		persistSave(mainData, localStorage);
@@ -160,10 +161,61 @@
 				title={!mainData || !isPackageUnlocked(mainData, locale, 'p2') ? m.package_locked() : ''}
 				onclick={() => selectPackage('p2')}
 			>
-				{#if mainData && !isPackageUnlocked(mainData, locale, 'p2')}<span aria-hidden="true"
-						>🔒</span
+				{#if mainData && !isPackageUnlocked(mainData, locale, 'p2')}<svg
+						class="lock"
+						viewBox="0 0 24 24"
+						aria-hidden="true"
+						><rect
+							x="5"
+							y="10"
+							width="14"
+							height="10"
+							rx="2"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="1.8"
+						/><path
+							d="M8 10V7a4 4 0 0 1 8 0v3"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="1.8"
+							stroke-linecap="round"
+						/></svg
 					>{/if}
 				{m.package_2()}
+			</button>
+			<button
+				type="button"
+				class:active={packageId === 'p3'}
+				aria-pressed={packageId === 'p3'}
+				disabled={!package2Data || !isPackageUnlocked(package2Data, locale, 'p3')}
+				title={!package2Data || !isPackageUnlocked(package2Data, locale, 'p3')
+					? m.package_locked()
+					: ''}
+				onclick={() => selectPackage('p3')}
+			>
+				{#if package2Data && !isPackageUnlocked(package2Data, locale, 'p3')}<svg
+						class="lock"
+						viewBox="0 0 24 24"
+						aria-hidden="true"
+						><rect
+							x="5"
+							y="10"
+							width="14"
+							height="10"
+							rx="2"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="1.8"
+						/><path
+							d="M8 10V7a4 4 0 0 1 8 0v3"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="1.8"
+							stroke-linecap="round"
+						/></svg
+					>{/if}
+				{m.package_3()}
 			</button>
 		</div>
 	</section>

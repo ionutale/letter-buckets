@@ -78,5 +78,6 @@
 	"voice": "Voice",
 	"package_1": "Package 1",
 	"package_2": "Package 2",
-	"package_locked": "Finish Package 1 to unlock"
+	"package_locked": "Finish Package 1 to unlock",
+	"package_3": "Package 3"
 }

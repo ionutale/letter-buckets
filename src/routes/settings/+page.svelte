@@ -133,9 +133,11 @@
 		resetLocale(data, locale);
 		data.settings.coachDone = false;
 		data.settings.activePackage = 'p1';
-		const package2 = loadSave(localStorage, 'p2');
-		resetLocale(package2, locale);
-		persistSave(package2, localStorage, 'p2');
+		for (const packageId of ['p2', 'p3'] as const) {
+			const packageData = loadSave(localStorage, packageId);
+			resetLocale(packageData, locale);
+			persistSave(packageData, localStorage, packageId);
+		}
 		persist();
 		showToast(m.reset_done());
 	}
