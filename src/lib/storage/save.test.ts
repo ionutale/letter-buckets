@@ -8,6 +8,7 @@ import {
 	markWordComplete,
 	persistSave,
 	recordAttempt,
+	saveKey,
 	resetLevelWords,
 	resetLocale,
 	hintsRemaining,
@@ -447,5 +448,29 @@ describe('reset', () => {
 		expect(data.locales.en.metrics.wordsCompleted).toBe(0);
 		expect(data.locales.en.metrics.chapters).toEqual({});
 		expect(data.locales.en.hintUsage).toEqual({});
+	});
+});
+
+describe('packages', () => {
+	it('uses a separate save key and keeps progress independent', () => {
+		const map = new Map<string, string>();
+		const store = {
+			getItem: (key: string) => map.get(key) ?? null,
+			setItem: (key: string, value: string) => void map.set(key, value)
+		};
+		const main = defaultSave();
+		main.settings.muted = true;
+		markWordComplete(main, 'en', 1, 0);
+		persistSave(main, store);
+
+		const p2 = loadSave(store, 'p2');
+		expect(p2.settings.muted).toBe(true);
+		expect(p2.locales.en.levelWords).toEqual({});
+		markWordComplete(p2, 'en', 1, 0);
+		persistSave(p2, store, 'p2');
+
+		expect(saveKey('p1')).not.toBe(saveKey('p2'));
+		expect(loadSave(store).locales.en.levelWords).toEqual({ 1: [0] });
+		expect(loadSave(store, 'p2').locales.en.levelWords).toEqual({ 1: [0] });
 	});
 });

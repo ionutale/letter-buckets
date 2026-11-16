@@ -3,36 +3,45 @@
 	import { m } from '#lib/paraglide/messages.js';
 	import { getLocale, localizeHref } from '#lib/paraglide/runtime.js';
 	import { getLevelContent, getWordArt } from '#lib/content/index.js';
-	import type { Locale } from '#lib/content/schema.js';
+	import type { Locale, PackageId } from '#lib/content/schema.js';
 	import { audio } from '#lib/audio/index.js';
-	import { loadSave, wordKey, type SaveData } from '#lib/storage/save.js';
+	import { isPackageUnlocked, loadSave, wordKey, type SaveData } from '#lib/storage/save.js';
 	import WordChip from '#lib/components/WordChip.svelte';
 
 	let data = $state<SaveData | null>(null);
 	let locale = $state<Locale>('en');
+	let packageId = $state<PackageId>('p1');
 
 	onMount(() => {
-		data = loadSave(localStorage);
 		locale = getLocale() as Locale;
+		const main = loadSave(localStorage);
+		packageId =
+			main.settings.activePackage === 'p2' && isPackageUnlocked(main, locale, 'p2') ? 'p2' : 'p1';
+		data = loadSave(localStorage, packageId);
 	});
 
 	const unlocked = $derived(data ? data.locales[locale].unlocked : {});
 	const count = $derived(Object.keys(unlocked).length);
 
-	const chapters = $derived([
-		{ n: 1, label: m.chapter_home() },
-		{ n: 2, label: m.chapter_farm() },
-		{ n: 3, label: m.chapter_town() },
-		{ n: 4, label: m.chapter_nature() },
-		{ n: 5, label: m.chapter_world() }
-	]);
+	const chapters = $derived(
+		packageId === 'p2'
+			? [1, 2, 3, 4, 5].map((n) => ({ n, label: m.chapter_n({ n }) }))
+			: [
+					{ n: 1, label: m.chapter_home() },
+					{ n: 2, label: m.chapter_farm() },
+					{ n: 3, label: m.chapter_town() },
+					{ n: 4, label: m.chapter_nature() },
+					{ n: 5, label: m.chapter_world() }
+				]
+	);
 
 	function audioPath(level: number, index: number): string {
-		return `/audio/words/${locale}/l${String(level).padStart(2, '0')}-w${index + 1}.mp3`;
+		const folder = packageId === 'p2' ? '/audio/p2/words' : '/audio/words';
+		return `${folder}/${locale}/l${String(level).padStart(2, '0')}-w${index + 1}.mp3`;
 	}
 
 	function play(level: number, index: number): void {
-		audio.playWord(locale, level, index);
+		audio.playWord(locale, level, index, packageId);
 	}
 </script>
 
@@ -56,11 +65,11 @@
 				<div class="level-row">
 					<span class="level-num">{level}</span>
 					<div class="chips">
-						{#each getLevelContent(locale, level).words as entry, index}
+						{#each getLevelContent(locale, level, packageId).words as entry, index}
 							<WordChip
 								word={entry.word}
 								{level}
-								image={getWordArt(locale, level, index)}
+								image={getWordArt(locale, level, index, packageId)}
 								unlocked={unlocked[wordKey(level, index)] === true}
 								audio={audioPath(level, index)}
 								onplay={() => play(level, index)}

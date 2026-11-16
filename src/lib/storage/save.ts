@@ -1,4 +1,4 @@
-import type { Locale } from '../content/schema.js';
+import type { Locale, PackageId } from '../content/schema.js';
 import { LOCALES } from '../content/schema.js';
 
 export type GameMode = 'easy' | 'medium' | 'hard';
@@ -37,6 +37,7 @@ export interface SaveSettings {
 	installHintDismissed: boolean;
 	mode: GameMode;
 	volumes: VolumeSettings;
+	activePackage: PackageId;
 }
 
 export interface SaveData {
@@ -51,6 +52,7 @@ export interface KeyValueStorage {
 }
 
 export const SAVE_KEY = 'letter-buckets-save';
+export const SAVE_KEY_P2 = 'letter-buckets-save-p2';
 export const MAX_LEVEL = 50;
 export const WORDS_PER_LEVEL = 3;
 
@@ -94,7 +96,8 @@ export function defaultSave(): SaveData {
 			coachDone: false,
 			installHintDismissed: false,
 			mode: 'easy',
-			volumes: { music: 1, sfx: 1, voice: 1 }
+			volumes: { music: 1, sfx: 1, voice: 1 },
+			activePackage: 'p1'
 		},
 		locales: Object.fromEntries(
 			LOCALES.map((locale) => [locale, defaultLocaleProgress()])
@@ -209,25 +212,42 @@ function sanitizeLocale(value: unknown): LocaleProgress {
 	return progress;
 }
 
-export function loadSave(storage?: KeyValueStorage | null): SaveData {
+export function saveKey(packageId: PackageId = 'p1'): string {
+	return packageId === 'p2' ? SAVE_KEY_P2 : SAVE_KEY;
+}
+
+function applySharedSettings(
+	data: SaveData,
+	storage: KeyValueStorage,
+	packageId: PackageId
+): SaveData {
+	if (packageId === 'p2') data.settings = loadSave(storage, 'p1').settings;
+	return data;
+}
+
+export function loadSave(storage?: KeyValueStorage | null, packageId: PackageId = 'p1'): SaveData {
 	const fallback = defaultSave();
 	if (!storage) return fallback;
 
 	let raw: string | null;
 	try {
-		raw = storage.getItem(SAVE_KEY);
+		raw = storage.getItem(saveKey(packageId));
 	} catch {
-		return fallback;
+		return applySharedSettings(fallback, storage, packageId);
 	}
-	if (typeof raw !== 'string' || raw.length === 0) return fallback;
+	if (typeof raw !== 'string' || raw.length === 0) {
+		return applySharedSettings(fallback, storage, packageId);
+	}
 
 	let parsed: unknown;
 	try {
 		parsed = JSON.parse(raw);
 	} catch {
-		return fallback;
+		return applySharedSettings(fallback, storage, packageId);
 	}
-	if (!isPlainObject(parsed) || parsed.version !== 1) return fallback;
+	if (!isPlainObject(parsed) || parsed.version !== 1) {
+		return applySharedSettings(fallback, storage, packageId);
+	}
 
 	const data = defaultSave();
 	if (isPlainObject(parsed.settings)) {
@@ -245,6 +265,9 @@ export function loadSave(storage?: KeyValueStorage | null): SaveData {
 		) {
 			data.settings.mode = parsed.settings.mode;
 		}
+		if (parsed.settings.activePackage === 'p1' || parsed.settings.activePackage === 'p2') {
+			data.settings.activePackage = parsed.settings.activePackage;
+		}
 		if (isPlainObject(parsed.settings.volumes)) {
 			for (const channel of ['music', 'sfx', 'voice'] as const) {
 				const value = parsed.settings.volumes[channel];
@@ -259,11 +282,19 @@ export function loadSave(storage?: KeyValueStorage | null): SaveData {
 			data.locales[locale] = sanitizeLocale(parsed.locales[locale]);
 		}
 	}
-	return data;
+	return applySharedSettings(data, storage, packageId);
 }
 
-export function persistSave(data: SaveData, storage: KeyValueStorage): void {
-	storage.setItem(SAVE_KEY, JSON.stringify(data));
+export function persistSave(
+	data: SaveData,
+	storage: KeyValueStorage,
+	packageId: PackageId = 'p1'
+): void {
+	storage.setItem(saveKey(packageId), JSON.stringify(data));
+}
+
+export function isPackageUnlocked(data: SaveData, locale: Locale, packageId: PackageId): boolean {
+	return packageId === 'p1' || data.locales[locale].clearedThrough >= MAX_LEVEL;
 }
 
 export function getLocaleProgress(data: SaveData, locale: Locale): LocaleProgress {

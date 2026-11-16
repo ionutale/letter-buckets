@@ -3,18 +3,40 @@
 	import { m } from '#lib/paraglide/messages.js';
 	import { getLocale, localizeHref } from '#lib/paraglide/runtime.js';
 	import { getLevelContent, getWordArt } from '#lib/content/index.js';
-	import type { Locale } from '#lib/content/schema.js';
-	import { currentLevel, loadSave, type SaveData } from '#lib/storage/save.js';
+	import type { Locale, PackageId } from '#lib/content/schema.js';
+	import {
+		currentLevel,
+		isPackageUnlocked,
+		loadSave,
+		persistSave,
+		type SaveData
+	} from '#lib/storage/save.js';
 	import InstallHint from '#lib/components/InstallHint.svelte';
 
 	let data = $state<SaveData | null>(null);
+	let mainData = $state<SaveData | null>(null);
 	let locale = $state<Locale>('en');
+	let packageId = $state<PackageId>('p1');
 	let broken = $state<Record<number, boolean>>({});
 
 	onMount(() => {
-		data = loadSave(localStorage);
 		locale = getLocale() as Locale;
+		mainData = loadSave(localStorage);
+		packageId =
+			mainData.settings.activePackage === 'p2' && isPackageUnlocked(mainData, locale, 'p2')
+				? 'p2'
+				: 'p1';
+		data = loadSave(localStorage, packageId);
 	});
+
+	function selectPackage(next: PackageId): void {
+		if (!mainData || next === packageId) return;
+		if (next === 'p2' && !isPackageUnlocked(mainData, locale, 'p2')) return;
+		packageId = next;
+		mainData.settings.activePackage = next;
+		persistSave(mainData, localStorage);
+		data = loadSave(localStorage, next);
+	}
 
 	const level = $derived(data ? currentLevel(data, locale) : 1);
 	const chapter = $derived(Math.ceil(level / 10));
@@ -25,11 +47,11 @@
 	const accuracy = $derived(
 		metrics && attempts > 0 ? Math.round((metrics.correctPlacements / attempts) * 100) : 0
 	);
-	const theme = $derived(getLevelContent(locale, level).theme);
+	const theme = $derived(getLevelContent(locale, level, packageId).theme);
 	const mode = $derived(
-		data?.settings.mode === 'medium'
+		mainData?.settings.mode === 'medium'
 			? m.mode_medium()
-			: data?.settings.mode === 'hard'
+			: mainData?.settings.mode === 'hard'
 				? m.mode_hard()
 				: m.mode_easy()
 	);
@@ -79,7 +101,7 @@
 					<span class="word-card" style={`--i:${index}`}>
 						{#if !broken[index]}
 							<img
-								src={getWordArt(locale, level, index)}
+								src={getWordArt(locale, level, index, packageId)}
 								alt=""
 								loading="eager"
 								decoding="async"
@@ -120,6 +142,29 @@
 			</span>
 			<span class="chapter-copy">{m.chapter_n({ n: chapter })}</span>
 			<span class="mode-chip">{mode}</span>
+		</div>
+		<div class="package-switch" aria-label={m.package_1()}>
+			<button
+				type="button"
+				class:active={packageId === 'p1'}
+				aria-pressed={packageId === 'p1'}
+				onclick={() => selectPackage('p1')}
+			>
+				{m.package_1()}
+			</button>
+			<button
+				type="button"
+				class:active={packageId === 'p2'}
+				aria-pressed={packageId === 'p2'}
+				disabled={!mainData || !isPackageUnlocked(mainData, locale, 'p2')}
+				title={!mainData || !isPackageUnlocked(mainData, locale, 'p2') ? m.package_locked() : ''}
+				onclick={() => selectPackage('p2')}
+			>
+				{#if mainData && !isPackageUnlocked(mainData, locale, 'p2')}<span aria-hidden="true"
+						>🔒</span
+					>{/if}
+				{m.package_2()}
+			</button>
 		</div>
 	</section>
 
@@ -381,6 +426,36 @@
 		border-radius: var(--lb-radius-pill);
 		background: var(--lb-paper-2);
 		box-shadow: inset 0 0 0 1px var(--lb-border);
+	}
+	.package-switch {
+		display: flex;
+		gap: 2px;
+		padding: 3px;
+		border-radius: var(--lb-radius-pill);
+		background: var(--lb-paper-2);
+		box-shadow: inset 0 0 0 1px var(--lb-border);
+	}
+	.package-switch button {
+		min-height: 38px;
+		padding: 0 var(--lb-space-3);
+		border-radius: var(--lb-radius-pill);
+		color: var(--lb-ink-soft);
+		font-size: var(--lb-text-xs);
+		font-weight: 800;
+	}
+	.package-switch button.active {
+		background: var(--lb-paper);
+		color: var(--lb-ink);
+		box-shadow: var(--lb-shadow-1);
+	}
+	.package-switch button:disabled {
+		opacity: 0.45;
+	}
+	.package-switch :global(.lock) {
+		width: 13px;
+		height: 13px;
+		margin-right: 3px;
+		vertical-align: -2px;
 	}
 	.bottom {
 		display: grid;

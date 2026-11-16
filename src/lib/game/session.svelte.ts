@@ -1,6 +1,7 @@
 import { getLevelContent } from '../content/index.js';
 import type { LevelContent, Locale } from '../content/schema.js';
 import type { LocaleProgress } from '../storage/save.js';
+import type { PackageId } from '../content/schema.js';
 import { nextHintAction, type HintAction } from './hints.js';
 import {
 	buildPuzzle,
@@ -19,6 +20,7 @@ export interface BucketState {
 }
 
 export interface LevelSessionOptions {
+	packageId?: PackageId;
 	progress?: LocaleProgress;
 	onWordComplete?: (level: number, wordIndex: number, firstTry: boolean) => void;
 	onLevelComplete?: (level: number) => void;
@@ -30,6 +32,7 @@ export interface LevelSessionOptions {
 export interface LevelSession {
 	readonly level: number;
 	readonly locale: Locale;
+	readonly packageId: PackageId;
 	readonly content: LevelContent;
 	readonly buckets: BucketState[];
 	readonly openIndex: number | null;
@@ -54,7 +57,8 @@ export function createLevelSession(
 	locale: Locale,
 	options: LevelSessionOptions = {}
 ): LevelSession {
-	const content = getLevelContent(locale, level);
+	const packageId = options.packageId ?? 'p1';
+	const content = getLevelContent(locale, level, packageId);
 	const completed = new Set(options.progress?.levelWords[level] ?? []);
 	const notified = new Set<number>(completed);
 
@@ -243,6 +247,9 @@ export function createLevelSession(
 		},
 		get locale() {
 			return locale;
+		},
+		get packageId() {
+			return packageId;
 		},
 		get content() {
 			return content;

@@ -1,21 +1,33 @@
 <script lang="ts">
 	import { m } from '#lib/paraglide/messages.js';
+	import type { PackageId } from '#lib/content/schema.js';
 
 	interface Props {
 		active: number;
 		stamps?: number[];
+		packageId?: PackageId;
 		onselect: (chapter: number) => void;
 	}
 
-	let { active, stamps = [], onselect }: Props = $props();
+	let { active, stamps = [], packageId = 'p1', onselect }: Props = $props();
 
-	const chapters = $derived([
-		{ n: 1, label: m.chapter_home(), icon: 'home' },
-		{ n: 2, label: m.chapter_farm(), icon: 'farm' },
-		{ n: 3, label: m.chapter_town(), icon: 'town' },
-		{ n: 4, label: m.chapter_nature(), icon: 'nature' },
-		{ n: 5, label: m.chapter_world(), icon: 'world' }
-	]);
+	const chapters = $derived(
+		packageId === 'p2'
+			? [
+					{ n: 1, label: m.chapter_n({ n: 1 }), icon: 'home' },
+					{ n: 2, label: m.chapter_n({ n: 2 }), icon: 'farm' },
+					{ n: 3, label: m.chapter_n({ n: 3 }), icon: 'town' },
+					{ n: 4, label: m.chapter_n({ n: 4 }), icon: 'nature' },
+					{ n: 5, label: m.chapter_n({ n: 5 }), icon: 'world' }
+				]
+			: [
+					{ n: 1, label: m.chapter_home(), icon: 'home' },
+					{ n: 2, label: m.chapter_farm(), icon: 'farm' },
+					{ n: 3, label: m.chapter_town(), icon: 'town' },
+					{ n: 4, label: m.chapter_nature(), icon: 'nature' },
+					{ n: 5, label: m.chapter_world(), icon: 'world' }
+				]
+	);
 </script>
 
 <nav class="tabs" aria-label={m.chapters()}>

@@ -5,19 +5,23 @@
 	import { m } from '#lib/paraglide/messages.js';
 	import { getLocale, localizeHref } from '#lib/paraglide/runtime.js';
 	import { getLevelContent } from '#lib/content/index.js';
-	import type { Locale } from '#lib/content/schema.js';
-	import { currentLevel, loadSave, type SaveData } from '#lib/storage/save.js';
+	import type { Locale, PackageId } from '#lib/content/schema.js';
+	import { currentLevel, isPackageUnlocked, loadSave, type SaveData } from '#lib/storage/save.js';
 	import ChapterTabs from '#lib/components/ChapterTabs.svelte';
 
 	let data = $state<SaveData | null>(null);
 	let locale = $state<Locale>('en');
 	let active = $state(1);
+	let packageId = $state<PackageId>('p1');
 	let toast = $state('');
 	let toastTimer: number | null = null;
 
 	onMount(() => {
-		data = loadSave(localStorage);
 		locale = getLocale() as Locale;
+		const main = loadSave(localStorage);
+		packageId =
+			main.settings.activePackage === 'p2' && isPackageUnlocked(main, locale, 'p2') ? 'p2' : 'p1';
+		data = loadSave(localStorage, packageId);
 		active = Math.ceil(currentLevel(data, locale) / 10);
 		active = Math.min(5, Math.max(1, active));
 		if (page.url.searchParams.get('locked') === '1') {
@@ -71,7 +75,7 @@
 		<h1>{m.levels()}</h1>
 	</header>
 
-	<ChapterTabs {active} {stamps} onselect={(chapter) => (active = chapter)} />
+	<ChapterTabs {active} {stamps} {packageId} onselect={(chapter) => (active = chapter)} />
 
 	<div class="grid">
 		{#each levels as level}
