@@ -3,13 +3,22 @@ import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node
 import { homedir } from 'node:os';
 import { dirname, resolve } from 'node:path';
 
-const args = new Set(process.argv.slice(2));
+const argv = process.argv.slice(2);
+const args = new Set(argv);
 const FORCE = args.has('--force');
 const SAMPLE = args.has('--sample');
 const SFX_ONLY = args.has('--sfx');
 const ALL = args.has('--all') || SAMPLE;
+function flag(name) {
+	const index = argv.indexOf(`--${name}`);
+	return index === -1 ? undefined : argv[index + 1];
+}
+const ONLY_PACKAGE = flag('package');
+const ONLY_LOCALE = flag('locale');
 if (!ALL && !SFX_ONLY) {
-	console.error('usage: node scripts/generate_audio.mjs --all | --sample [--force]');
+	console.error(
+		'usage: node scripts/generate_audio.mjs --all | --sample [--force] [--package p1|p2|p3] [--locale it]'
+	);
 	process.exit(2);
 }
 
@@ -22,9 +31,15 @@ const PIPER_VOICE =
 const PIPER_VOICE_RU =
 	process.env.PIPER_VOICE_RU ?? resolve(homedir(), 'piper-voices/ru_RU-irina-medium.onnx');
 const PIPER_LENGTH_SCALE = process.env.PIPER_LENGTH_SCALE ?? '1.2';
-const CONTENT = JSON.parse(readFileSync('scripts/content.json', 'utf8'));
 const TMP = resolve('candidates/audio-tmp');
 mkdirSync(TMP, { recursive: true });
+
+// One file per package: the app plays them from matching folders.
+const PACKAGES = [
+	{ id: 'p1', content: 'scripts/content.json', out: 'static/audio/words' },
+	{ id: 'p2', content: 'scripts/content.p2.json', out: 'static/audio/p2/words' },
+	{ id: 'p3', content: 'scripts/content.p3.json', out: 'static/audio/p3/words' }
+];
 
 const LANGUAGES = {
 	en: 'English',
@@ -33,15 +48,27 @@ const LANGUAGES = {
 	ru: 'Russian'
 };
 
-// Qwen follows the accent in the instruction. Piper voices are fixed native
-// models, so they are configured by voice and slowed with --length_scale.
+// Qwen presets are native English/Chinese speakers; only the instruction steers
+// them. Italian uses a designed native voice from the engine's library instead,
+// so its instruction stays empty and the reference carries the accent.
+const QWEN_VOICE = {
+	en: 'serena',
+	it: 'narratrice-a',
+	de: 'serena'
+};
+
+// Piper voices are fixed native models, so they are configured by voice and
+// slowed with --length_scale.
 const VOICE_STYLE = {
 	en: 'a soft Southern English',
-	it: 'a gentle Tuscan',
-	de: 'a gentle Bavarian',
-	ru: 'a soft Moscow',
-	ro: 'a gentle Transylvanian'
+	de: 'a gentle Bavarian'
 };
+
+function instructFor(locale) {
+	const style = VOICE_STYLE[locale];
+	if (!style) return '';
+	return `Speak slowly and clearly in ${LANGUAGES[locale]} with ${style} accent, warm and unhurried, for a young child`;
+}
 
 const pad = (value) => String(value).padStart(2, '0');
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -104,12 +131,12 @@ function piperWav(text, voice) {
 
 async function qwenWav(text, locale) {
 	const language = LANGUAGES[locale];
-	if (!language) throw new Error(`No Qwen language for ${locale}`);
-	const style = VOICE_STYLE[locale];
+	const voice = QWEN_VOICE[locale];
+	if (!language || !voice) throw new Error(`No Qwen voice for ${locale}`);
 	const result = await studio('/voice', {
 		text,
-		voice: 'serena',
-		instruct: `Speak slowly and clearly in ${language} with ${style} accent, warm and unhurried, for a young child`,
+		voice,
+		instruct: instructFor(locale),
 		language,
 		seconds: 4
 	});
@@ -119,12 +146,11 @@ async function qwenWav(text, locale) {
 	return output;
 }
 
-async function wordClip(locale, level, index, output) {
+async function wordClip(locale, entry, output) {
 	if (existsSync(output) && !FORCE) {
 		console.log(`skip ${output}`);
 		return;
 	}
-	const entry = CONTENT[locale].levels[level - 1].words[index];
 	const text = entry.spoken ?? entry.word.toLowerCase();
 	const wav =
 		locale === 'ro'
@@ -137,27 +163,42 @@ async function wordClip(locale, level, index, output) {
 	console.log(`wrote ${output}`);
 }
 
+function selectedLocales(content) {
+	return Object.keys(content).filter((locale) => !ONLY_LOCALE || locale === ONLY_LOCALE);
+}
+
+function selectedPackages() {
+	return PACKAGES.filter(
+		(pkg) => (!ONLY_PACKAGE || pkg.id === ONLY_PACKAGE) && existsSync(pkg.content)
+	).map((pkg) => ({
+		...pkg,
+		content: JSON.parse(readFileSync(pkg.content, 'utf8'))
+	}));
+}
+
 async function generateWords() {
-	for (const locale of Object.keys(CONTENT)) {
-		if (SAMPLE) {
-			const output = `candidates/audio/${locale}-sample.mp3`;
-			const entry = CONTENT[locale].levels[0].words[0];
-			const text = entry.spoken ?? entry.word.toLowerCase();
-			const wav =
-				locale === 'ro'
-					? piperWav(text, PIPER_VOICE)
-					: locale === 'ru'
-						? piperWav(text, PIPER_VOICE_RU)
-						: await qwenWav(text, locale);
-			convert(wav, output);
-			rmSync(wav, { force: true });
-			console.log(`wrote ${output}`);
-			continue;
-		}
-		for (const level of CONTENT[locale].levels) {
-			for (let index = 0; index < 3; index++) {
-				const output = `static/audio/words/${locale}/l${pad(level.id)}-w${index + 1}.mp3`;
-				await wordClip(locale, level.id, index, output);
+	for (const pkg of selectedPackages()) {
+		for (const locale of selectedLocales(pkg.content)) {
+			if (SAMPLE) {
+				const output = `candidates/audio/${locale}-sample.mp3`;
+				const entry = pkg.content[locale].levels[0].words[0];
+				const text = entry.spoken ?? entry.word.toLowerCase();
+				const wav =
+					locale === 'ro'
+						? piperWav(text, PIPER_VOICE)
+						: locale === 'ru'
+							? piperWav(text, PIPER_VOICE_RU)
+							: await qwenWav(text, locale);
+				convert(wav, output);
+				rmSync(wav, { force: true });
+				console.log(`wrote ${output}`);
+				continue;
+			}
+			for (const level of pkg.content[locale].levels) {
+				for (let index = 0; index < level.words.length; index++) {
+					const output = `${pkg.out}/${locale}/l${pad(level.id)}-w${index + 1}.mp3`;
+					await wordClip(locale, level.words[index], output);
+				}
 			}
 		}
 	}

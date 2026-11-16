@@ -6,10 +6,12 @@
 
 **Status:** ready-for-agent
 
-- [ ] Extend the asset generators to read Package 2 and write `/art/p2/…` and `/audio/p2/…`.
+- [x] Extend the asset generators to read Package 2 and write `/art/p2/…` and `/audio/p2/…`.
 - [ ] Generate 50 level illustrations at 768×432 WebP.
 - [ ] Generate 750 localized word clues at 256×256 WebP.
 - [ ] Generate 750 slowed, regional word clips.
+  - [x] Italian: 150 clips generated with the native `narratrice-a` voice.
+  - [ ] English, German (Qwen), Romanian, Russian (Piper).
 - [ ] Review all five Package 2 contact sheets and fix wrong or text-bearing images.
 - [ ] `validate_assets` and `check_build_size` cover Package 2; build stays under budget.
 - [ ] Package 2 works offline with all its assets precached.
@@ -17,3 +19,6 @@
 ## Notes
 
 Package 2 has 50 independent levels per locale and five chapters. Its content and UI are already live behind the “complete Package 1” gate.
+
+`scripts/generate_audio.mjs --package p2 --locale it` writes the Italian clips;
+`node scripts/validate_assets.mjs --packages` checks every package.

@@ -7,6 +7,8 @@ candidates
 .superpowers
 .DS_Store
 scripts/content.json
+scripts/content.p2.json
+scripts/content.p3.json
 scripts/themes.json
 .venv-piper
 src/lib/paraglide

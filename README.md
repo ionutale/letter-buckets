@@ -47,19 +47,25 @@ Romanian, Italian, English, German, Russian. UI copy, theme names, word lists, a
 
 All art and audio are generated once and committed; the app makes no runtime model calls and has no third-party requests.
 
-- **Word audio:** Qwen3-TTS (via `music-sfx-voice-studio`) for English, Italian, and German; Piper `ro_RO-mihai-medium` for Romanian and `ru_RU-irina-medium` for Russian.
+- **Word audio:** Qwen3-TTS (via `music-sfx-voice-studio`) for English and German; Piper `ro_RO-mihai-medium` for Romanian and `ru_RU-irina-medium` for Russian. Italian uses the engine's designed native voice `narratrice-a`, cloned from an Italian reference, because Qwen's fixed presets carry an audible foreign accent.
 - **Effects and music:** Stable Audio 3 and the studio's procedural effects.
 - **Illustrations:** 50 theme images and 750 per-word clue icons, FLUX.2-klein through mflux, layered-paper direction.
 
 Regenerate:
 
 ```bash
-pnpm content:export                         # scripts/content.json + scripts/themes.json
+pnpm content:export                         # content.json, content.p2.json, content.p3.json, themes.json
 /Users/ionutale/developer-playground/flux2-klein-mlx-studio/.venv/bin/python scripts/generate_art.py --all
 node scripts/generate_audio.mjs --all       # starts from the local studio; see below
 /Users/ionutale/developer-playground/flux2-klein-mlx-studio/.venv/bin/python scripts/generate_word_art.py --all
 node scripts/validate_assets.mjs            # 50 theme images, 750 word clues, 750 clips, effects, music
+node scripts/validate_assets.mjs --packages # also checks packages 2 and 3
 ```
+
+The audio job generates every package by default. Narrow it with `--package p2`
+and `--locale it`, and add `--force` to overwrite clips that already exist.
+Output goes to `static/audio/words/…` for Package 1 and `static/audio/p2/words/…`,
+`static/audio/p3/words/…` for the others.
 
 `PIPER_BIN` can point at the local Piper virtualenv, for example
 `PIPER_BIN="$PWD/.venv-piper/bin/piper" node scripts/generate_audio.mjs --all`.

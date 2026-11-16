@@ -2,32 +2,66 @@ import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, statSync } from 'node:fs';
 
 const imagesOnly = process.argv.includes('--images-only');
-const content = JSON.parse(readFileSync('scripts/content.json', 'utf8'));
+// Package 2 and 3 art and audio are produced later than Package 1, so they are
+// opt-in: `--packages` validates what exists for every package.
+const allPackages = process.argv.includes('--packages');
 const locales = ['ro', 'it', 'en', 'de', 'ru'];
 const issues = [];
 
 const pad = (n) => String(n).padStart(2, '0');
 
-for (let level = 1; level <= 50; level++) {
-	const image = `static/art/levels/l${pad(level)}.webp`;
-	if (!existsSync(image)) {
-		issues.push(`missing illustration ${image}`);
-	} else if (statSync(image).size > 90 * 1024) {
-		issues.push(`illustration over 90 KB: ${image}`);
+const PACKAGES = [
+	{
+		id: 'p1',
+		content: 'scripts/content.json',
+		art: 'static/art',
+		audio: 'static/audio/words',
+		required: true
+	},
+	{
+		id: 'p2',
+		content: 'scripts/content.p2.json',
+		art: 'static/art/p2',
+		audio: 'static/audio/p2/words',
+		required: false
+	},
+	{
+		id: 'p3',
+		content: 'scripts/content.p3.json',
+		art: 'static/art/p3',
+		audio: 'static/audio/p3/words',
+		required: false
 	}
-}
+].filter((pkg) => pkg.required || allPackages);
 
-if (!imagesOnly) {
+for (const pkg of PACKAGES) {
+	if (!existsSync(pkg.content)) {
+		issues.push(`missing content export ${pkg.content}`);
+		continue;
+	}
+	const content = JSON.parse(readFileSync(pkg.content, 'utf8'));
+
+	for (let level = 1; level <= 50; level++) {
+		const image = `${pkg.art}/levels/l${pad(level)}.webp`;
+		if (!existsSync(image)) {
+			issues.push(`missing illustration ${image}`);
+		} else if (statSync(image).size > 90 * 1024) {
+			issues.push(`illustration over 90 KB: ${image}`);
+		}
+	}
+
+	if (imagesOnly) continue;
+
 	for (const locale of locales) {
 		for (const level of content[locale].levels) {
 			for (let index = 0; index < 3; index++) {
-				const clue = `static/art/words/${locale}/l${pad(level.id)}-w${index + 1}.webp`;
+				const clue = `${pkg.art}/words/${locale}/l${pad(level.id)}-w${index + 1}.webp`;
 				if (!existsSync(clue)) {
 					issues.push(`missing word illustration ${clue}`);
 				} else if (statSync(clue).size > 30 * 1024) {
 					issues.push(`word illustration over 30 KB: ${clue}`);
 				}
-				const clip = `static/audio/words/${locale}/l${pad(level.id)}-w${index + 1}.mp3`;
+				const clip = `${pkg.audio}/${locale}/l${pad(level.id)}-w${index + 1}.mp3`;
 				if (!existsSync(clip)) {
 					issues.push(`missing clip ${clip}`);
 					continue;
@@ -56,7 +90,9 @@ if (!imagesOnly) {
 			}
 		}
 	}
+}
 
+if (!imagesOnly) {
 	for (const sfx of [
 		'tile-pick',
 		'tile-place',
