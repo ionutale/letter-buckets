@@ -75,5 +75,8 @@
 	"no_progress_yet": "Noch keine Wörter geschafft.",
 	"music": "Musik",
 	"sfx": "Effekte",
-	"voice": "Stimme"
+	"voice": "Stimme",
+	"package_1": "Paket 1",
+	"package_2": "Paket 2",
+	"package_locked": "Schließe Paket 1 ab zum Freischalten"
 }

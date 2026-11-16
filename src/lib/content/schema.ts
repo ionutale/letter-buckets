@@ -1,4 +1,5 @@
 export type Locale = 'ro' | 'it' | 'en' | 'de' | 'ru';
+export type PackageId = 'p1' | 'p2';
 
 export interface WordEntry {
 	/** Display and puzzle form, uppercase, letters only. */
@@ -16,6 +17,7 @@ export interface LevelContent {
 
 export interface LocaleContent {
 	locale: Locale;
+	packageId?: PackageId;
 	levels: LevelContent[];
 }
 

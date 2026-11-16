@@ -40,7 +40,7 @@ test('shows completed words, mistakes and letter accuracy', async ({ page }) => 
 test('is reachable from home and shows an empty state before any progress', async ({ page }) => {
 	await seedSave(page, { locale: 'en' });
 	await page.goto('/en/');
-	await page.getByRole('link', { name: 'Progress', exact: true }).click();
+	await page.getByRole('link', { name: /^Progress/ }).click();
 
 	await expect(page).toHaveURL(/\/en\/progress$/);
 	await expect(page.locator('.empty')).toHaveText('No words completed yet.');

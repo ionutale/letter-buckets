@@ -28,7 +28,7 @@
 				<li>
 					<button
 						type="button"
-						onclick={() => audio.playWord(session.locale, session.level, index)}
+						onclick={() => audio.playWord(session.locale, session.level, index, session.packageId)}
 					>
 						{bucket.word}
 						<span aria-hidden="true">🔊</span>

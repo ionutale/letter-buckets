@@ -5,7 +5,7 @@
 	import { m } from '#lib/paraglide/messages.js';
 	import { getLocale, localizeHref } from '#lib/paraglide/runtime.js';
 	import { getLevelArt, getWordArt } from '#lib/content/index.js';
-	import type { Locale } from '#lib/content/schema.js';
+	import type { Locale, PackageId } from '#lib/content/schema.js';
 	import { createLevelSession } from '#lib/game/session.svelte.js';
 	import type { LevelSession } from '#lib/game/session.svelte.js';
 	import { audio } from '#lib/audio/index.js';
@@ -13,6 +13,7 @@
 		getLocaleProgress,
 		hintsRemaining,
 		isLevelOpen,
+		isPackageUnlocked,
 		loadSave,
 		markWordComplete,
 		persistSave,
@@ -30,6 +31,7 @@
 	let data = $state<SaveData | null>(null);
 	let session = $state<LevelSession | null>(null);
 	let locale = $state<Locale>('en');
+	let packageId = $state<PackageId>('p1');
 	let artBroken = $state(false);
 	let coachStep = $state<1 | 2 | null>(null);
 	let muted = $state(false);
@@ -46,12 +48,15 @@
 	);
 
 	onMount(() => {
-		data = loadSave(localStorage);
 		locale = getLocale() as Locale;
+		const main = loadSave(localStorage);
+		packageId =
+			main.settings.activePackage === 'p2' && isPackageUnlocked(main, locale, 'p2') ? 'p2' : 'p1';
+		data = loadSave(localStorage, packageId);
 		muted = data.settings.muted;
 		mode = data.settings.mode;
 		audio.setMuted(muted);
-		audio.preloadLevel(locale, paramLevel);
+		audio.preloadLevel(locale, paramLevel, packageId);
 		if (paramLevel === 1 && !data.settings.coachDone) coachStep = 1;
 	});
 
@@ -68,34 +73,44 @@
 			void goto(`${localizeHref('/levels')}?locked=1`);
 			return;
 		}
-		if (session?.level === level) return;
+		if (session?.level === level && session.packageId === packageId) return;
 
-		audio.preloadLevel(locale, level);
+		audio.preloadLevel(locale, level, packageId);
 		session?.closeWord();
 		session = createLevelSession(level, locale, {
+			packageId,
 			progress: getLocaleProgress(data, locale),
 			onWordComplete: (completedLevel, wordIndex, firstTry) => {
 				if (!data) return;
 				markWordComplete(data, locale, completedLevel, wordIndex, firstTry);
-				persistSave(data, localStorage);
+				persistPackage(data);
 			},
 			onAttempt: (completedLevel, _wordIndex, correct) => {
 				if (!data) return;
 				recordAttempt(data, locale, completedLevel, correct);
-				persistSave(data, localStorage);
+				persistPackage(data);
 			},
 			canHint: () => hintsLeft > 0,
 			onHintUsed: () => {
 				if (!data) return;
-				if (spendHint(data, locale, mode, paramLevel)) persistSave(data, localStorage);
+				if (spendHint(data, locale, mode, paramLevel)) persistPackage(data);
 			},
 			onLevelComplete: () => {
 				if (!data) return;
 				audio.playSfx('level-complete');
-				persistSave(data, localStorage);
+				persistPackage(data);
 			}
 		});
 	});
+
+	function persistPackage(value: SaveData): void {
+		persistSave(value, localStorage, packageId);
+		if (packageId === 'p2') {
+			const main = loadSave(localStorage);
+			main.settings = value.settings;
+			persistSave(main, localStorage);
+		}
+	}
 
 	function hideArt(event: Event): void {
 		artBroken = true;
@@ -106,14 +121,14 @@
 		if (!data || !session) return;
 		audio.playSfx('ui-tap');
 		resetLevelWords(data, locale, paramLevel);
-		persistSave(data, localStorage);
+		persistPackage(data);
 		session.reset();
 	}
 
 	function dismissCoach(): void {
 		if (!data) return;
 		data.settings.coachDone = true;
-		persistSave(data, localStorage);
+		persistPackage(data);
 		coachStep = null;
 	}
 
@@ -132,7 +147,7 @@
 		muted = !muted;
 		data.settings.muted = muted;
 		audio.setMuted(muted);
-		persistSave(data, localStorage);
+		persistPackage(data);
 	}
 </script>
 
@@ -194,7 +209,7 @@
 	{#if !artBroken}
 		<img
 			class="banner"
-			src={getLevelArt(paramLevel)}
+			src={getLevelArt(paramLevel, packageId)}
 			alt=""
 			loading="lazy"
 			decoding="async"
@@ -209,7 +224,7 @@
 					index={bucket.index + 1}
 					status={bucket.status}
 					word={bucket.word}
-					image={getWordArt(locale, paramLevel, bucket.index)}
+					image={getWordArt(locale, paramLevel, bucket.index, packageId)}
 					onclick={() => openBucket(bucket.index)}
 				/>
 			{/each}

@@ -75,5 +75,8 @@
 	"no_progress_yet": "No words completed yet.",
 	"music": "Music",
 	"sfx": "Sound effects",
-	"voice": "Voice"
+	"voice": "Voice",
+	"package_1": "Package 1",
+	"package_2": "Package 2",
+	"package_locked": "Finish Package 1 to unlock"
 }

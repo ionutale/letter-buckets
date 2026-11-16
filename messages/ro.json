@@ -75,5 +75,8 @@
 	"no_progress_yet": "Niciun cuvânt completat încă.",
 	"music": "Muzică",
 	"sfx": "Efecte sonore",
-	"voice": "Voce"
+	"voice": "Voce",
+	"package_1": "Pachetul 1",
+	"package_2": "Pachetul 2",
+	"package_locked": "Termină Pachetul 1 pentru a debloca"
 }

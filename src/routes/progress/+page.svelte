@@ -2,9 +2,10 @@
 	import { onMount } from 'svelte';
 	import { m } from '#lib/paraglide/messages.js';
 	import { getLocale, localizeHref } from '#lib/paraglide/runtime.js';
-	import type { Locale } from '#lib/content/schema.js';
+	import type { Locale, PackageId } from '#lib/content/schema.js';
 	import {
 		emptyChapterMetrics,
+		isPackageUnlocked,
 		loadSave,
 		type ChapterMetrics,
 		type SaveData
@@ -12,10 +13,14 @@
 
 	let data = $state<SaveData | null>(null);
 	let locale = $state<Locale>('en');
+	let packageId = $state<PackageId>('p1');
 
 	onMount(() => {
-		data = loadSave(localStorage);
 		locale = getLocale() as Locale;
+		const main = loadSave(localStorage);
+		packageId =
+			main.settings.activePackage === 'p2' && isPackageUnlocked(main, locale, 'p2') ? 'p2' : 'p1';
+		data = loadSave(localStorage, packageId);
 	});
 
 	const metrics = $derived(data?.locales[locale].metrics ?? null);

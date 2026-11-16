@@ -75,5 +75,8 @@
 	"no_progress_yet": "Nessuna parola completata.",
 	"music": "Musica",
 	"sfx": "Effetti sonori",
-	"voice": "Voce"
+	"voice": "Voce",
+	"package_1": "Pacchetto 1",
+	"package_2": "Pacchetto 2",
+	"package_locked": "Completa il Pacchetto 1 per sbloccare"
 }

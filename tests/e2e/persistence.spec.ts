@@ -36,7 +36,7 @@ test('a chapter stamp is awarded only at level 10, not mid-chapter', async ({ pa
 	await page.reload();
 
 	await page.goto('/en/');
-	await expect(page.locator('.stamps .filled')).toHaveCount(1);
+	await expect(page.locator('.stars .filled')).toHaveCount(1);
 	const save = await page.evaluate(() => JSON.parse(localStorage.getItem('letter-buckets-save')!));
 	expect(save.locales.en.chapterStamps).toEqual([1]);
 });

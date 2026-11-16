@@ -132,6 +132,10 @@
 		if (!data) return;
 		resetLocale(data, locale);
 		data.settings.coachDone = false;
+		data.settings.activePackage = 'p1';
+		const package2 = loadSave(localStorage, 'p2');
+		resetLocale(package2, locale);
+		persistSave(package2, localStorage, 'p2');
 		persist();
 		showToast(m.reset_done());
 	}

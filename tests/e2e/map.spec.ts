@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 
 test('home Play continues at the current level', async ({ page }) => {
 	await page.goto('/en/');
-	await page.getByRole('link', { name: 'Play', exact: true }).click();
+	await page.getByRole('link', { name: /^Play/ }).click();
 	await expect(page).toHaveURL(/\/en\/levels\/1$/);
 });
 
@@ -39,10 +39,7 @@ test('a completed level unlocks the next one', async ({ page }) => {
 	});
 
 	await page.goto('/en/');
-	await expect(page.getByRole('link', { name: 'Play', exact: true })).toHaveAttribute(
-		'href',
-		'/en/levels/2'
-	);
+	await expect(page.getByRole('link', { name: /^Play/ })).toHaveAttribute('href', '/en/levels/2');
 
 	await page.goto('/en/levels');
 	await expect(page.locator('button.level[data-state="done"]')).toHaveCount(1);

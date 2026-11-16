@@ -14,6 +14,7 @@ repository.
 - [04 — Clue-image QA](04-clue-image-qa.md)
 - [05 — Release validation](05-release-validation.md) (blocked by 01–04)
 - [06 — Publish to Cloudflare and a public repo](06-publish.md) (blocked by 05)
+- [07 — Package 2 art and audio](07-package-2-assets.md)
 
 ## Prompt disposition
 
