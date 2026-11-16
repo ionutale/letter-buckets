@@ -5,8 +5,8 @@
 	import type { Locale, PackageId } from '#lib/content/schema.js';
 	import {
 		emptyChapterMetrics,
-		isPackageUnlocked,
 		loadSave,
+		resolveActivePackage,
 		type ChapterMetrics,
 		type SaveData
 	} from '#lib/storage/save.js';
@@ -17,9 +17,7 @@
 
 	onMount(() => {
 		locale = getLocale() as Locale;
-		const main = loadSave(localStorage);
-		packageId =
-			main.settings.activePackage === 'p2' && isPackageUnlocked(main, locale, 'p2') ? 'p2' : 'p1';
+		packageId = resolveActivePackage(localStorage, locale);
 		data = loadSave(localStorage, packageId);
 	});
 

@@ -15,6 +15,7 @@ repository.
 - [05 — Release validation](05-release-validation.md) (blocked by 01–04)
 - [06 — Publish to Cloudflare and a public repo](06-publish.md) (blocked by 05)
 - [07 — Package 2 art and audio](07-package-2-assets.md)
+- [08 — Package 3 art and audio](08-package-3-assets.md)
 
 ## Prompt disposition
 

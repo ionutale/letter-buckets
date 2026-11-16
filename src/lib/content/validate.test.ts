@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CONTENT, LEVEL_COUNT, PACKAGE_2 } from './index.js';
+import { CONTENT, LEVEL_COUNT, PACKAGE_2, PACKAGE_3 } from './index.js';
 import { validateContent } from './validate.js';
 
 describe('content', () => {
@@ -8,6 +8,9 @@ describe('content', () => {
 	});
 	it('validates package 2 in all five locales', () => {
 		expect(validateContent(PACKAGE_2)).toEqual([]);
+	});
+	it('validates package 3 in all five locales', () => {
+		expect(validateContent(PACKAGE_3)).toEqual([]);
 	});
 	it('has exactly 50 levels per locale', () => {
 		for (const locale of Object.keys(CONTENT) as (keyof typeof CONTENT)[]) {

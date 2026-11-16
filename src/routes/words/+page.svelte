@@ -5,7 +5,7 @@
 	import { getLevelContent, getWordArt } from '#lib/content/index.js';
 	import type { Locale, PackageId } from '#lib/content/schema.js';
 	import { audio } from '#lib/audio/index.js';
-	import { isPackageUnlocked, loadSave, wordKey, type SaveData } from '#lib/storage/save.js';
+	import { loadSave, resolveActivePackage, wordKey, type SaveData } from '#lib/storage/save.js';
 	import WordChip from '#lib/components/WordChip.svelte';
 
 	let data = $state<SaveData | null>(null);
@@ -14,9 +14,7 @@
 
 	onMount(() => {
 		locale = getLocale() as Locale;
-		const main = loadSave(localStorage);
-		packageId =
-			main.settings.activePackage === 'p2' && isPackageUnlocked(main, locale, 'p2') ? 'p2' : 'p1';
+		packageId = resolveActivePackage(localStorage, locale);
 		data = loadSave(localStorage, packageId);
 	});
 
