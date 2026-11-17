@@ -74,7 +74,7 @@ export function createAudioController(options: AudioOptions = {}): AudioControll
 	let resumeMusicWhenVisible = false;
 	let context: AudioContext | null = null;
 	let gains: Record<VolumeChannel, GainNode> | null = null;
-	const sources = new WeakMap<HTMLAudioElement, MediaElementAudioSourceNode>();
+	const routed = new WeakSet<HTMLAudioElement>();
 	const preloads = new Map<string, HTMLAudioElement>();
 
 	function playQuietly(audio: HTMLAudioElement): void {
@@ -110,11 +110,23 @@ export function createAudioController(options: AudioOptions = {}): AudioControll
 	}
 
 	function resumeContext(): void {
-		if (context?.state === 'suspended') void context.resume().catch(() => undefined);
+		if (context?.state !== 'suspended') return;
+		void context
+			.resume()
+			.then(() => {
+				// Music outlives the suspension that started it: link it now so the
+				// volume sliders and the ducking can reach it.
+				if (music && !routed.has(music) && context?.state === 'running') {
+					connectElement(music, 'music');
+					applyGain('music');
+				}
+			})
+			.catch(() => undefined);
 	}
 
 	function connectElement(audio: HTMLAudioElement, channel: VolumeChannel): boolean {
 		if (!ensureGraph() || !context || !gains) return false;
+		if (routed.has(audio)) return true;
 		// A suspended graph is not rendering yet: routing a clip into it drops
 		// everything until the context resumes, which swallows the word's first
 		// phoneme. Play those natively until the context is running.
@@ -122,11 +134,10 @@ export function createAudioController(options: AudioOptions = {}): AudioControll
 			resumeContext();
 			return false;
 		}
-		if (sources.has(audio)) return true;
 		try {
 			const source = context.createMediaElementSource(audio);
 			source.connect(gains[channel]);
-			sources.set(audio, source);
+			routed.add(audio);
 			return true;
 		} catch {
 			return false;
@@ -165,7 +176,7 @@ export function createAudioController(options: AudioOptions = {}): AudioControll
 
 	function syncMusicVolume(): void {
 		applyGain('music');
-		if (music && !gains && !muted) {
+		if (music && !routed.has(music) && !muted) {
 			music.volume = (duckTimer === null ? MUSIC_VOLUME : DUCKED_VOLUME) * volumes.music;
 		}
 	}
@@ -180,7 +191,7 @@ export function createAudioController(options: AudioOptions = {}): AudioControll
 
 	function duckMusic(holdForVoice = false): void {
 		if (!music || muted) return;
-		if (!gains) music.volume = DUCKED_VOLUME * volumes.music;
+		if (!routed.has(music)) music.volume = DUCKED_VOLUME * volumes.music;
 		if (typeof window !== 'undefined') {
 			if (duckTimer !== null) window.clearTimeout(duckTimer);
 			// A word clip can run for several seconds. Hold the duck until the clip
