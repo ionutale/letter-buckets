@@ -115,7 +115,13 @@ export function createAudioController(options: AudioOptions = {}): AudioControll
 
 	function connectElement(audio: HTMLAudioElement, channel: VolumeChannel): boolean {
 		if (!ensureGraph() || !context || !gains) return false;
-		resumeContext();
+		// A suspended graph is not rendering yet: routing a clip into it drops
+		// everything until the context resumes, which swallows the word's first
+		// phoneme. Play those natively until the context is running.
+		if (context.state !== 'running') {
+			resumeContext();
+			return false;
+		}
 		if (sources.has(audio)) return true;
 		try {
 			const source = context.createMediaElementSource(audio);
