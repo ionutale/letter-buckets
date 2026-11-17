@@ -41,6 +41,11 @@
 	});
 
 	const current = $derived(data ? currentLevel(data, locale) : 1);
+	const stateLabel = {
+		done: () => m.level_done(),
+		current: () => m.level_current(),
+		locked: () => m.level_locked()
+	};
 	const start = $derived((active - 1) * 10 + 1);
 	const levels = $derived(Array.from({ length: 10 }, (_, index) => start + index));
 	const stamps = $derived(data ? data.locales[locale].chapterStamps : []);
@@ -56,7 +61,9 @@
 		if (!data) return;
 		const state = stateFor(level);
 		if (state === 'locked') {
-			toast = m.finish_level_first({ n: Math.max(1, level - 1) });
+			// The level that unlocks any locked level is the current one, not
+			// necessarily the level immediately before the one that was tapped.
+			toast = m.finish_level_first({ n: current });
 			if (toastTimer !== null) window.clearTimeout(toastTimer);
 			toastTimer = window.setTimeout(() => {
 				toast = '';
@@ -83,7 +90,7 @@
 	<div class="grid">
 		{#each levels as level}
 			{@const state = stateFor(level)}
-			{@const content = data ? getLevelContent(locale, level) : null}
+			{@const content = data ? getLevelContent(locale, level, packageId) : null}
 			<button
 				type="button"
 				class="level"
@@ -91,7 +98,7 @@
 				class:current={state === 'current'}
 				class:locked={state === 'locked'}
 				data-state={state}
-				aria-label={`${m.level_number({ n: level })}, ${state}`}
+				aria-label={`${m.level_number({ n: level })}, ${stateLabel[state]()}`}
 				onclick={() => open(level)}
 			>
 				<span class="num">{level}</span>

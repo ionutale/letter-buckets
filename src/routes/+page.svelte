@@ -57,6 +57,9 @@
 				: m.mode_easy()
 	);
 
+	const p2Locked = $derived(!mainData || !isPackageUnlocked(mainData, locale, 'p2'));
+	const p3Locked = $derived(!package2Data || !isPackageUnlocked(package2Data, locale, 'p3'));
+
 	function hideImage(index: number): void {
 		broken = { ...broken, [index]: true };
 	}
@@ -144,7 +147,7 @@
 			<span class="chapter-copy">{m.chapter_n({ n: chapter })}</span>
 			<span class="mode-chip">{mode}</span>
 		</div>
-		<div class="package-switch" aria-label={m.package_1()}>
+		<div class="package-switch" role="group" aria-label={m.packages()}>
 			<button
 				type="button"
 				class:active={packageId === 'p1'}
@@ -157,8 +160,9 @@
 				type="button"
 				class:active={packageId === 'p2'}
 				aria-pressed={packageId === 'p2'}
-				disabled={!mainData || !isPackageUnlocked(mainData, locale, 'p2')}
-				title={!mainData || !isPackageUnlocked(mainData, locale, 'p2') ? m.package_locked() : ''}
+				aria-disabled={p2Locked}
+				aria-label={p2Locked ? `${m.package_2()}, ${m.package_locked()}` : undefined}
+				title={p2Locked ? m.package_locked() : ''}
 				onclick={() => selectPackage('p2')}
 			>
 				{#if mainData && !isPackageUnlocked(mainData, locale, 'p2')}<svg
@@ -188,10 +192,9 @@
 				type="button"
 				class:active={packageId === 'p3'}
 				aria-pressed={packageId === 'p3'}
-				disabled={!package2Data || !isPackageUnlocked(package2Data, locale, 'p3')}
-				title={!package2Data || !isPackageUnlocked(package2Data, locale, 'p3')
-					? m.package_locked()
-					: ''}
+				aria-disabled={p3Locked}
+				aria-label={p3Locked ? `${m.package_3()}, ${m.package_3_locked()}` : undefined}
+				title={p3Locked ? m.package_3_locked() : ''}
 				onclick={() => selectPackage('p3')}
 			>
 				{#if package2Data && !isPackageUnlocked(package2Data, locale, 'p3')}<svg
@@ -500,7 +503,7 @@
 		color: var(--lb-ink);
 		box-shadow: var(--lb-shadow-1);
 	}
-	.package-switch button:disabled {
+	.package-switch button[aria-disabled='true'] {
 		opacity: 0.45;
 	}
 	.package-switch :global(.lock) {

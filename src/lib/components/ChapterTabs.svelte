@@ -12,20 +12,20 @@
 	let { active, stamps = [], packageId = 'p1', onselect }: Props = $props();
 
 	const chapters = $derived(
-		packageId === 'p2'
+		packageId === 'p1'
 			? [
-					{ n: 1, label: m.chapter_n({ n: 1 }), icon: 'home' },
-					{ n: 2, label: m.chapter_n({ n: 2 }), icon: 'farm' },
-					{ n: 3, label: m.chapter_n({ n: 3 }), icon: 'town' },
-					{ n: 4, label: m.chapter_n({ n: 4 }), icon: 'nature' },
-					{ n: 5, label: m.chapter_n({ n: 5 }), icon: 'world' }
-				]
-			: [
 					{ n: 1, label: m.chapter_home(), icon: 'home' },
 					{ n: 2, label: m.chapter_farm(), icon: 'farm' },
 					{ n: 3, label: m.chapter_town(), icon: 'town' },
 					{ n: 4, label: m.chapter_nature(), icon: 'nature' },
 					{ n: 5, label: m.chapter_world(), icon: 'world' }
+				]
+			: [
+					{ n: 1, label: m.chapter_n({ n: 1 }), icon: 'home' },
+					{ n: 2, label: m.chapter_n({ n: 2 }), icon: 'farm' },
+					{ n: 3, label: m.chapter_n({ n: 3 }), icon: 'town' },
+					{ n: 4, label: m.chapter_n({ n: 4 }), icon: 'nature' },
+					{ n: 5, label: m.chapter_n({ n: 5 }), icon: 'world' }
 				]
 	);
 </script>

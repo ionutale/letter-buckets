@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { m } from '#lib/paraglide/messages.js';
+
 	interface Props {
 		letter?: string;
 		state: 'revealed' | 'empty' | 'tile' | 'selected' | 'placed';
@@ -32,9 +34,9 @@
 	const accessibleLabel = $derived(
 		label ??
 			(state === 'empty'
-				? 'Empty letter slot'
+				? m.empty_letter_slot()
 				: state === 'tile' || state === 'selected'
-					? `Letter ${letter}`
+					? m.letter_tile({ letter })
 					: letter)
 	);
 </script>

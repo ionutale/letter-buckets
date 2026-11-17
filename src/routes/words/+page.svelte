@@ -25,15 +25,15 @@
 	const count = $derived(Object.keys(unlocked).length);
 
 	const chapters = $derived(
-		packageId === 'p2'
-			? [1, 2, 3, 4, 5].map((n) => ({ n, label: m.chapter_n({ n }) }))
-			: [
+		packageId === 'p1'
+			? [
 					{ n: 1, label: m.chapter_home() },
 					{ n: 2, label: m.chapter_farm() },
 					{ n: 3, label: m.chapter_town() },
 					{ n: 4, label: m.chapter_nature() },
 					{ n: 5, label: m.chapter_world() }
 				]
+			: [1, 2, 3, 4, 5].map((n) => ({ n, label: m.chapter_n({ n }) }))
 	);
 
 	function audioPath(level: number, index: number): string {

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { m } from '#lib/paraglide/messages.js';
 	import SpeakerIcon from './SpeakerIcon.svelte';
 	interface Props {
 		word: string;
@@ -18,7 +19,7 @@
 		type="button"
 		class="chip unlocked"
 		data-audio={audio}
-		aria-label={`Hear ${word}`}
+		aria-label={m.hear_word_named({ word })}
 		onclick={onplay}
 	>
 		{#if image && !imageBroken}<img
@@ -33,7 +34,7 @@
 		<span class="icon" aria-hidden="true"><SpeakerIcon /></span>
 	</button>
 {:else}
-	<span class="chip locked" aria-label={`Word locked, level ${level}`}>?</span>
+	<span class="chip locked" role="img" aria-label={m.word_locked({ n: level })}>?</span>
 {/if}
 
 <style>

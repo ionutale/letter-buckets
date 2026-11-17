@@ -286,7 +286,7 @@
 		bind:this={panelEl}
 	>
 		<header class="panel-head">
-			<button type="button" class="icon" aria-label="Close" onclick={close}>×</button>
+			<button type="button" class="icon" aria-label={m.close()} onclick={close}>×</button>
 			<p>{m.word_of({ i: session.openIndex! + 1 })}</p>
 			<button
 				type="button"
@@ -413,9 +413,10 @@
 				<button type="button" class="back" onclick={close}>{m.back_to_buckets()}</button>
 			</div>
 		{:else}
-			<div class="tray" aria-label="Letter tiles">
+			<div class="tray" role="group" aria-label={m.letter_tiles()}>
 				{#each word.remaining as tile (tile.id)}
 					<LetterTile
+						label={m.letter_tile({ letter: tile.letter })}
 						letter={tile.letter}
 						state={selectedId === tile.id ? 'selected' : 'tile'}
 						dataTile={tile.id}

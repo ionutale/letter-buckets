@@ -338,7 +338,7 @@
 	<section class="card about" aria-label={m.about()}>
 		<h2>{m.about()}</h2>
 		<p>{m.app_name()} · v0.1</p>
-		<p>Nunito (OFL). Generated art and audio. No accounts, no analytics, no tracking.</p>
+		<p>{m.about_note()}</p>
 	</section>
 
 	<!-- The status region must exist before its text changes to be reliably

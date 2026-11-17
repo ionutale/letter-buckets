@@ -74,6 +74,13 @@
 		if (coachStep === 1 && session?.openIndex != null) coachStep = 2;
 	});
 
+	// SvelteKit reuses this component when only [level] changes. A broken
+	// banner on one level must not hide the artwork on the next one.
+	$effect(() => {
+		void paramLevel;
+		artBroken = false;
+	});
+
 	$effect(() => {
 		const level = paramLevel;
 		if (!data) return;
@@ -232,7 +239,7 @@
 	{/if}
 
 	{#if session}
-		<div class="buckets" aria-label="Words">
+		<div class="buckets" role="group" aria-label={m.words()}>
 			{#each session.buckets as bucket (bucket.index)}
 				<Bucket
 					index={bucket.index + 1}
