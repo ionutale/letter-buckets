@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+	createWordMistakes,
 	currentLevel,
 	defaultSave,
 	isLevelOpen,
@@ -114,6 +115,86 @@ describe('save', () => {
 		resetLocale(data, 'en');
 		expect(currentLevel(data, 'en')).toBe(1);
 		expect(data.locales.ro.levelWords[1]).toEqual([0]);
+	});
+
+	it('canonicalises unlocked word keys on load', () => {
+		const raw = JSON.stringify({
+			version: 1,
+			locales: {
+				en: {
+					unlocked: {
+						'1:0': true,
+						'01:0': true,
+						'09:2': true,
+						'9:2': true,
+						'9:02': true,
+						'2:0': false,
+						'0:1': true,
+						'51:0': true
+					}
+				}
+			}
+		});
+		const data = loadSave(storage(raw));
+		// The aliases collapse onto the canonical keys, so one word counts once.
+		expect(data.locales.en.unlocked).toEqual({ '1:0': true, '9:2': true });
+	});
+});
+
+describe('resilient persistence', () => {
+	function failingStore() {
+		return {
+			getItem: () => null,
+			setItem: () => {
+				throw new Error('QuotaExceededError: private mode');
+			}
+		};
+	}
+
+	it('does not throw when the store rejects a write', () => {
+		expect(() => persistSave(defaultSave(), failingStore())).not.toThrow();
+		expect(persistSave(defaultSave(), failingStore())).toBe(false);
+	});
+
+	it('keeps the shared settings mirror non-fatal', () => {
+		const data = defaultSave();
+		data.settings.muted = true;
+		expect(() => persistSharedSettings(data.settings, failingStore())).not.toThrow();
+	});
+
+	it('reports a successful write', () => {
+		expect(persistSave(defaultSave(), storage())).toBe(true);
+	});
+});
+
+describe('first try tracking', () => {
+	it('keeps a reopened word out of the first-try count', () => {
+		// A wrong placement, then the panel is closed and reopened before the
+		// word is finally solved.
+		const mistakes = createWordMistakes();
+		mistakes.note(1, 0);
+
+		const data = defaultSave();
+		markWordComplete(data, 'en', 1, 0, !mistakes.has(1, 0));
+
+		expect(data.locales.en.metrics.wordsFirstTry).toBe(0);
+		expect(data.locales.en.metrics.wordsWithMistakes).toBe(1);
+	});
+
+	it('keeps a clean word first try through a replay', () => {
+		const mistakes = createWordMistakes();
+		const data = defaultSave();
+		markWordComplete(data, 'en', 1, 0, !mistakes.has(1, 0));
+
+		// Play again, then replay the word with a mistake: the word was already
+		// solved first try, so its classification must not change.
+		resetLevelWords(data, 'en', 1);
+		mistakes.note(1, 0);
+		markWordComplete(data, 'en', 1, 0, !mistakes.has(1, 0));
+
+		expect(data.locales.en.metrics.wordsFirstTry).toBe(1);
+		expect(data.locales.en.metrics.wordsWithMistakes).toBe(0);
+		expect(mistakes.has(1, 1)).toBe(false);
 	});
 });
 

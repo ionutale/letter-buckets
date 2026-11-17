@@ -3,6 +3,8 @@ import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node
 import { homedir } from 'node:os';
 import { dirname, resolve } from 'node:path';
 
+import { atomicallyReplace } from './lib/atomic-write.mjs';
+
 const argv = process.argv.slice(2);
 const args = new Set(argv);
 const FORCE = args.has('--force');
@@ -110,12 +112,16 @@ function convert(input, output, { music = false, sfx = false, speech = false } =
 		'silenceremove=start_periods=1:start_threshold=-45dB,areverse,' +
 		(speech ? 'atempo=0.85,' : '') +
 		'loudnorm=I=-18:TP=-3';
-	const ff = ['-y', '-loglevel', 'error', '-i', input, '-ac', '1', '-ar', '24000'];
-	if (!music) ff.push('-af', filter);
-	if (sfx) ff.push('-t', '3');
-	ff.push('-codec:a', 'libmp3lame', '-b:a', music ? '64k' : '48k', output);
-	const result = spawnSync('ffmpeg', ff, { stdio: 'inherit' });
-	if (result.status !== 0) throw new Error(`ffmpeg failed for ${output}`);
+	// ffmpeg writes a hidden sibling; the rename below is the only thing that
+	// publishes it, so a killed run can never leave a truncated clip behind.
+	atomicallyReplace(output, (temp) => {
+		const ff = ['-y', '-loglevel', 'error', '-i', input, '-ac', '1', '-ar', '24000'];
+		if (!music) ff.push('-af', filter);
+		if (sfx) ff.push('-t', '3');
+		ff.push('-codec:a', 'libmp3lame', '-b:a', music ? '64k' : '48k', temp);
+		const result = spawnSync('ffmpeg', ff, { stdio: 'inherit' });
+		if (result.status !== 0) throw new Error(`ffmpeg failed for ${output}`);
+	});
 }
 
 function piperWav(text, voice) {
@@ -264,7 +270,50 @@ async function music() {
 	console.log(`wrote ${output}`);
 }
 
+/**
+ * Fail fast when the selection matches nothing: a typo in --package, --locale or
+ * --voice used to generate zero clips and exit successfully.
+ */
+function preflight() {
+	if (SFX_ONLY) return;
+	if (ONLY_PACKAGE && !PACKAGES.some((pkg) => pkg.id === ONLY_PACKAGE)) {
+		throw new Error(
+			`unknown package "${ONLY_PACKAGE}"; known packages: ${PACKAGES.map((pkg) => pkg.id).join(', ')}`
+		);
+	}
+	const packages = selectedPackages();
+	if (packages.length === 0) {
+		throw new Error(
+			`nothing to generate: no content exports found (${PACKAGES.map((pkg) => pkg.content).join(', ')}). Run \`pnpm content:export\` first.`
+		);
+	}
+
+	let selected = 0;
+	for (const pkg of packages) {
+		const locales = selectedLocales(pkg.content);
+		if (locales.length === 0) continue;
+		for (const locale of locales) {
+			const voices = voicePlan(locale).filter((voice) => !ONLY_VOICE || voice.id === ONLY_VOICE);
+			if (ONLY_VOICE && voices.length === 0) {
+				throw new Error(
+					`unknown voice "${ONLY_VOICE}" for ${locale}; known voices: ${voicePlan(locale)
+						.map((voice) => voice.id)
+						.join(', ')}`
+				);
+			}
+			selected += voices.length * pkg.content[locale].levels.length;
+		}
+	}
+
+	if (selected === 0) {
+		throw new Error(
+			`nothing to generate for package="${ONLY_PACKAGE ?? 'all'}" locale="${ONLY_LOCALE ?? 'all'}" voice="${ONLY_VOICE ?? 'all'}"`
+		);
+	}
+}
+
 async function main() {
+	preflight();
 	const health = await fetch(`${STUDIO}/health`).catch(() => null);
 	if (!health?.ok) {
 		throw new Error(

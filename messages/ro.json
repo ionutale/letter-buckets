@@ -83,5 +83,6 @@
 	"voice_choice": "Narator",
 	"voice_choice_hint": "Atinge o voce ca s-o auzi.",
 	"preparing_game": "Se pregătește jocul",
+	"download_failed": "Descărcare incompletă",
 	"downloading_package": "Se descarcă pachetul {n}"
 }

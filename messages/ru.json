@@ -83,5 +83,6 @@
 	"voice_choice": "Рассказчик",
 	"voice_choice_hint": "Нажмите на голос, чтобы услышать его.",
 	"preparing_game": "Подготовка игры",
+	"download_failed": "Загрузка не завершена",
 	"downloading_package": "Загрузка пакета {n}"
 }

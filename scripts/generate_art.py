@@ -16,6 +16,10 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(Path(__file__).resolve().parent / "lib"))
+
+from atomic_write import atomic_replace  # noqa: E402
+
 CANDIDATES = ROOT / "candidates"
 ART = ROOT / "static" / "art" / "levels"
 THEMES = ROOT / "scripts" / "themes.json"
@@ -86,9 +90,12 @@ def to_webp(png: Path, webp: Path) -> None:
     from PIL import Image
 
     webp.parent.mkdir(parents=True, exist_ok=True)
-    with Image.open(png) as image:
-        image = image.convert("RGB").resize((768, 432), Image.LANCZOS)
-        image.save(webp, "WEBP", quality=80)
+    # Encode into a hidden sibling first: an interrupted run leaves the
+    # previous level image in place instead of a truncated WebP.
+    with atomic_replace(webp) as temp:
+        with Image.open(png) as image:
+            image = image.convert("RGB").resize((768, 432), Image.LANCZOS)
+            image.save(temp, "WEBP", quality=80)
     png.unlink(missing_ok=True)
 
 

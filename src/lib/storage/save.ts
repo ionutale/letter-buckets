@@ -190,7 +190,10 @@ function sanitizeLocale(value: unknown): LocaleProgress {
 			if (!match) continue;
 			const level = Number(match[1]);
 			if (level < 1 || level > MAX_LEVEL) continue;
-			progress.unlocked[key] = true;
+			// Rebuild the key so aliases such as "01:0" or "09:2" collapse onto
+			// their canonical twin. The Word Book counts keys, so one unlocked
+			// word must never be counted twice.
+			progress.unlocked[wordKey(level, Number(match[2]))] = true;
 		}
 	}
 
@@ -329,12 +332,21 @@ export function persistSharedSettings(settings: SaveSettings, storage: KeyValueS
 	persistSave(main, storage, 'p1');
 }
 
+/**
+ * Best-effort write: a full quota, private mode or a disabled store must never
+ * interrupt play, so failures are swallowed and reported as `false`.
+ */
 export function persistSave(
 	data: SaveData,
 	storage: KeyValueStorage,
 	packageId: PackageId = 'p1'
-): void {
-	storage.setItem(saveKey(packageId), JSON.stringify(data));
+): boolean {
+	try {
+		storage.setItem(saveKey(packageId), JSON.stringify(data));
+		return true;
+	} catch {
+		return false;
+	}
 }
 
 export function isPackageUnlocked(data: SaveData, locale: Locale, packageId: PackageId): boolean {
@@ -347,6 +359,33 @@ export function getLocaleProgress(data: SaveData, locale: Locale): LocaleProgres
 
 export function wordKey(level: number, wordIndex: number): string {
 	return `${level}:${wordIndex}`;
+}
+
+/**
+ * Session record of words that have already been attempted wrongly. Closing and
+ * reopening a bucket builds a fresh puzzle, so the session's own mistake flag is
+ * gone; the level screen keeps this to stop a retried word being reported as a
+ * first try. It never changes the save format.
+ */
+export interface WordMistakes {
+	/** Remember a wrong attempt for the rest of the session. */
+	note(level: number, wordIndex: number): void;
+	/** True when the word already has a recorded wrong attempt. */
+	has(level: number, wordIndex: number): boolean;
+}
+
+export function createWordMistakes(): WordMistakes {
+	const keys = new Set<string>();
+	return {
+		note(level, wordIndex) {
+			if (!Number.isInteger(level) || level < 1 || level > MAX_LEVEL) return;
+			if (!Number.isInteger(wordIndex) || wordIndex < 0 || wordIndex >= WORDS_PER_LEVEL) return;
+			keys.add(wordKey(level, wordIndex));
+		},
+		has(level, wordIndex) {
+			return keys.has(wordKey(level, wordIndex));
+		}
+	};
 }
 
 export function currentLevel(data: SaveData, locale: Locale): number {

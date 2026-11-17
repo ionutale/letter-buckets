@@ -83,5 +83,6 @@
 	"voice_choice": "Erzähler",
 	"voice_choice_hint": "Tippe auf eine Stimme, um sie zu hören.",
 	"preparing_game": "Spiel wird vorbereitet",
+	"download_failed": "Download unvollständig",
 	"downloading_package": "Paket {n} wird geladen"
 }

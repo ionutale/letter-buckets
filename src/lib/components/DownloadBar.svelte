@@ -15,6 +15,25 @@
 				? m.downloading_package({ n: 3 })
 				: m.preparing_game()
 	);
+
+	/** How long the failure notice stays before it gets out of the way. */
+	const FAILED_NOTICE_MS = 8000;
+	let failureVisible = $state(false);
+
+	$effect(() => {
+		const failed = downloads.progress.failed;
+		const active = downloads.progress.active;
+		if (!failed || active) {
+			// A retry started (or nothing failed): drop the old notice.
+			failureVisible = false;
+			return;
+		}
+		failureVisible = true;
+		const timer = setTimeout(() => {
+			failureVisible = false;
+		}, FAILED_NOTICE_MS);
+		return () => clearTimeout(timer);
+	});
 </script>
 
 {#if downloads.progress.active}
@@ -31,6 +50,11 @@
 			{label}
 			<span class="percent">{percent}%</span>
 		</p>
+	</div>
+{:else if failureVisible}
+	<div class="download-bar failed" role="status" aria-live="polite">
+		<div class="line"></div>
+		<p class="label">{m.download_failed()}</p>
 	</div>
 {/if}
 
@@ -52,6 +76,9 @@
 		height: 100%;
 		background: var(--lb-ochre);
 		transition: width 240ms ease;
+	}
+	.failed .line {
+		background: var(--lb-ochre);
 	}
 	.label {
 		position: absolute;

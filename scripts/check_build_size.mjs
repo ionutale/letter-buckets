@@ -1,7 +1,8 @@
 import { readdirSync, statSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, relative, sep } from 'node:path';
 
 const ROOT = 'build';
+const INSTALL_BUDGET = 1.5 * 1024 * 1024;
 const files = [];
 
 function walk(dir) {
@@ -12,9 +13,23 @@ function walk(dir) {
 	}
 }
 
+/**
+ * What the service worker puts in the install cache: the shell, app code,
+ * fonts, icons, UI sounds and the music loop. Art, word audio and manifests
+ * are downloaded on demand, so they belong to the deploy budget only.
+ */
+function isPrecached(file) {
+	const path = relative(ROOT, file).split(sep).join('/');
+	if (path.startsWith('manifests/')) return false;
+	if (path.startsWith('audio/sfx/') || path.startsWith('audio/music/')) return true;
+	return !path.startsWith('art/') && !path.startsWith('audio/');
+}
+
 walk(ROOT);
 
 const size = files.reduce((sum, file) => sum + statSync(file).size, 0);
+const precached = files.filter(isPrecached);
+const installSize = precached.reduce((sum, file) => sum + statSync(file).size, 0);
 const images = files.filter((file) => /\/art\/levels\/l\d{2}\.webp$/.test(file));
 const wordImages = files.filter((file) => /\/art\/words\/[a-z]{2}\/l\d{2}-w\d\.webp$/.test(file));
 const clips = files.filter((file) => /\/audio\/words\/[a-z]{2}\/l\d{2}-w\d\.mp3$/.test(file));
@@ -26,6 +41,9 @@ const packageClues = files.filter((file) =>
 );
 
 console.log(`build: ${(size / 1024 / 1024).toFixed(2)} MB`);
+console.log(
+	`install: ${(installSize / 1024 / 1024).toFixed(2)} MB (${precached.length} precached files)`
+);
 console.log(
 	`images: ${images.length}, word images: ${wordImages.length}, word clips: ${clips.length}, italian voice clips: ${italianVoiceClips.length}`
 );
@@ -39,6 +57,10 @@ for (const item of largest) console.log(`${(item.bytes / 1024).toFixed(1)} KB ${
 
 if (size > 30 * 1024 * 1024) {
 	console.error('build is over the 30 MB budget');
+	process.exit(1);
+}
+if (installSize > INSTALL_BUDGET) {
+	console.error('install precache is over the 1.5 MB budget');
 	process.exit(1);
 }
 if (images.length !== 50) {

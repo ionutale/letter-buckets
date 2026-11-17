@@ -83,5 +83,6 @@
 	"voice_choice": "Narratore",
 	"voice_choice_hint": "Tocca una voce per ascoltarla.",
 	"preparing_game": "Preparazione del gioco",
+	"download_failed": "Download incompleto",
 	"downloading_package": "Scaricamento pacchetto {n}"
 }

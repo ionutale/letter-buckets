@@ -11,6 +11,7 @@
 	import type { LevelSession } from '#lib/game/session.svelte.js';
 	import { audio } from '#lib/audio/index.js';
 	import {
+		createWordMistakes,
 		getLocaleProgress,
 		hintsRemaining,
 		isLevelOpen,
@@ -40,6 +41,10 @@
 	let coachStep = $state<1 | 2 | null>(null);
 	let muted = $state(false);
 	let mode = $state<GameMode>('easy');
+
+	// Survives a bucket being closed and reopened: the session forgets its own
+	// mistake flag when the panel closes.
+	const wordMistakes = createWordMistakes();
 
 	const paramLevel = $derived(Number.parseInt(page.params.level ?? '', 10));
 	const content = $derived(session?.content ?? null);
@@ -87,11 +92,15 @@
 			progress: getLocaleProgress(data, locale),
 			onWordComplete: (completedLevel, wordIndex, firstTry) => {
 				if (!data) return;
-				markWordComplete(data, locale, completedLevel, wordIndex, firstTry);
+				// A word that was already attempted wrongly is not a first try even
+				// if the panel was closed and reopened before it was finished.
+				const clean = firstTry && !wordMistakes.has(completedLevel, wordIndex);
+				markWordComplete(data, locale, completedLevel, wordIndex, clean);
 				persistPackage(data);
 			},
-			onAttempt: (completedLevel, _wordIndex, correct) => {
+			onAttempt: (completedLevel, wordIndex, correct) => {
 				if (!data) return;
+				if (!correct) wordMistakes.note(completedLevel, wordIndex);
 				recordAttempt(data, locale, completedLevel, correct);
 				persistPackage(data);
 			},

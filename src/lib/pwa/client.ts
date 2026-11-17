@@ -67,6 +67,10 @@ function watchForUpdate(reg: ServiceWorkerRegistration): void {
 
 /** Tell the waiting worker to take over now (the page reloads once after). */
 export function applyUpdate(): void {
+	const waiting = registration?.waiting;
+	// Nothing waiting means nothing to activate: do not arm the reload, or an
+	// unrelated `controllerchange` later would reload the page mid-word.
+	if (!waiting) return;
 	updateRequested = true;
-	registration?.waiting?.postMessage({ type: 'SKIP_WAITING' });
+	waiting.postMessage({ type: 'SKIP_WAITING' });
 }
