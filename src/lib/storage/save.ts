@@ -322,6 +322,13 @@ export function loadSave(storage?: KeyValueStorage | null, packageId: PackageId 
 	return applySharedSettings(data, storage, packageId);
 }
 
+/** Settings live in the Package 1 save; other packages mirror theirs back. */
+export function persistSharedSettings(settings: SaveSettings, storage: KeyValueStorage): void {
+	const main = loadSave(storage, 'p1');
+	main.settings = settings;
+	persistSave(main, storage, 'p1');
+}
+
 export function persistSave(
 	data: SaveData,
 	storage: KeyValueStorage,

@@ -7,6 +7,7 @@ import {
 	markLevelComplete,
 	markWordComplete,
 	persistSave,
+	persistSharedSettings,
 	recordAttempt,
 	saveKey,
 	resetLevelWords,
@@ -472,6 +473,33 @@ describe('packages', () => {
 		expect(saveKey('p1')).not.toBe(saveKey('p2'));
 		expect(loadSave(store).locales.en.levelWords).toEqual({ 1: [0] });
 		expect(loadSave(store, 'p2').locales.en.levelWords).toEqual({ 1: [0] });
+	});
+});
+
+describe('shared settings', () => {
+	function makeStore() {
+		const map = new Map<string, string>();
+		return {
+			getItem: (key: string) => map.get(key) ?? null,
+			setItem: (key: string, value: string) => void map.set(key, value)
+		};
+	}
+
+	it('keeps settings written while a later package is active', () => {
+		const store = makeStore();
+		const p3 = loadSave(store, 'p3');
+		p3.settings.muted = true;
+		p3.settings.mode = 'hard';
+		p3.settings.coachDone = false;
+		persistSave(p3, store, 'p3');
+		persistSharedSettings(p3.settings, store);
+
+		// loadSave always reads settings from Package 1, so the mirror is what counts.
+		expect(loadSave(store, 'p3').settings.muted).toBe(true);
+		expect(loadSave(store, 'p3').settings.mode).toBe('hard');
+		expect(loadSave(store, 'p3').settings.coachDone).toBe(false);
+		expect(loadSave(store, 'p2').settings.muted).toBe(true);
+		expect(loadSave(store, 'p1').settings.muted).toBe(true);
 	});
 });
 

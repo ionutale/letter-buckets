@@ -18,6 +18,7 @@
 		resolveActivePackage,
 		markWordComplete,
 		persistSave,
+		persistSharedSettings,
 		recordAttempt,
 		resetLevelWords,
 		spendHint,
@@ -111,11 +112,9 @@
 
 	function persistPackage(value: SaveData): void {
 		persistSave(value, localStorage, packageId);
-		if (packageId === 'p2') {
-			const main = loadSave(localStorage);
-			main.settings = value.settings;
-			persistSave(main, localStorage);
-		}
+		// Settings are shared: whatever package is being played writes them back
+		// to the Package 1 save, which loadSave reads them from.
+		if (packageId !== 'p1') persistSharedSettings(value.settings, localStorage);
 	}
 
 	function hideArt(event: Event): void {

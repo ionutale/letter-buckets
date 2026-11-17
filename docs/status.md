@@ -128,26 +128,28 @@ Four review passes wrote **45 findings** as individual tickets in
 Each ticket carries severity, location with line numbers, confidence, the
 failure mode, quoted evidence, a concrete fix and how to test it.
 
+Fixed from the review so far: `A01` (music double attenuation), `C01`/`B01`
+(settings lost while a later package is active) and `D01` (manifests in the
+install precache). The storage reviewer also simulated all 2,250 puzzles across
+three packages and five locales and found no unsolvable puzzle, wrong gap count
+or broken unlock chain.
+
 ## Next, in priority order
 
-1. **`C01` — Package 3 loses settings.** `persistPackage` mirrors settings into
-   the shared save only for `packageId === 'p2'`, while `loadSave` discards
-   non-p1 settings. Muting or dismissing the coach mark during Package 3 is
-   undone on the next navigation.
-2. **`D02` — audio written in place.** A killed render leaves a truncated clip
+1. **`D02` — audio written in place.** A killed render leaves a truncated clip
    that every later run skips. Write to a temporary file and rename on success;
    apply the same to `generate_word_art.py`.
-3. **`A04` — download retry never gives up.** A permanent failure keeps
+2. **`A04` — download retry never gives up.** A permanent failure keeps
    retrying every 15 s for the life of the page.
-4. **Review the remaining clue sheets.** Only English and Romanian were
+3. **Review the remaining clue sheets.** Only English and Romanian were
    inspected; Italian, German and Russian icons deserve the same look.
-5. **English and German narrators.** Both still use `serena`, the preset that
+4. **English and German narrators.** Both still use `serena`, the preset that
    carried a foreign accent in Italian.
-6. **iPhone mute verification.** The code pauses music and suspends the context;
+5. **iPhone mute verification.** The code pauses music and suspends the context;
    never confirmed on a real device.
-7. **Transcription sweep.** Duration checks caught three gibberish German
+6. **Transcription sweep.** Duration checks caught three gibberish German
    clips; a Whisper pass over all 4,050 would catch short ones.
-8. **Documentation drift** (`D11`–`D13`): README inventory, the service-worker
+7. **Documentation drift** (`D11`–`D13`): README inventory, the service-worker
    claim in the download spec, and the manifest ordering description.
 
 ## Commands
