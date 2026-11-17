@@ -34,3 +34,12 @@ repository.
 | 17   | Repeat-audio button while solving                          | 01                       |
 | 20   | Metrics view + easy/medium/hard modes                      | 02 + 03                  |
 | 21   | List the last 30 prompts                                   | This map                 |
+
+## 2026-11-17 code review
+
+Four review passes wrote 45 evidence-backed tickets into `issues/review/`, one
+file per finding, prefixed by area: `A` audio/PWA/build, `B` storage/game,
+`C` routes/components/a11y, `D` scripts/tests/docs.
+
+Current state, shipped features and the prioritised backlog live in
+[`docs/status.md`](../docs/status.md).
