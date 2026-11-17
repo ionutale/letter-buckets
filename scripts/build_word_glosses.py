@@ -440,11 +440,17 @@ def main() -> None:
                 else:
                     glosses[key] = f"{word.lower()} ({translation})"
 
+    package_counts = {"p1": len(glosses)}
     for package, path in PACKAGE_CONTENT.items():
         if not path.exists():
+            print(
+                f"skipping {package}: {path.name} is missing; run pnpm content:export",
+                file=sys.stderr,
+            )
             continue
         content = json.loads(path.read_text())
         english = content["en"]["levels"]
+        count = 0
         for locale in ["en", "ro", "it", "de", "ru"]:
             for position, level in enumerate(content[locale]["levels"]):
                 for index, entry in enumerate(level["words"]):
@@ -452,6 +458,7 @@ def main() -> None:
                     replacement = PACKAGE_OVERRIDES[package].get(f"{level['id']}:{index}")
                     if replacement:
                         glosses[f"{package}:{locale}:{level['id']}:{index}"] = replacement
+                        count += 1
                         continue
                     subject = english[position]["words"][index]["word"].lower()
                     if locale == "en":
@@ -460,10 +467,13 @@ def main() -> None:
                         glosses[f"{package}:{locale}:{level['id']}:{index}"] = (
                             f"{entry['word'].lower()} ({subject})"
                         )
+                    count += 1
+        package_counts[package] = count
 
     # Tab indentation keeps the generated file stable under Prettier's checked formatting.
     OUT.write_text(json.dumps(glosses, ensure_ascii=False, indent="\t") + "\n")
-    print(f"wrote {len(glosses)} glosses to {OUT.relative_to(ROOT)}")
+    detail = ", ".join(f"{package} {count}" for package, count in package_counts.items())
+    print(f"wrote {len(glosses)} glosses ({detail}) to {OUT.relative_to(ROOT)}")
 
 
 if __name__ == "__main__":

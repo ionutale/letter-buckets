@@ -14,6 +14,10 @@ import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(Path(__file__).resolve().parent / "lib"))
+
+from atomic_write import atomic_replace, temp_sibling  # noqa: E402
+
 GLOSSES = ROOT / "scripts" / "word_glosses.json"
 
 PACKAGES = {
@@ -49,6 +53,23 @@ def load_model():
     return Flux2Klein(model_config=ModelConfig.flux2_klein_4b())
 
 
+def gloss_subject(
+    package: str, locale: str, level: dict, index: int, entry: dict, glosses: dict
+) -> str | None:
+    """The image subject for one word.
+
+    Package 1 keeps the original key so its existing glosses still apply, and
+    may fall back to the word itself. Packages 2 and 3 are namespaced: a missing
+    key must stop the run instead of borrowing Package 1's subject for a
+    different word.
+    """
+    key = f"{package}:{locale}:{level['id']}:{index}"
+    if package == "p1":
+        legacy = f"{locale}:{level['id']}:{index}"
+        return glosses.get(key, glosses.get(legacy, entry["word"].lower()))
+    return glosses.get(key)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--all", action="store_true")
@@ -62,14 +83,14 @@ def main() -> int:
 
     content = json.loads(PACKAGES[args.package]["content"].read_text())
     out = PACKAGES[args.package]["out"]
-    expected = len(list(content.values())[0]["levels"]) * len(content) * 3
     glosses = json.loads(GLOSSES.read_text()) if GLOSSES.exists() else {}
     locales = [args.locale] if args.locale else list(content)
     only = {int(part) for part in args.only.split(",") if part.strip()}
-    model = load_model()
-    total = 0
-    started = time.time()
 
+    # Everything the run could draw, before the model is loaded: existing output
+    # is skipped unless --force, and a run with nothing to do fails instead of
+    # reporting "done: 0 images" as success.
+    targets = []
     for locale in locales:
         for level in content[locale]["levels"]:
             if only and level["id"] not in only:
@@ -78,39 +99,62 @@ def main() -> int:
                 output = out / locale / f"l{level['id']:02}-w{index + 1}.webp"
                 if output.exists() and not args.force:
                     continue
-                # Package 2 and 3 glosses are namespaced; Package 1 keeps the
-                # original key so its existing file still applies.
-                key = f"{args.package}:{locale}:{level['id']}:{index}"
-                legacy = f"{locale}:{level['id']}:{index}"
-                subject = glosses.get(key, glosses.get(legacy, entry["word"].lower()))
-                prompt = STYLE.format(word=subject)
-                seed = level["id"] * 1000 + index + 41
-                image = model.generate_image(
-                    seed=seed,
-                    prompt=prompt,
-                    num_inference_steps=STEPS,
-                    width=SIZE,
-                    height=SIZE,
-                    guidance=GUIDANCE,
-                )
-                png = output.with_suffix(".png")
-                output.parent.mkdir(parents=True, exist_ok=True)
-                image.save(path=str(png), export_json_metadata=False, overwrite=True)
-                from PIL import Image
+                targets.append((locale, level, index, entry, output))
+    if not targets:
+        raise SystemExit(
+            "nothing to generate: all selected images already exist (use --force to redraw them)"
+        )
 
+    missing = []
+    for locale, level, index, entry, _ in targets:
+        key = f"{args.package}:{locale}:{level['id']}:{index}"
+        if gloss_subject(args.package, locale, level, index, entry, glosses) is None:
+            missing.append(key)
+    if missing:
+        raise SystemExit(
+            f"{len(missing)} gloss(es) missing, e.g. {missing[:5]}; "
+            "run scripts/build_word_glosses.py"
+        )
+
+    target = len(targets)
+    model = load_model()
+    total = 0
+    started = time.time()
+
+    for locale, level, index, entry, output in targets:
+        subject = gloss_subject(args.package, locale, level, index, entry, glosses)
+        prompt = STYLE.format(word=subject)
+        seed = level["id"] * 1000 + index + 41
+        image = model.generate_image(
+            seed=seed,
+            prompt=prompt,
+            num_inference_steps=STEPS,
+            width=SIZE,
+            height=SIZE,
+            guidance=GUIDANCE,
+        )
+        png = temp_sibling(output.with_suffix(".png"))
+        try:
+            image.save(path=str(png), export_json_metadata=False, overwrite=True)
+            from PIL import Image
+
+            # The WebP is the published asset, so it is renamed into
+            # place only once PIL has finished encoding it.
+            with atomic_replace(output) as temp:
                 with Image.open(png) as opened:
-                    opened.convert("RGB").save(output, "WEBP", quality=80)
-                png.unlink(missing_ok=True)
-                total += 1
-                elapsed = time.time() - started
-                rate = elapsed / total
-                remaining = (750 - total) * rate
-                print(
-                    f"{output.relative_to(ROOT)}  {total}/750  "
-                    f"{rate:.1f}s/img  ~{remaining / 60:.0f} min left",
-                    flush=True,
-                )
-    print(f"done: {total} images in {(time.time() - started) / 60:.1f} min")
+                    opened.convert("RGB").save(temp, "WEBP", quality=80)
+        finally:
+            png.unlink(missing_ok=True)
+        total += 1
+        elapsed = time.time() - started
+        rate = elapsed / total
+        remaining = (target - total) * rate
+        print(
+            f"{output.relative_to(ROOT)}  {total}/{target}  "
+            f"{rate:.1f}s/img  ~{remaining / 60:.0f} min left",
+            flush=True,
+        )
+    print(f"done: {total}/{target} images in {(time.time() - started) / 60:.1f} min")
     return 0
 
 

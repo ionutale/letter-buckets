@@ -1,6 +1,6 @@
 import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import type { LevelContent, Locale, LocaleContent } from './schema.js';
+import type { LevelContent, Locale, LocaleContent, PackageId } from './schema.js';
 import { LOCALES } from './schema.js';
 import {
 	gapCountForLevel,
@@ -23,6 +23,20 @@ function assetPath(relative: string): string {
 	return fileURLToPath(new URL(`static/${relative}`, PROJECT_ROOT));
 }
 
+/** Asset folders for a package; Package 1 keeps the unsegmented layout. */
+export function packageAssetFolder(packageId: PackageId): {
+	clips: string;
+	clues: string;
+	levels: string;
+} {
+	const segment = packageId === 'p1' ? '' : `${packageId}/`;
+	return {
+		clips: `audio/${segment}words`,
+		clues: `art/${segment}words`,
+		levels: `art/${segment}levels`
+	};
+}
+
 function pad(value: number): string {
 	return String(value).padStart(2, '0');
 }
@@ -43,6 +57,7 @@ export function validateContent(
 			issues.push({ locale, message: 'missing locale content' });
 			continue;
 		}
+		const folders = packageAssetFolder(data.packageId ?? 'p1');
 		if (data.locale !== locale) {
 			issues.push({ locale, message: `locale field is "${data.locale}"` });
 		}
@@ -124,7 +139,9 @@ export function validateContent(
 				}
 
 				if (options.requireAssets) {
-					const clip = assetPath(`audio/words/${locale}/l${pad(level.id)}-w${wordIndex + 1}.mp3`);
+					const clip = assetPath(
+						`${folders.clips}/${locale}/l${pad(level.id)}-w${wordIndex + 1}.mp3`
+					);
 					if (!existsSync(clip)) {
 						issues.push({
 							locale,
@@ -133,7 +150,9 @@ export function validateContent(
 							message: `missing audio clip ${clip}`
 						});
 					}
-					const clue = assetPath(`art/words/${locale}/l${pad(level.id)}-w${wordIndex + 1}.webp`);
+					const clue = assetPath(
+						`${folders.clues}/${locale}/l${pad(level.id)}-w${wordIndex + 1}.webp`
+					);
 					if (!existsSync(clue)) {
 						issues.push({
 							locale,
@@ -146,7 +165,7 @@ export function validateContent(
 			}
 
 			if (options.requireAssets) {
-				const art = assetPath(`art/levels/l${pad(level.id)}.webp`);
+				const art = assetPath(`${folders.levels}/l${pad(level.id)}.webp`);
 				if (!existsSync(art)) {
 					issues.push({ locale, level: level.id, message: `missing illustration ${art}` });
 				}

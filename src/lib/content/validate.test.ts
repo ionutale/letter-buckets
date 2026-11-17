@@ -1,11 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import { CONTENT, LEVEL_COUNT, PACKAGE_2, PACKAGE_3 } from './index.js';
-import { validateContent } from './validate.js';
+import { packageAssetFolder, validateContent } from './validate.js';
 
 describe('content', () => {
 	it('is valid in all five locales', () => {
 		expect(validateContent(CONTENT)).toEqual([]);
 	});
+	it("checks each package's own asset folders", () => {
+		expect(packageAssetFolder('p1').clips).toBe('audio/words');
+		expect(packageAssetFolder('p2').clips).toBe('audio/p2/words');
+		expect(packageAssetFolder('p3').levels).toBe('art/p3/levels');
+	});
+
 	it('validates package 2 in all five locales', () => {
 		expect(validateContent(PACKAGE_2)).toEqual([]);
 	});

@@ -169,3 +169,22 @@ export const PACKAGE_THEME_PROMPTS = {
 	p2: THEME_PROMPTS_P2,
 	p3: THEME_PROMPTS_P3
 } as const;
+
+/**
+ * Levels whose prompt paints a scene instead of naming one of the three words
+ * the level asks for. `scripts/validate_assets.mjs` fails when a prompt names
+ * none of its level's words unless the level is listed here, so swapping a word
+ * without updating its prompt cannot pass the asset gate silently. Remove an
+ * entry once the prompt names a current word again; the validator asks for it.
+ */
+export const THEME_PROMPT_EXCEPTIONS: Readonly<Record<'p1' | 'p2' | 'p3', readonly number[]>> = {
+	p1: [7, 20, 39, 50],
+	p2: [],
+	p3: []
+};
+
+/** The level words a prompt does not name; empty means it names at least one. */
+export function themePromptDrift(prompt: string, words: readonly string[]): string[] {
+	const text = prompt.toLowerCase();
+	return words.filter((word) => !text.includes(word.toLowerCase()));
+}

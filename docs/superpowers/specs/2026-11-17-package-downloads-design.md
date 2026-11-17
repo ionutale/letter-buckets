@@ -34,8 +34,9 @@ background, in level order, with a progress bar that never blocks play.
   download flags must be tied to the build version.
 - The app has no server: every download is a plain `fetch` against static files,
   cached by the service worker's cache-first lane on the way through.
-- Downloads must start only after the service worker controls the page,
-  otherwise early files are fetched but never stored.
+- Downloads go through the page into the versioned `Cache`, which works whether
+  or not the service worker controls the page, so no `serviceWorker.ready` gate
+  is needed.
 
 ## Decisions
 
@@ -43,20 +44,22 @@ background, in level order, with a progress bar that never blocks play.
   manifest, `200.html`, UI sounds and the music loop. All `/art/` and
   `/audio/words/` (including packages 2 and 3) leave it.
 - **One downloader for everything.** Level assets and package assets are the
-  same kind of job, ordered per level: level art, its three clues, its three
-  clips.
+  same kind of job, ordered per level: level art, then each clue followed by its
+  own clip.
 - **Order is current level first**, then forward to 50, then any earlier gaps.
   A returning player on level 20 resumes at 20 instead of starting at 1.
-- **Scope is package + locale + voice**: about 1.45 MB for all of Package 1 in
-  one language and narrator, 0.66 MB per additional package today.
+- **Scope is package + locale + voice**: about 1.4–1.5 MB for all of Package 1
+  in one language and narrator, about 1.6 MB per additional package today.
 - **A generated manifest per package, locale and voice**
   (`/manifests/p2/it/narratrice.json`) lists the files that exist with their
-  byte sizes, already ordered per level. Generated at build time, so missing
-  art simply does not appear.
+  byte sizes, already ordered per level. Generated at build time; each manifest
+  has an expected file count, so missing art fails the build instead of silently
+  shortening the list.
 - **Trigger:** the layout starts the queue on mount, and re-checks after a level
   is completed. Packages 2 and 3 join the queue when they unlock.
-- **The queue waits for `navigator.serviceWorker.ready`** before its first
-  fetch, so every byte it downloads is kept.
+- **The queue writes into `letter-buckets-${version}` through the `Cache` API,
+  so a file is kept whether or not the worker controls the page**, and starts as
+  soon as the layer makes its first manifest request.
 - **Download flags are keyed by build version**, so a deploy re-downloads only
   what it must.
 - **The bar is `position: fixed`** at the top: a thin line and a short label.

@@ -12,18 +12,18 @@ at runtime.
 
 ## Where it stands
 
-|                     |                                                                 |
-| ------------------- | --------------------------------------------------------------- |
-| Packages            | 3 separate worlds (q1–q3), 50 levels each                       |
-| Words               | 450 per language, 2,250 word entries across five languages      |
-| Level illustrations | 150 (50 per package)                                            |
-| Word clue images    | 2,250 (750 per package, 150 per language)                       |
-| Word clips          | 4,050 (1,350 per package; Package 1 has five Italian narrators) |
-| Italian narrators   | narratrice, chiara, marco, lucia, giovane                       |
-| Tests               | 114 unit, 119 E2E (desktop + mobile), 6 visual, axe clean       |
-| Build size          | 27.12 MB total                                                  |
-| First install       | 1.00 MB precache (shell, fonts, icons, UI sounds, music)        |
-| Package download    | ~1.6 MB per package for one language and narrator               |
+|                     |                                                                      |
+| ------------------- | -------------------------------------------------------------------- |
+| Packages            | 3 separate worlds (q1–q3), 50 levels each                            |
+| Words               | 450 per language, 2,250 word entries across five languages           |
+| Level illustrations | 150 (50 per package)                                                 |
+| Word clue images    | 2,250 (750 per package, 150 per language)                            |
+| Word clips          | 4,050 (1,350 per package; Package 1 has five Italian narrators)      |
+| Italian narrators   | narratrice, chiara, marco, lucia, giovane                            |
+| Tests               | 129 unit, 140 Playwright (desktop, mobile, cross-browser), axe clean |
+| Build size          | 27.12 MB total                                                       |
+| First install       | 1.00 MB precache (shell, fonts, icons, UI sounds, music)             |
+| Package download    | ~1.5–1.6 MB per package for one language and narrator                |
 
 Packages 2 and 3 unlock in order: complete all 50 levels of a package to open
 the next one. Progress, stars, hint budgets and analytics are stored separately
@@ -60,9 +60,12 @@ issues/              tickets, including issues/review for the 2026-11-17 review
    designed native voices), Piper for Romanian and Russian. `PIPER_BIN` must
    point at `.venv-piper/bin/piper`.
 6. `scripts/build_manifest.mjs` (run by `prebuild`) writes one manifest per
-   package, language and narrator into `static/manifests/`, ordered per level.
-7. `node scripts/validate_assets.mjs --packages` and `pnpm size` verify the
-   result.
+   package, language and narrator into `static/manifests/`, ordered per level
+   (illustration, then each clue followed by its clip). A manifest with fewer
+   than its expected 350 files is reported and fails the build.
+7. `node scripts/validate_assets.mjs --packages` checks every plate, clue and
+   clip for every package and narrator, plus the effects, music and the level
+   prompts, and `pnpm size` verifies the result.
 
 ## Progressive downloads
 
@@ -129,10 +132,13 @@ Each ticket carries severity, location with line numbers, confidence, the
 failure mode, quoted evidence, a concrete fix and how to test it.
 
 Fixed from the review so far: `A01` (music double attenuation), `C01`/`B01`
-(settings lost while a later package is active) and `D01` (manifests in the
-install precache). The storage reviewer also simulated all 2,250 puzzles across
-three packages and five locales and found no unsolvable puzzle, wrong gap count
-or broken unlock chain.
+(settings lost while a later package is active), `D01` (manifests in the
+install precache), and the script, test and documentation findings `D03`–`D04`
+and `D06`–`D14` plus `B06` (theme prompts checked against their words).
+`B04` (`validateContent` probing Package 1 asset paths) needs
+`src/lib/content/validate.ts`, which was outside that pass. The storage
+reviewer also simulated all 2,250 puzzles across three packages and five
+locales and found no unsolvable puzzle, wrong gap count or broken unlock chain.
 
 ## Next
 
@@ -155,8 +161,10 @@ frontier: 01-06 can start immediately; 07 and 08 wait on 01.
    never confirmed on a real device.
 6. **Transcription sweep.** Duration checks caught three gibberish German
    clips; a Whisper pass over all 4,050 would catch short ones.
-7. **Documentation drift** (`D11`–`D13`): README inventory, the service-worker
-   claim in the download spec, and the manifest ordering description.
+7. **`B04` — Package 1 asset paths in content validation.** `validateContent`
+   with `requireAssets` still probes `audio/words/...` and `art/...` for every
+   package; it needs a `packageId` threaded through and the same folder rule as
+   `getWordArt`/`getLevelArt`. That file was not part of the script/docs pass.
 
 ## Commands
 

@@ -47,7 +47,16 @@ createServer(async (request, response) => {
 			return;
 		}
 	} catch {
-		// Fall through to the SPA shell.
+		// Not a file: either a client-side route or a missing asset.
+	}
+
+	// Only client-side routes get the SPA shell. A path with a file extension is
+	// an asset: answering with the shell hides a broken build from the app, the
+	// service worker and the tests that assert a clip came back.
+	const wantsShell = extname(pathname) === '';
+	if (!wantsShell) {
+		response.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' }).end('Not found');
+		return;
 	}
 
 	try {

@@ -43,13 +43,43 @@ test('a first visit downloads package one in level order behind a progress bar',
 	const paths = await cachedPaths(page);
 	expect(paths).toContain('/art/levels/l01.webp');
 	expect(paths).toContain('/audio/words/en/l01-w1.mp3');
-	expect(paths.filter((path) => path.startsWith('/art/levels/'))).toHaveLength(50);
+	const plates = paths.filter((path) => path.startsWith('/art/levels/'));
+	expect(plates).toHaveLength(50);
 	expect(paths.filter((path) => path.startsWith('/audio/words/en/'))).toHaveLength(150);
 	expect(paths.filter((path) => path.startsWith('/audio/p2/'))).toHaveLength(0);
+
+	// The queue is level-ordered, three files at a time, so the first three
+	// plates are levels 1–3 even though the order inside a batch may vary.
+	expect(new Set(plates.slice(0, 3))).toEqual(
+		new Set(['/art/levels/l01.webp', '/art/levels/l02.webp', '/art/levels/l03.webp'])
+	);
 
 	expect((await barLabels(page)).some((label) => label.startsWith('Preparing the game'))).toBe(
 		true
 	);
+});
+
+test('a returning player downloads from their level, then wraps around', async ({ page }) => {
+	await watchBar(page);
+	await seedSave(page, { locale: 'en', clearedThrough: 19 });
+	await page.goto('/en/');
+	await expect
+		.poll(() => barLabels(page).then((labels) => labels.length), { timeout: 20_000 })
+		.toBeGreaterThan(0);
+	await expect(page.locator('.download-bar')).toHaveCount(0, { timeout: 90_000 });
+
+	const paths = await cachedPaths(page);
+	const plates = paths.filter((path) => path.startsWith('/art/levels/'));
+	expect(plates).toHaveLength(50);
+	expect(new Set(plates.slice(0, 3))).toEqual(
+		new Set(['/art/levels/l20.webp', '/art/levels/l21.webp', '/art/levels/l22.webp'])
+	);
+	// The levels already passed are the earlier gaps, fetched after level 50.
+	expect(plates.indexOf('/art/levels/l01.webp')).toBeGreaterThan(
+		plates.indexOf('/art/levels/l50.webp')
+	);
+	expect(paths.filter((path) => path.startsWith('/art/words/en/'))).toHaveLength(150);
+	expect(paths.filter((path) => path.startsWith('/audio/words/en/'))).toHaveLength(150);
 });
 
 test('an unlocked package downloads in the background and names itself', async ({ page }) => {
