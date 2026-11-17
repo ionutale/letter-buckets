@@ -3,6 +3,7 @@
 
 Run with the FLUX studio venv:
   flux2-klein-mlx-studio/.venv/bin/python scripts/generate_word_art.py --all
+  flux2-klein-mlx-studio/.venv/bin/python scripts/generate_word_art.py --package p2 --all
 """
 from __future__ import annotations
 
@@ -13,9 +14,22 @@ import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-CONTENT = ROOT / "scripts" / "content.json"
 GLOSSES = ROOT / "scripts" / "word_glosses.json"
-OUT = ROOT / "static" / "art" / "words"
+
+PACKAGES = {
+    "p1": {
+        "content": ROOT / "scripts" / "content.json",
+        "out": ROOT / "static" / "art" / "words",
+    },
+    "p2": {
+        "content": ROOT / "scripts" / "content.p2.json",
+        "out": ROOT / "static" / "art" / "p2" / "words",
+    },
+    "p3": {
+        "content": ROOT / "scripts" / "content.p3.json",
+        "out": ROOT / "static" / "art" / "p3" / "words",
+    },
+}
 
 STEPS = 6
 SIZE = 256
@@ -41,11 +55,14 @@ def main() -> int:
     parser.add_argument("--locale", default="")
     parser.add_argument("--only", default="", help="comma-separated level numbers")
     parser.add_argument("--force", action="store_true")
+    parser.add_argument("--package", choices=sorted(PACKAGES), default="p1")
     args = parser.parse_args()
     if not args.all:
         parser.error("choose --all")
 
-    content = json.loads(CONTENT.read_text())
+    content = json.loads(PACKAGES[args.package]["content"].read_text())
+    out = PACKAGES[args.package]["out"]
+    expected = len(list(content.values())[0]["levels"]) * len(content) * 3
     glosses = json.loads(GLOSSES.read_text()) if GLOSSES.exists() else {}
     locales = [args.locale] if args.locale else list(content)
     only = {int(part) for part in args.only.split(",") if part.strip()}
@@ -58,11 +75,14 @@ def main() -> int:
             if only and level["id"] not in only:
                 continue
             for index, entry in enumerate(level["words"]):
-                output = OUT / locale / f"l{level['id']:02}-w{index + 1}.webp"
+                output = out / locale / f"l{level['id']:02}-w{index + 1}.webp"
                 if output.exists() and not args.force:
                     continue
-                key = f"{locale}:{level['id']}:{index}"
-                subject = glosses.get(key, entry["word"].lower())
+                # Package 2 and 3 glosses are namespaced; Package 1 keeps the
+                # original key so its existing file still applies.
+                key = f"{args.package}:{locale}:{level['id']}:{index}"
+                legacy = f"{locale}:{level['id']}:{index}"
+                subject = glosses.get(key, glosses.get(legacy, entry["word"].lower()))
                 prompt = STYLE.format(word=subject)
                 seed = level["id"] * 1000 + index + 41
                 image = model.generate_image(

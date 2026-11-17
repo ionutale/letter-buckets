@@ -5,6 +5,7 @@ pipeline as the local FLUX studio.
 Run with the studio venv:
   flux2-klein-mlx-studio/.venv/bin/python scripts/generate_art.py --style-check
   flux2-klein-mlx-studio/.venv/bin/python scripts/generate_art.py --all
+  flux2-klein-mlx-studio/.venv/bin/python scripts/generate_art.py --package p2 --all
 """
 from __future__ import annotations
 
@@ -18,6 +19,12 @@ ROOT = Path(__file__).resolve().parent.parent
 CANDIDATES = ROOT / "candidates"
 ART = ROOT / "static" / "art" / "levels"
 THEMES = ROOT / "scripts" / "themes.json"
+
+PACKAGES = {
+    "p1": {"themes": ROOT / "scripts" / "themes.json", "art": ROOT / "static" / "art" / "levels"},
+    "p2": {"themes": ROOT / "scripts" / "themes.p2.json", "art": ROOT / "static" / "art" / "p2" / "levels"},
+    "p3": {"themes": ROOT / "scripts" / "themes.p3.json", "art": ROOT / "static" / "art" / "p3" / "levels"},
+}
 
 WIDTH = 1024
 HEIGHT = 576
@@ -94,21 +101,23 @@ def style_check(model) -> None:
         print(f"wrote {png}", flush=True)
 
 
-def load_themes() -> list[str]:
-    if not THEMES.exists():
-        raise SystemExit("scripts/themes.json missing; run `pnpm content:export` first")
-    return json.loads(THEMES.read_text())
+def load_themes(package: str) -> list[str]:
+    path = PACKAGES[package]["themes"]
+    if not path.exists():
+        raise SystemExit(f"{path.name} missing; run `pnpm content:export` first")
+    return json.loads(path.read_text())
 
 
-def generate_all(model, only: set[int] | None, force: bool) -> None:
-    themes = load_themes()
+def generate_all(model, package: str, only: set[int] | None, force: bool) -> None:
+    themes = load_themes(package)
     if len(themes) != 50:
         raise SystemExit(f"expected 50 themes, found {len(themes)}")
+    art = PACKAGES[package]["art"]
 
     for index, scene in enumerate(themes, start=1):
         if only and index not in only:
             continue
-        webp = ART / f"l{index:02}.webp"
+        webp = art / f"l{index:02}.webp"
         if webp.exists() and not force:
             print(f"skip {webp.name}", flush=True)
             continue
@@ -125,6 +134,7 @@ def main() -> int:
     parser.add_argument("--all", action="store_true")
     parser.add_argument("--only", default="")
     parser.add_argument("--force", action="store_true")
+    parser.add_argument("--package", choices=sorted(PACKAGES), default="p1")
     args = parser.parse_args()
 
     if not args.style_check and not args.all:
@@ -135,7 +145,7 @@ def main() -> int:
     if args.style_check:
         style_check(model)
     if args.all:
-        generate_all(model, only or None, args.force)
+        generate_all(model, args.package, only or None, args.force)
     return 0
 
 

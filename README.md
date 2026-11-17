@@ -81,8 +81,12 @@ Regenerate:
 pnpm content:export                         # content.json, content.p2.json, content.p3.json, themes.json
 pnpm manifests                              # static/manifests/<package>/<locale>/<voice>.json
 /Users/ionutale/developer-playground/flux2-klein-mlx-studio/.venv/bin/python scripts/generate_art.py --all
+/Users/ionutale/developer-playground/flux2-klein-mlx-studio/.venv/bin/python scripts/generate_art.py --package p2 --all
+/Users/ionutale/developer-playground/flux2-klein-mlx-studio/.venv/bin/python scripts/generate_art.py --package p3 --all
 node scripts/generate_audio.mjs --all       # starts from the local studio; see below
 /Users/ionutale/developer-playground/flux2-klein-mlx-studio/.venv/bin/python scripts/generate_word_art.py --all
+/Users/ionutale/developer-playground/flux2-klein-mlx-studio/.venv/bin/python scripts/generate_word_art.py --package p2 --all
+python3 scripts/contact_sheet.py --package p2      # review sheet in candidates/
 node scripts/validate_assets.mjs            # 50 theme images, 750 word clues, 750 clips, effects, music
 node scripts/validate_assets.mjs --packages # also checks packages 2 and 3
 ```
