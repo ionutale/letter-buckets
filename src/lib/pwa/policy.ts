@@ -36,6 +36,9 @@ export function decide(input: DecisionInput, origin: string): Decision {
  * whatever passes through. UI sounds and the music loop stay in the install.
  */
 export function isDownloadedAsset(path: string): boolean {
-	if (path.startsWith('/audio/sfx/') || path.startsWith('/audio/music/')) return false;
-	return path.startsWith('/art/') || path.startsWith('/audio/');
+	// SvelteKit's asset manifest lists `art/levels/l01.webp`, without the
+	// leading slash that arrives on a request.
+	const full = path.startsWith('/') ? path : `/${path}`;
+	if (full.startsWith('/audio/sfx/') || full.startsWith('/audio/music/')) return false;
+	return full.startsWith('/art/') || full.startsWith('/audio/');
 }

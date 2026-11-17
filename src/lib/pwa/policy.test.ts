@@ -55,6 +55,10 @@ describe('decide', () => {
 		expect(isDownloadedAsset('/audio/sfx/coin.mp3')).toBe(false);
 		expect(isDownloadedAsset('/audio/music/loop.mp3')).toBe(false);
 		expect(isDownloadedAsset('/icons/apple-touch-icon.png')).toBe(false);
+		// The asset manifest drops the leading slash.
+		expect(isDownloadedAsset('art/levels/l01.webp')).toBe(true);
+		expect(isDownloadedAsset('audio/words/en/l01-w1.mp3')).toBe(true);
+		expect(isDownloadedAsset('audio/sfx/coin.mp3')).toBe(false);
 	});
 
 	it('bypasses non-GET and cross-origin requests', () => {

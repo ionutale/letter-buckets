@@ -19,14 +19,40 @@ const PRECACHE = [
 	...assets.map((asset) => resolve(asset.path))
 ].filter((path) => !isDownloadedAsset(path));
 
+/**
+ * A redirected response cannot satisfy a navigation request, so anything cached
+ * for the shell is rebuilt from its body. Cloudflare answers `/200.html` with a
+ * 308 to `/200`, which would otherwise poison the cache.
+ */
+async function cleanResponse(response: Response): Promise<Response> {
+	const body = await response.arrayBuffer();
+	return new Response(body, {
+		status: response.status,
+		statusText: response.statusText,
+		headers: response.headers
+	});
+}
+
+async function fetchShell(): Promise<Response | undefined> {
+	try {
+		const response = await fetch(INDEX, { redirect: 'follow' });
+		return response.ok ? await cleanResponse(response) : undefined;
+	} catch {
+		return undefined;
+	}
+}
+
 self.addEventListener('install', (event) => {
 	event.waitUntil(
 		(async () => {
 			const cache = await caches.open(CACHE);
-			const urls = [...PRECACHE, INDEX];
-			for (let i = 0; i < urls.length; i += BATCH) {
-				await Promise.all(urls.slice(i, i + BATCH).map((url) => cache.add(url).catch(() => {})));
+			for (let i = 0; i < PRECACHE.length; i += BATCH) {
+				await Promise.all(
+					PRECACHE.slice(i, i + BATCH).map((url) => cache.add(url).catch(() => {}))
+				);
 			}
+			const shell = await fetchShell();
+			if (shell) await cache.put(INDEX, shell).catch(() => {});
 		})()
 	);
 });
@@ -93,10 +119,14 @@ function safeOrigin(url: string): string {
 async function respondNavigation(event: FetchEvent): Promise<Response> {
 	const cache = await caches.open(CACHE);
 	const cached = await cache.match(INDEX);
-	const refresh = fetch(event.request)
+	// A navigation Request has mode "navigate", which fetch() rejects, so the
+	// refresh goes by URL instead.
+	const refresh = fetch(event.request.url, { headers: event.request.headers })
 		.then(async (response) => {
-			if (response.ok) await cache.put(INDEX, response.clone()).catch(() => {});
-			return response;
+			if (!response.ok) return undefined;
+			const clean = await cleanResponse(response);
+			await cache.put(INDEX, clean.clone()).catch(() => {});
+			return clean;
 		})
 		.catch(() => undefined);
 
@@ -104,8 +134,7 @@ async function respondNavigation(event: FetchEvent): Promise<Response> {
 		event.waitUntil(refresh.then(() => undefined));
 		return cached;
 	}
-	const response = await refresh;
-	return response ?? Response.error();
+	return (await refresh) ?? Response.error();
 }
 
 /** Cache-first; a miss goes to the network and is then stored for next time. */
