@@ -118,6 +118,11 @@ export function createAudioController(options: AudioOptions = {}): AudioControll
 		if (!context || context.state !== 'running') return;
 		if (!music || routed.has(music)) return;
 		connectElement(music, 'music');
+		if (routed.has(music)) {
+			// The channel gain owns the level from here. Leaving the element's own
+			// volume set would apply the same factor twice and muffle the loop.
+			music.volume = 1;
+		}
 		applyGain('music');
 	}
 

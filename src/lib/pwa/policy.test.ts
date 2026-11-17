@@ -59,6 +59,8 @@ describe('decide', () => {
 		expect(isDownloadedAsset('art/levels/l01.webp')).toBe(true);
 		expect(isDownloadedAsset('audio/words/en/l01-w1.mp3')).toBe(true);
 		expect(isDownloadedAsset('audio/sfx/coin.mp3')).toBe(false);
+		expect(isDownloadedAsset('manifests/p2/it/marco.json')).toBe(true);
+		expect(isDownloadedAsset('/manifests/p1/en/default.json')).toBe(true);
 	});
 
 	it('bypasses non-GET and cross-origin requests', () => {

@@ -39,6 +39,8 @@ export function isDownloadedAsset(path: string): boolean {
 	// SvelteKit's asset manifest lists `art/levels/l01.webp`, without the
 	// leading slash that arrives on a request.
 	const full = path.startsWith('/') ? path : `/${path}`;
+	// Manifests are fetched by the downloader on demand, not part of the install.
+	if (full.startsWith('/manifests/')) return true;
 	if (full.startsWith('/audio/sfx/') || full.startsWith('/audio/music/')) return false;
 	return full.startsWith('/art/') || full.startsWith('/audio/');
 }

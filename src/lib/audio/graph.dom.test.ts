@@ -90,8 +90,13 @@ describe('audio graph', () => {
 
 	it('links music into the graph once the context resumes', async () => {
 		const { createSource } = installContext('suspended');
+		const created: FakeAudio[] = [];
 		const controller = createAudioController({
-			createAudio: () => new FakeAudio() as unknown as HTMLAudioElement
+			createAudio: () => {
+				const audio = new FakeAudio();
+				created.push(audio);
+				return audio as unknown as HTMLAudioElement;
+			}
 		});
 
 		controller.unlock();
@@ -99,6 +104,8 @@ describe('audio graph', () => {
 
 		await new Promise((resolve) => setTimeout(resolve, 5));
 		expect(createSource).toHaveBeenCalledTimes(1);
+		// The element must hand its level to the graph, or the factor applies twice.
+		expect(created[0].volume).toBe(1);
 	});
 
 	it('plays natively while the audio context is still suspended', () => {
