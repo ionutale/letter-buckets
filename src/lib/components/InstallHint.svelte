@@ -49,7 +49,7 @@
 		font-weight: 700;
 	}
 	button {
-		min-height: 40px;
+		min-height: 44px;
 		padding: 0 var(--lb-space-3);
 		border-radius: var(--lb-radius-pill);
 		background: var(--lb-paper);

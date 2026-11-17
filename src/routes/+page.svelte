@@ -488,7 +488,7 @@
 		box-shadow: inset 0 0 0 1px var(--lb-border);
 	}
 	.package-switch button {
-		min-height: 38px;
+		min-height: 44px;
 		padding: 0 var(--lb-space-3);
 		border-radius: var(--lb-radius-pill);
 		color: var(--lb-ink-soft);

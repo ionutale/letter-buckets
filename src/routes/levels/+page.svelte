@@ -102,9 +102,8 @@
 		{/each}
 	</div>
 
-	{#if toast}
-		<p class="toast" role="status">{toast}</p>
-	{/if}
+	<!-- The live region must exist before its text, or some screen readers miss it. -->
+	<p class="toast" role="status" aria-live="polite" class:empty={!toast}>{toast}</p>
 </main>
 
 <style>
@@ -181,6 +180,9 @@
 		top: 6px;
 		right: 8px;
 		font-size: 0.9rem;
+	}
+	.toast.empty {
+		display: none;
 	}
 	.toast {
 		position: fixed;
