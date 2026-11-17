@@ -134,7 +134,13 @@ install precache). The storage reviewer also simulated all 2,250 puzzles across
 three packages and five locales and found no unsolvable puzzle, wrong gap count
 or broken unlock chain.
 
-## Next, in priority order
+## Next
+
+The 51 review findings are sliced into eight tracer-bullet tickets under
+`.scratch/review-fixes/issues/`, numbered in dependency order. Work the
+frontier: 01-06 can start immediately; 07 and 08 wait on 01.
+
+## Priority detail
 
 1. **`D02` — audio written in place.** A killed render leaves a truncated clip
    that every later run skips. Write to a temporary file and rename on success;
