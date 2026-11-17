@@ -275,6 +275,120 @@ OVERRIDES = {
 }
 
 
+# Package 2 and 3 words are already bilingual in their content files; these
+# replacements cover the ones a bare word renders badly.
+PACKAGE_OVERRIDES = {
+	"p2": {
+		"10:0": "an open carton with packing tape",
+		"10:2": "a house door with a number plate",
+		"11:1": "a coiled fire hose",
+		"12:2": "a police car with a flashing light",
+		"13:1": "an x-ray picture of a hand",
+		"18:1": "a supermarket aisle with shelves",
+		"20:1": "a suitcase at a boarding gate",
+		"23:1": "a television remote with buttons",
+		"23:2": "a rooftop television antenna",
+		"24:2": "a radio tuning dial",
+		"25:1": "a spinning washing drum",
+		"28:1": "a printer toner cartridge",
+		"29:0": "a small electric motor",
+		"29:1": "a small round sensor eye",
+		"30:1": "a drone rotor blade",
+		"37:2": "glowing magma cracks",
+		"44:1": "an open treasure chest with coins",
+		"49:1": "a pile of gold coins",
+	},
+	"p3": {
+		"1:0": "a bright smiling face",
+		"1:1": "a sad face with a teardrop",
+		"1:2": "a calm face with closed eyes",
+		"2:0": "a wide friendly smile",
+		"2:1": "a pair of friendly eyes",
+		"2:2": "a round button nose",
+		"3:0": "two children holding hands",
+		"3:1": "an apple cut in two halves",
+		"3:2": "two teddy bears hugging",
+		"4:0": "a chef hat and a wooden spoon",
+		"4:1": "a bus steering wheel",
+		"4:2": "a book and a pencil",
+		"5:0": "a hand lifting a small box",
+		"5:1": "a basket held in two hands",
+		"5:2": "a broom and soap bubbles",
+		"6:0": "a pair of dancing shoes",
+		"6:2": "music notes and a microphone",
+		"8:0": "running footprints",
+		"8:1": "eyes peeking from behind a curtain",
+		"8:2": "a laughing face",
+		"9:1": "a pillow and a folded blanket",
+		"9:2": "a sleeping face with a dream cloud",
+		"10:0": "a seedling growing taller",
+		"10:1": "three children of different heights",
+		"10:2": "a family of paper figures",
+		"15:1": "a ball of dough and a rolling pin",
+		"16:2": "a mug of cocoa with marshmallows",
+		"20:2": "a glass of lemonade with a straw",
+		"22:1": "falling confetti",
+		"22:2": "a bursting firework",
+		"24:1": "a friendly little ghost",
+		"25:1": "a wooden sleigh",
+		"30:1": "a round mooncake on a plate",
+		"31:0": "swirling wind lines",
+		"31:2": "falling autumn leaves",
+		"32:0": "a dark cloud with a lightning bolt",
+		"32:1": "a bright lightning flash",
+		"32:2": "falling raindrops",
+		"33:0": "a rainbow of paint swatches",
+		"33:1": "a fluffy white cloud",
+		"34:0": "a snowman with a scarf",
+		"34:1": "a pair of mittens",
+		"35:0": "soft mist layers",
+		"35:1": "a hazy horizon",
+		"35:2": "a glowing lamp",
+		"36:0": "a ringed planet",
+		"36:1": "waves on the ocean",
+		"36:2": "a row of pine trees",
+		"37:0": "a speckled granite rock",
+		"37:1": "a smooth marble block",
+		"37:2": "a pile of sand",
+		"38:0": "a handful of seeds",
+		"38:1": "a green sprout",
+		"38:2": "a watering can pouring water",
+		"39:0": "a comet with a tail",
+		"39:1": "a ringed planet",
+		"39:2": "a spiral galaxy",
+		"40:0": "the sun rising over hills",
+		"40:2": "a dewdrop on a leaf",
+		"41:0": "a flowing superhero cape",
+		"41:1": "a superhero eye mask",
+		"41:2": "a superhero shield emblem",
+		"42:0": "a magnifying glass over footprints",
+		"42:1": "footprints in the sand",
+		"42:2": "a detective hat",
+		"43:0": "a folded map",
+		"43:1": "a brass compass",
+		"43:2": "a pair of hiking boots",
+		"44:0": "a metal gear",
+		"44:1": "a coiled metal spring",
+		"44:2": "a small wooden model",
+		"45:0": "a glass beaker",
+		"45:1": "a science flask",
+		"45:2": "a magnifying lens",
+		"46:1": "a story scroll with a star",
+		"47:0": "three balls in the air",
+		"47:2": "a clown face",
+		"48:0": "puppet strings",
+		"48:1": "a small puppet stage",
+		"49:0": "a magnifying glass and footprints",
+		"50:1": "a castle and a little village",
+		"50:2": "a sunset sky",
+	},
+}
+
+PACKAGE_CONTENT = {
+	"p2": ROOT / "scripts" / "content.p2.json",
+	"p3": ROOT / "scripts" / "content.p3.json",
+}
+
 def main() -> None:
     content = json.loads((ROOT / "scripts" / "content.json").read_text())
     translations = json.loads(TRANSLATIONS.read_text())
@@ -294,6 +408,27 @@ def main() -> None:
                     glosses[key] = translation
                 else:
                     glosses[key] = f"{word.lower()} ({translation})"
+
+    for package, path in PACKAGE_CONTENT.items():
+        if not path.exists():
+            continue
+        content = json.loads(path.read_text())
+        english = content["en"]["levels"]
+        for locale in ["en", "ro", "it", "de", "ru"]:
+            for position, level in enumerate(content[locale]["levels"]):
+                for index, entry in enumerate(level["words"]):
+                    key = f"{package}:{level['id']}:{index}"
+                    replacement = PACKAGE_OVERRIDES[package].get(f"{level['id']}:{index}")
+                    if replacement:
+                        glosses[f"{package}:{locale}:{level['id']}:{index}"] = replacement
+                        continue
+                    subject = english[position]["words"][index]["word"].lower()
+                    if locale == "en":
+                        glosses[f"{package}:{locale}:{level['id']}:{index}"] = subject
+                    else:
+                        glosses[f"{package}:{locale}:{level['id']}:{index}"] = (
+                            f"{entry['word'].lower()} ({subject})"
+                        )
 
     # Tab indentation keeps the generated file stable under Prettier's checked formatting.
     OUT.write_text(json.dumps(glosses, ensure_ascii=False, indent="\t") + "\n")

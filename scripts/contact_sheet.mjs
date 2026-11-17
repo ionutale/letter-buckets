@@ -3,8 +3,14 @@ import { resolve } from 'node:path';
 import { chromium } from '@playwright/test';
 
 const root = resolve(import.meta.dirname, '..');
-const content = JSON.parse(readFileSync(resolve(root, 'scripts/content.json'), 'utf8'));
-const locales = process.argv.slice(2).filter((value) => value in content);
+const args = process.argv.slice(2);
+const pkgIndex = args.indexOf('--package');
+const pkg = pkgIndex === -1 ? 'p1' : args[pkgIndex + 1];
+const contentFile = { p1: 'content.json', p2: 'content.p2.json', p3: 'content.p3.json' }[pkg];
+if (!contentFile) throw new Error(`unknown package ${pkg}`);
+const artDir = pkg === 'p1' ? 'static/art/words' : `static/art/${pkg}/words`;
+const content = JSON.parse(readFileSync(resolve(root, 'scripts', contentFile), 'utf8'));
+const locales = args.filter((value) => value in content);
 const targets = locales.length > 0 ? locales : Object.keys(content);
 
 const browser = await chromium.launch();
@@ -20,7 +26,7 @@ for (const locale of targets) {
 			const word = typeof entry === 'string' ? entry : entry.word;
 			const path = resolve(
 				root,
-				`static/art/words/${locale}/l${String(level.id).padStart(2, '0')}-w${index + 1}.webp`
+				`${artDir}/${locale}/l${String(level.id).padStart(2, '0')}-w${index + 1}.webp`
 			);
 			if (!existsSync(path)) {
 				cells.push(
@@ -45,8 +51,9 @@ for (const locale of targets) {
 			.missing { display: grid; place-items: center; color: #999; font-size: 12px; }
 			figcaption { margin-top: 2px; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 		</style><main>${cells.join('')}</main>`);
-	await page.screenshot({ path: `/tmp/words-${locale}.png`, fullPage: true });
-	console.log(`/tmp/words-${locale}.png`);
+	const out = `/tmp/words-${pkg}-${locale}.png`;
+	await page.screenshot({ path: out, fullPage: true });
+	console.log(out);
 }
 
 await browser.close();

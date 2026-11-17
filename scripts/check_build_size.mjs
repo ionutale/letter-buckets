@@ -25,6 +25,9 @@ console.log(`build: ${(size / 1024 / 1024).toFixed(2)} MB`);
 console.log(
 	`images: ${images.length}, word images: ${wordImages.length}, word clips: ${clips.length}, italian voice clips: ${italianVoiceClips.length}`
 );
+console.log(
+	`package levels: ${packageLevels.length}, package clues: ${packageClues.length}`
+);
 
 const largest = files
 	.map((file) => ({ file, bytes: statSync(file).size }))
@@ -50,6 +53,14 @@ if (clips.length !== 750) {
 }
 if (italianVoiceClips.length !== 1800) {
 	console.error(`expected 1800 alternate Italian clips, found ${italianVoiceClips.length}`);
+	process.exit(1);
+}
+if (packageLevels.length !== 100) {
+	console.error(`expected 100 package level illustrations, found ${packageLevels.length}`);
+	process.exit(1);
+}
+if (packageClues.length !== 1500) {
+	console.error(`expected 1500 package clues, found ${packageClues.length}`);
 	process.exit(1);
 }
 console.log('size budget OK');

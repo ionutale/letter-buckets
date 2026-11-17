@@ -86,7 +86,8 @@ pnpm manifests                              # static/manifests/<package>/<locale
 node scripts/generate_audio.mjs --all       # starts from the local studio; see below
 /Users/ionutale/developer-playground/flux2-klein-mlx-studio/.venv/bin/python scripts/generate_word_art.py --all
 /Users/ionutale/developer-playground/flux2-klein-mlx-studio/.venv/bin/python scripts/generate_word_art.py --package p2 --all
-python3 scripts/contact_sheet.py --package p2      # review sheet in candidates/
+python3 scripts/contact_sheet.py --package p2      # level sheet in candidates/
+node scripts/contact_sheet.mjs --package p2 it      # clue sheet per language in /tmp
 node scripts/validate_assets.mjs            # 50 theme images, 750 word clues, 750 clips, effects, music
 node scripts/validate_assets.mjs --packages # also checks packages 2 and 3
 ```
