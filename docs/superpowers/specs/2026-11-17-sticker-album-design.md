@@ -32,7 +32,7 @@ of a chapter sticker carry the meaning.
 - A fourth shelf item on the home screen opens the album for the active package.
 - One sticker per cleared level, fifty per package, in five spreads of ten.
 - A chapter sticker in the spread header, gold when the chapter is complete.
-- Four badges per chapter, evaluated once when the chapter is finished and stored:
+- Four badges per chapter, derived from per-level marks the game records as they happen:
   - **Chapter sticker** — all ten levels of the chapter cleared.
   - **All first try** — every word in the chapter completed with no wrong letter.
   - **No hints** — the chapter finished without pressing the hint button.
@@ -88,11 +88,12 @@ These count as failures even if the screens work:
 
 ## Approaches considered
 
-**A — Stickers derived, badges frozen (chosen).** A sticker exists exactly when
-`level <= clearedThrough`, so no sticker data is stored. Badges are evaluated once,
-when a chapter's tenth level completes, and written into a small set of ids. The
-save grows by a few hundred bytes, replays cannot revoke anything, and the album
-screen is a pure view of state the game already keeps.
+**A — Stickers derived, mastery frozen (chosen).** A sticker exists exactly when
+`level <= clearedThrough`, so no sticker data is stored. Mastery is recorded as two
+monotonic per-level marks — clean run, no-hint run — and the four chapter badges are
+derived from them. The save grows by two short arrays, replays cannot revoke anything,
+the album screen is a pure view of state the game already keeps, and one messy level
+can be repaired by replaying that level alone.
 
 **B — Store everything.** Stickers and badges both persisted with timestamps. This
 buys "new!" markers and a dated album, at the cost of fifty entries per package, two
@@ -111,63 +112,99 @@ earned "all first try" and later replays sloppily would watch the badge vanish.
 Two additions to `LocaleProgress` in `src/lib/storage/save.ts`:
 
 ```ts
-/** Earned mastery badges, ids like `c3:firsttry`. */
-badges: string[];
-/** Hint-button presses per chapter, across all modes. Keyed "1"…"5". */
-helpUsed: Record<number, number>;
+/** Levels finished with every word on the first try. */
+cleanLevels: number[];
+/** Levels finished without pressing the hint button. */
+noHelpLevels: number[];
 ```
 
-- `badges` defaults to `[]`; sanitized by regex `/^c[1-5]:(star|firsttry|nohints|helpfree)$/`,
-  de-duplicated, and sorted by chapter then a fixed badge order.
-- `helpUsed` defaults to `{}`; keys clamped to 1–5, values to non-negative integers.
-- Neither field is required by older saves; both are filled by `defaultLocaleProgress`.
+- Both default to `[]`, are de-duplicated, and are sanitized to integers in 1–50.
+  Older saves simply load with empty arrays.
 - `resetLocale` (settings reset) clears both with the rest of the locale progress.
-- Stickers are **not** stored. `stickerLevels(progress)` returns every level from 1 to
-  `clearedThrough`, and the album derives its spreads from that.
+- **Nothing else is stored.** Stickers are derived from `clearedThrough`; the four
+  chapter badges are derived from the two arrays plus `chapterStamps`. That is safe
+  because the arrays are monotonic: a level is added once and never removed, so a
+  badge cannot be recomputed into a worse state.
+- A level already in between `1` and `clearedThrough` may or may not be marked. That
+  is honest: an unmarked level means "we never saw a clean run", not "it failed".
 
-Recording help: `spendHint` already exists for Medium and Hard. Add a single
-`recordHelp(data, locale, level)` called whenever the hint button produces an action,
-**and** in the Easy path so the press is counted even though the budget is unlimited.
-The existing `hintUsage` budget behaviour is unchanged; `helpUsed` is a parallel
-counter, not a replacement.
+```ts
+export function stickerLevels(progress: LocaleProgress): number[] {
+	return Array.from({ length: progress.clearedThrough }, (_, i) => i + 1);
+}
+```
+
+### What earns a mark
+
+Marks are written by the level page when a level completes, from facts the session
+observes during that level only:
+
+- `cleanLevels` gets the level when all three words report into `onWordComplete` with
+  `firstTry === true`.
+- `noHelpLevels` gets the level when the hint button produced no action during the
+  entire level, in any mode. `spendHint` currently returns before recording in Easy,
+  so the level page tracks presses for this purpose separately, through the existing
+  `onHintUsed` callback — no change to the Medium/Hard hint budget.
+
+Two corrections the reviewer flagged, both applied here:
+
+- **The first-try signal is unreliable today.** `mistakesThisWord` is reset by
+  `closeWord` as well as `openBucket`, so closing a word after a wrong letter and
+  reopening it reports the word as first try. The flag must live per word for the
+  life of the session, cleared only by `openBucket` for a word that has not been
+  completed yet.
+- **Automatic idle hints do not create a mark failure.** The idle timer calls `place`
+  directly, so it never reaches `onHintUsed`. Only a deliberate button press does,
+  which is the intended meaning: the badge records that the child did not ask for
+  help, not that they never paused.
 
 ### Badge evaluation
 
-Called at the end of `markLevelComplete` once a chapter boundary is reached
-(`level % 10 === 0`), using the chapter's own metrics at that moment:
+Derived, not stored. All four are pure functions of the progress record:
 
-| id           | condition                                                          |
-| ------------ | ------------------------------------------------------------------ |
-| `c<n>:star`  | chapter cleared (the chapter stamp is being awarded now)            |
-| `c<n>:firsttry` | `wordsCompleted >= 30 && wordsWithMistakes === 0`               |
-| `c<n>:nohints`   | `helpUsed[n] === 0`                                             |
-| `c<n>:helpfree`  | `firsttry` and `nohints` both true                              |
+| badge | condition |
+| --- | --- |
+| **Chapter sticker** | `chapterStamps` includes the chapter (unchanged behaviour) |
+| **All first try** | all ten levels of the chapter are in `cleanLevels` |
+| **No hints** | all ten levels of the chapter are in `noHelpLevels` |
+| **Never needed help** | the previous two both hold |
 
-`markLevelComplete` takes the chapter metric totals it already has access to. Because
-this runs only when the tenth level completes, later replays cannot change the
-outcome, and a badge is never written twice.
+`newlyEarnedBadges(before, after, chapter)` compares the derived set for one chapter
+before and after a save, which is what the level-complete card needs. Nothing is
+written except the level arrays.
 
-Badges are **not** evaluated for chapters finished before this feature ships: there
-is no history of hint presses or clean words to reconstruct, and inventing one would
-be a lie. Existing players begin with the chapter stickers only.
+Consequences, all intended:
+
+- A chapter with a shaky level 3 can still earn "all first try" by replaying level 3
+  cleanly. One level, not ten.
+- A chapter finished before this feature ships shows only its chapter sticker until
+  the child replays some levels. There is no invented history and no epoch marker.
+- Marks are added on replay, never removed, so a sloppy later replay cannot take a
+  badge away — the anti-goal holds by construction rather than by freezing ids.
 
 ### Album screen
 
 New route `src/routes/album/+page.svelte`, reached from a fourth item in the home
 shelf.
 
-- Header: back button, title "Sticker album", package chip for the active package.
-  If the active package is locked its album is read-only with a lock on the chip,
-  matching the package selector's behaviour.
+- Header: back button, title "Sticker album", package chip naming the active package.
+  The album always follows `resolveActivePackage`, exactly like the level map and the
+  Word Book, so there is no locked-album state: a package that cannot be activated
+  cannot be opened here either.
 - One spread per chapter, ten stickers in a 5×2 grid, paged with dots. The current
   chapter opens first: the chapter containing `clearedThrough + 1`, or chapter 5 when
   everything is finished.
 - A filled sticker is the level's sticker art inside a paper die-cut frame, rotated a
-  degree or two like a real sticker. It is a button that navigates to that level.
+  degree or two like a real sticker. It is a button that navigates to that level. A
+  cleared level opens in its finished state, exactly as it does today, with the big
+  Play button that starts a fresh run — so repairing a missing mark costs one tap and
+  no new replay mode exists.
 - An empty slot is a quiet dashed die-cut outline with the level number in the middle.
   Not a button, no padlock, no "missing" language.
 - The chapter sticker sits in the spread header: gold when the chapter is complete,
-  blank die-cut paper before that.
+  blank die-cut paper before that. Its emblem is the chapter glyph the game already
+  uses in `ChapterTabs.svelte`, drawn inline inside the sticker frame — no new art,
+  and it works for Packages 2 and 3 whose assets do not exist yet.
 - The four badges sit in a row under the grid, always all four present: earned ones
   in gold, leaf, berry and ink with their name; unearned ones muted with "not yet".
   No locks, no percentages.
@@ -183,8 +220,9 @@ hidden so four items still fit; the icons and labels remain.
 ### Level complete card
 
 `LevelComplete.svelte` gains the sticker for the level just finished, shown above the
-word list, entering with the existing overshoot easing. When the level ends a chapter,
-newly earned badges appear as one line each under the sticker. Nothing animates on
+word list, entering with the existing overshoot easing. Any badge that became complete
+in that moment appears as one line each under the sticker — including a badge finished
+by replaying a single level in the middle of a chapter. Nothing animates on
 screen for more than the current card already does.
 
 The card needs the sticker path and the newly earned badges passed in, because the
@@ -230,15 +268,20 @@ marks.
 
 ### Testing
 
-- Unit: each badge condition; badges survive a replay with mistakes; sanitizer drops
-  malformed ids; `helpUsed` counts in Easy; older saves without the fields load with
-  defaults; `resetLocale` clears badges and help.
+- Unit: each badge condition, including that a chapter missing one marked level earns
+  nothing and that marking that level completes the badge.
+- Unit: marks are added on replay and never removed; a sloppy replay after earning
+  leaves the badge intact.
+- Unit: sanitizer drops malformed level arrays, de-duplicates and clamps to 1–50;
+  saves without the fields load with empty arrays; `resetLocale` clears both.
 - Unit: `stickerLevels` at 0, 1, 9, 10, 50.
-- E2E: shelf item opens the album; a cleared level shows its sticker while a later
-  one shows a number; the chapter sticker turns gold at level 10; earning a badge
-  shows it on the level-complete card and keeps it after a sloppy replay; a locked
-  package shows a locked album; Packages 2 and 3 render empty spreads without broken
-  images.
+- Unit: a wrong letter followed by close-and-reopen no longer reports first try.
+- Unit: a hint press in Easy mode prevents `noHelpLevels` while leaving the unlimited
+  hint budget untouched.
+- E2E: the shelf item opens the album; a cleared level shows its sticker while a later
+  one shows a number; the chapter sticker turns gold at level 10; a badge earned after
+  replaying one level appears on the level-complete card and survives a sloppy replay;
+  Packages 2 and 3 render empty spreads without broken images.
 - Visual: album with 8 of 10 stickers in the first spread, in all five locales.
 
 ## Rollout
@@ -263,6 +306,12 @@ stays manual.
 3. Stickers are square images masked in CSS, not transparent die-cut PNGs.
 4. Automatic help from the idle timer does **not** count toward the no-hint badge;
    only deliberate presses do, so pausing to think is never punished.
-5. The album follows the active package; a locked package shows a locked album.
-6. Unearned badges are visible but muted, because all four are always still reachable
-   by replaying the chapter.
+5. The album follows the active package. There is no locked-album screen, because a
+   package that is locked cannot be activated in the first place.
+6. Unearned badges are visible but muted, because the per-level marks make all four
+   reachable at any time by replaying the specific level that is missing.
+7. The chapter sticker reuses the existing `ChapterTabs` emblem rather than five new
+   images, which keeps the art set at exactly 150 stickers.
+8. Replay repairs a missing mark but never removes one. A chapter can therefore earn
+   "all first try" from a mix of runs, which is the kindest reading of the badge and
+   the only one that keeps the anti-goal intact.
