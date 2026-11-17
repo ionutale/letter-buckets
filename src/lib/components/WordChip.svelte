@@ -1,4 +1,5 @@
 <script lang="ts">
+	import SpeakerIcon from './SpeakerIcon.svelte';
 	interface Props {
 		word: string;
 		level: number;
@@ -29,7 +30,7 @@
 				onerror={() => (imageBroken = true)}
 			/>{/if}
 		<span class="word">{word}</span>
-		<span class="icon" aria-hidden="true">🔊</span>
+		<span class="icon" aria-hidden="true"><SpeakerIcon /></span>
 	</button>
 {:else}
 	<span class="chip locked" aria-label={`Word locked, level ${level}`}>?</span>

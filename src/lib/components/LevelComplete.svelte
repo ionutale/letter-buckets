@@ -1,4 +1,5 @@
 <script lang="ts">
+	import SpeakerIcon from './SpeakerIcon.svelte';
 	import { m } from '#lib/paraglide/messages.js';
 	import { audio } from '#lib/audio/index.js';
 	import type { LevelSession } from '#lib/game/session.svelte.js';
@@ -38,7 +39,7 @@
 							)}
 					>
 						{bucket.word}
-						<span aria-hidden="true">🔊</span>
+						<span class="speaker" aria-hidden="true"><SpeakerIcon /></span>
 					</button>
 				</li>
 			{/each}
@@ -55,6 +56,10 @@
 {/if}
 
 <style>
+	.speaker {
+		font-size: 0.85rem;
+		opacity: 0.7;
+	}
 	.complete {
 		position: fixed;
 		inset: 0;

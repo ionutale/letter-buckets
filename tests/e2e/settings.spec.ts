@@ -179,6 +179,82 @@ test('hard mode locks the hint control at zero but keeps play and nudges working
 	await expect(page.locator('button.icon.hint')).toBeDisabled();
 });
 
+test('volume sliders drive the live audio graph and mute suspends playback', async ({ page }) => {
+	await page.addInitScript(() => {
+		const log = { gain: [] as number[], suspend: 0, resume: 0, pause: 0 };
+		(window as unknown as { __audio: typeof log }).__audio = log;
+		const Orig = window.AudioContext;
+		const origGain = Orig.prototype.createGain;
+		Orig.prototype.createGain = function () {
+			const node = origGain.call(this);
+			const set = node.gain.setTargetAtTime.bind(node.gain);
+			node.gain.setTargetAtTime = (value: number, time: number, constant: number) => {
+				log.gain.push(Number(value.toFixed(3)));
+				return set(value, time, constant);
+			};
+			return node;
+		};
+		const origSuspend = Orig.prototype.suspend;
+		Orig.prototype.suspend = function () {
+			log.suspend += 1;
+			return origSuspend.call(this);
+		};
+		const origResume = Orig.prototype.resume;
+		Orig.prototype.resume = function () {
+			log.resume += 1;
+			return origResume.call(this);
+		};
+		const origPause = HTMLMediaElement.prototype.pause;
+		HTMLMediaElement.prototype.pause = function () {
+			log.pause += 1;
+			return origPause.call(this);
+		};
+	});
+
+	await seedSave(page, { locale: 'en', muted: false });
+	await page.goto('/en/settings');
+	// Unlocking happens on the first tap; it also starts the music loop.
+	await page.getByRole('heading', { name: 'Settings', exact: true }).click();
+
+	const setSlider = async (id: string, value: number) => {
+		await page.locator(id).evaluate((element, next) => {
+			const input = element as HTMLInputElement;
+			input.value = String(next);
+			input.dispatchEvent(new Event('input', { bubbles: true }));
+		}, value);
+	};
+	const lastGain = () =>
+		page.evaluate(() => (window as unknown as { __audio: { gain: number[] } }).__audio.gain.at(-1));
+
+	await setSlider('#volume-music', 0);
+	expect(await lastGain()).toBe(0);
+	await setSlider('#volume-music', 50);
+	expect(await lastGain()).toBeCloseTo(0.08, 2);
+	await setSlider('#volume-sfx', 50);
+	expect(await lastGain()).toBeCloseTo(0.275, 2);
+	await setSlider('#volume-voice', 50);
+	expect(await lastGain()).toBeCloseTo(0.45, 2);
+
+	const before = await page.evaluate(
+		() => (window as unknown as { __audio: { suspend: number; pause: number } }).__audio
+	);
+	await page.locator('button.toggle').click();
+	const muted = await page.evaluate(
+		() => (window as unknown as { __audio: { suspend: number; pause: number } }).__audio
+	);
+	expect(muted.suspend).toBeGreaterThan(before.suspend);
+	expect(muted.pause).toBeGreaterThan(before.pause);
+
+	const beforeResume = await page.evaluate(
+		() => (window as unknown as { __audio: { resume: number } }).__audio.resume
+	);
+	await page.locator('button.toggle').click();
+	const resumed = await page.evaluate(
+		() => (window as unknown as { __audio: { resume: number } }).__audio.resume
+	);
+	expect(resumed).toBeGreaterThan(beforeResume);
+});
+
 test('adjusts and persists music, effects and voice volumes', async ({ page }) => {
 	await seedSave(page, { locale: 'en' });
 	await page.goto('/en/settings');

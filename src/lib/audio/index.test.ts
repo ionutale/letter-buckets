@@ -154,4 +154,95 @@ describe('channel volumes', () => {
 		expect(created[0].volume).toBe(0);
 		expect(controller.volumes).toEqual({ music: 0, sfx: 0.5, voice: 0.5 });
 	});
+
+	it('clamps slider values to the 0-1 range', () => {
+		const controller = createAudioController({ createAudio: () => ({}) as HTMLAudioElement });
+		controller.setVolume('music', 2);
+		controller.setVolume('sfx', -3);
+		controller.setVolume('voice', 0.25);
+		expect(controller.volumes).toEqual({ music: 1, sfx: 0, voice: 0.25 });
+
+		controller.setVolume('voice', Number.NaN);
+		expect(controller.volumes.voice).toBe(1);
+	});
+
+	it('changes one channel without touching the others', () => {
+		class FakeAudio {
+			src = '';
+			volume = 1;
+			loop = false;
+			preload = '';
+			paused = true;
+			play = vi.fn(async () => {
+				this.paused = false;
+			});
+			pause = vi.fn(() => {
+				this.paused = true;
+			});
+			addEventListener = vi.fn();
+		}
+		const created: FakeAudio[] = [];
+		const controller = createAudioController({
+			createAudio: () => {
+				const audio = new FakeAudio();
+				created.push(audio);
+				return audio as unknown as HTMLAudioElement;
+			}
+		});
+
+		controller.unlock();
+		const music = created[0];
+
+		controller.setVolume('sfx', 0);
+		expect(music.volume).toBeCloseTo(0.16);
+
+		controller.setVolume('voice', 1);
+		controller.playWord('en', 1, 0);
+		expect(created.at(-1)!.volume).toBeCloseTo(0.9);
+
+		controller.setVolume('voice', 0);
+		controller.playWord('en', 1, 1);
+		expect(created.at(-1)!.volume).toBe(0);
+
+		controller.setVolume('music', 0.5);
+		expect(music.volume).toBeCloseTo(0.08);
+	});
+
+	it('plays nothing while muted, then resumes at the stored volumes', () => {
+		class FakeAudio {
+			src = '';
+			volume = 1;
+			loop = false;
+			preload = '';
+			paused = true;
+			play = vi.fn(async () => {
+				this.paused = false;
+			});
+			pause = vi.fn(() => {
+				this.paused = true;
+			});
+			addEventListener = vi.fn();
+		}
+		const created: FakeAudio[] = [];
+		const controller = createAudioController({
+			createAudio: () => {
+				const audio = new FakeAudio();
+				created.push(audio);
+				return audio as unknown as HTMLAudioElement;
+			}
+		});
+
+		controller.setVolume('music', 0.5);
+		controller.unlock();
+		const music = created[0];
+
+		controller.setMuted(true);
+		expect(music.pause).toHaveBeenCalled();
+		controller.playWord('en', 1, 0);
+		expect(created).toHaveLength(1);
+
+		controller.setMuted(false);
+		expect(music.volume).toBeCloseTo(0.08);
+		expect(music.play).toHaveBeenCalled();
+	});
 });

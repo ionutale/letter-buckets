@@ -18,6 +18,7 @@ class FakeAudio {
 
 function installContext(state: 'suspended' | 'running') {
 	const createSource = vi.fn(() => ({ connect: vi.fn() }));
+	const gainCalls: number[] = [];
 	class FakeContext {
 		state = state;
 		destination = {};
@@ -25,10 +26,18 @@ function installContext(state: 'suspended' | 'running') {
 		createGain() {
 			return {
 				connect: vi.fn(),
-				gain: { cancelScheduledValues: vi.fn(), setTargetAtTime: vi.fn() }
+				gain: {
+					cancelScheduledValues: vi.fn(),
+					setTargetAtTime: vi.fn((value: number) => {
+						gainCalls.push(Number(value.toFixed(3)));
+					})
+				}
 			};
 		}
 		createMediaElementSource = createSource;
+		suspend = vi.fn(async () => {
+			this.state = 'suspended';
+		});
 		// Resolve a tick later, like a real device: audio started in the same tick
 		// still sees a suspended context.
 		resume = vi.fn(
@@ -46,12 +55,12 @@ function installContext(state: 'suspended' | 'running') {
 		configurable: true,
 		writable: true
 	});
-	return createSource;
+	return { createSource, gainCalls };
 }
 
 describe('audio graph', () => {
 	it('routes words through the graph once the context is running', () => {
-		const createSource = installContext('running');
+		const { createSource } = installContext('running');
 		const controller = createAudioController({
 			createAudio: () => new FakeAudio() as unknown as HTMLAudioElement
 		});
@@ -80,7 +89,7 @@ describe('audio graph', () => {
 	});
 
 	it('links music into the graph once the context resumes', async () => {
-		const createSource = installContext('suspended');
+		const { createSource } = installContext('suspended');
 		const controller = createAudioController({
 			createAudio: () => new FakeAudio() as unknown as HTMLAudioElement
 		});
@@ -94,7 +103,7 @@ describe('audio graph', () => {
 
 	it('plays natively while the audio context is still suspended', () => {
 		// Routing into a suspended graph silently swallows the start of the clip.
-		const createSource = installContext('suspended');
+		const { createSource } = installContext('suspended');
 		const created: FakeAudio[] = [];
 		const controller = createAudioController({
 			createAudio: () => {
@@ -107,5 +116,43 @@ describe('audio graph', () => {
 		controller.playWord('en', 1, 0);
 		expect(createSource).not.toHaveBeenCalled();
 		expect(created[0].play).toHaveBeenCalled();
+	});
+
+	it('schedules the gain of each channel as its slider moves', () => {
+		const { gainCalls } = installContext('running');
+		const controller = createAudioController({
+			createAudio: () => new FakeAudio() as unknown as HTMLAudioElement
+		});
+
+		controller.unlock();
+		expect(gainCalls.slice(0, 3)).toEqual([0.16, 0.55, 0.9]);
+
+		controller.setVolume('music', 0.5);
+		expect(gainCalls.at(-1)).toBeCloseTo(0.08);
+
+		controller.setVolume('sfx', 0);
+		expect(gainCalls.at(-1)).toBe(0);
+
+		controller.setVolume('voice', 1);
+		expect(gainCalls.at(-1)).toBeCloseTo(0.9);
+
+		controller.setVolume('music', 0);
+		expect(gainCalls.at(-1)).toBe(0);
+	});
+
+	it('silences the music gain when muted and restores it on unmute', () => {
+		const { gainCalls } = installContext('running');
+		const controller = createAudioController({
+			createAudio: () => new FakeAudio() as unknown as HTMLAudioElement
+		});
+
+		controller.setVolume('music', 0.5);
+		controller.unlock();
+		controller.setMuted(true);
+		expect(gainCalls.at(-1)).toBe(0);
+
+		controller.setMuted(false);
+		// Unmute restores every channel: music, effects, voice.
+		expect(gainCalls.slice(-3)).toEqual([0.08, 0.55, 0.9]);
 	});
 });

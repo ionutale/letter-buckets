@@ -98,6 +98,10 @@ export function createAudioController(options: AudioOptions = {}): AudioControll
 				voice: context.createGain()
 			};
 			for (const gain of Object.values(gains)) gain.connect(context.destination);
+			// Whatever gets the context running — a gesture, an interruption ending,
+			// a resume settling — music must end up inside the graph or its slider
+			// has nothing to move.
+			context.addEventListener?.('statechange', () => linkMusic());
 			applyGain('music');
 			applyGain('sfx');
 			applyGain('voice');
@@ -109,18 +113,24 @@ export function createAudioController(options: AudioOptions = {}): AudioControll
 		}
 	}
 
+	/** Music outlives the suspension that started it: link it when we can. */
+	function linkMusic(): void {
+		if (!context || context.state !== 'running') return;
+		if (!music || routed.has(music)) return;
+		connectElement(music, 'music');
+		applyGain('music');
+	}
+
 	function resumeContext(): void {
-		if (context?.state !== 'suspended') return;
+		// iOS reports "interrupted" after calls, alarms and the screen lock, and a
+		// suspended context is what a first tap usually leaves behind.
+		if (context?.state !== 'suspended' && context?.state !== 'interrupted') {
+			linkMusic();
+			return;
+		}
 		void context
 			.resume()
-			.then(() => {
-				// Music outlives the suspension that started it: link it now so the
-				// volume sliders and the ducking can reach it.
-				if (music && !routed.has(music) && context?.state === 'running') {
-					connectElement(music, 'music');
-					applyGain('music');
-				}
-			})
+			.then(() => linkMusic())
 			.catch(() => undefined);
 	}
 
@@ -176,6 +186,11 @@ export function createAudioController(options: AudioOptions = {}): AudioControll
 
 	function syncMusicVolume(): void {
 		applyGain('music');
+		if (music && !routed.has(music)) {
+			// Moving the slider is a gesture: another chance to get music routed.
+			connectElement(music, 'music');
+			applyGain('music');
+		}
 		if (music && !routed.has(music) && !muted) {
 			music.volume = (duckTimer === null ? MUSIC_VOLUME : DUCKED_VOLUME) * volumes.music;
 		}
