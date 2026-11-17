@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { decide, isLazyVoiceClip } from './policy.js';
+import { decide, isDownloadedAsset } from './policy.js';
 
 const app = 'https://letterbuckets.test';
 const input = (over: Partial<Parameters<typeof decide>[0]>) => ({
@@ -47,13 +47,14 @@ describe('decide', () => {
 		).toBe('cache-first');
 	});
 
-	it('keeps alternate italian narrators out of the install precache', () => {
-		expect(isLazyVoiceClip('/audio/words/it/chiara/l01-w1.mp3')).toBe(true);
-		expect(isLazyVoiceClip('/audio/p2/words/it/marco/l01-w1.mp3')).toBe(true);
-		expect(isLazyVoiceClip('/audio/p3/words/it/lucia/l50-w3.mp3')).toBe(true);
-		expect(isLazyVoiceClip('/audio/words/it/l01-w1.mp3')).toBe(false);
-		expect(isLazyVoiceClip('/audio/words/en/l01-w1.mp3')).toBe(false);
-		expect(isLazyVoiceClip('/audio/sfx/coin.mp3')).toBe(false);
+	it('leaves art and word audio to the progressive downloader', () => {
+		expect(isDownloadedAsset('/art/levels/l01.webp')).toBe(true);
+		expect(isDownloadedAsset('/art/p2/words/en/l01-w1.webp')).toBe(true);
+		expect(isDownloadedAsset('/audio/words/en/l01-w1.mp3')).toBe(true);
+		expect(isDownloadedAsset('/audio/p2/words/it/marco/l01-w1.mp3')).toBe(true);
+		expect(isDownloadedAsset('/audio/sfx/coin.mp3')).toBe(false);
+		expect(isDownloadedAsset('/audio/music/loop.mp3')).toBe(false);
+		expect(isDownloadedAsset('/icons/apple-touch-icon.png')).toBe(false);
 	});
 
 	it('bypasses non-GET and cross-origin requests', () => {

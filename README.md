@@ -54,10 +54,32 @@ All art and audio are generated once and committed; the app makes no runtime mod
 Only the default Italian narrator is precached for offline use. The other four
 are cached the first time one is played, so the install stays around 12 MB.
 
+## Progressive downloads
+
+A first install carries the shell only — about **0.85 MB**: app code, fonts,
+icons, UI sounds and the music loop. Level art, word clues and word clips
+download after that, in level order (level _n_ illustration, its three clues,
+its three clips, then level _n+1_), starting from the level the player is on.
+Packages 2 and 3 join the queue only once they unlock.
+
+A slim progress bar pinned to the top reports the queue. It never blocks play:
+a missing file simply streams in when requested. The queue is restarted on
+`online` and after a level completes.
+
+`scripts/build_manifest.mjs` writes one manifest per package, language and
+narrator under `static/manifests/`, listing only the files that exist and their
+byte sizes. `pnpm build` regenerates them through `prebuild`.
+
+Downloads write into the same versioned cache the service worker reads, so a
+finished queue is also the offline copy. Because each deploy opens a fresh
+cache, the offline guarantee covers the language and narrator actually in use,
+not all five languages.
+
 Regenerate:
 
 ```bash
 pnpm content:export                         # content.json, content.p2.json, content.p3.json, themes.json
+pnpm manifests                              # static/manifests/<package>/<locale>/<voice>.json
 /Users/ionutale/developer-playground/flux2-klein-mlx-studio/.venv/bin/python scripts/generate_art.py --all
 node scripts/generate_audio.mjs --all       # starts from the local studio; see below
 /Users/ionutale/developer-playground/flux2-klein-mlx-studio/.venv/bin/python scripts/generate_word_art.py --all

@@ -3,7 +3,7 @@ import { assets, immutable } from '$app/manifest';
 import { version } from '$app/env';
 import { resolve } from '$app/paths';
 import { self } from '$app/service-worker';
-import { decide, isLazyVoiceClip } from '#lib/pwa/policy';
+import { decide, isDownloadedAsset } from '#lib/pwa/policy';
 
 // One cache per deployment: a new build opens a fresh cache and the activate
 // handler deletes everything else, so stale assets can never be served.
@@ -12,12 +12,12 @@ const INDEX = '/200.html';
 const BATCH = 8;
 
 // `immutable`/`assets` are relative to the base path; resolve them to
-// pathnames that can be cached and matched back. `assets` includes every file
-// in static/, so all 50 illustrations and the default word clips are covered.
+// pathnames that can be cached and matched back. Art and word audio are left
+// out: the app downloads those in level order, so a first install is small.
 const PRECACHE = [
 	...immutable.map((asset) => resolve(asset.path)),
 	...assets.map((asset) => resolve(asset.path))
-].filter((path) => !isLazyVoiceClip(path));
+].filter((path) => !isDownloadedAsset(path));
 
 self.addEventListener('install', (event) => {
 	event.waitUntil(

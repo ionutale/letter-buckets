@@ -42,14 +42,25 @@ async function seed(page: Page, locale: string, unlocked: boolean) {
 	);
 }
 
+/** Waits for the progressive download queue so the bar is never in a shot. */
+async function settle(page: import('@playwright/test').Page): Promise<void> {
+	await page
+		.waitForFunction(() => localStorage.getItem('letter-buckets-downloads') !== null, null, {
+			timeout: 60_000
+		})
+		.catch(() => undefined);
+}
+
 for (const locale of ['en', 'ro', 'it', 'de', 'ru']) {
 	test(`home, level, word panel and Word Book in ${locale}`, async ({ page }) => {
 		await seed(page, locale, false);
 		await page.goto(`/${locale}/`);
+		await settle(page);
 		await expect(page.locator('a.play')).toBeVisible();
 		await expect(page).toHaveScreenshot(`home-${locale}.png`);
 
 		await page.goto(`/${locale}/levels/1`);
+		await settle(page);
 		await expect(page.locator('button.bucket').first()).toBeVisible();
 		await expect(page).toHaveScreenshot(`level-${locale}.png`);
 
@@ -67,6 +78,7 @@ for (const locale of ['en', 'ro', 'it', 'de', 'ru']) {
 		}, locale);
 
 		await page.goto(`/${locale}/words`);
+		await settle(page);
 		await expect(page.locator('.chip').first()).toBeVisible();
 		await expect(page).toHaveScreenshot(`book-${locale}.png`, { fullPage: true });
 	});

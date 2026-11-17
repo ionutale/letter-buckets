@@ -18,6 +18,8 @@ test('works offline after install, including real word playback and art', async 
 
 	await page.goto('/en/');
 	await page.evaluate(() => navigator.serviceWorker.ready);
+	// The shell installs first; level assets follow in the background.
+	await expect(page.locator('.download-bar')).toHaveCount(0, { timeout: 90_000 });
 
 	const keys = await page.evaluate(() => caches.keys());
 	expect(keys.some((key) => key.startsWith('letter-buckets-'))).toBe(true);
@@ -28,7 +30,7 @@ test('works offline after install, including real word playback and art', async 
 
 	const audio = await page.evaluate(async () => (await fetch('/audio/words/en/l01-w1.mp3')).status);
 	const image = await page.evaluate(async () => (await fetch('/art/levels/l01.webp')).status);
-	const clue = await page.evaluate(async () => (await fetch('/art/words/ro/l01-w1.webp')).status);
+	const clue = await page.evaluate(async () => (await fetch('/art/words/en/l01-w1.webp')).status);
 	expect(audio).toBe(200);
 	expect(image).toBe(200);
 	expect(clue).toBe(200);

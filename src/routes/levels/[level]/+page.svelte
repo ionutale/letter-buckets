@@ -28,6 +28,7 @@
 	import WordPanel from '#lib/components/WordPanel.svelte';
 	import LevelComplete from '#lib/components/LevelComplete.svelte';
 	import CoachMark from '#lib/components/CoachMark.svelte';
+	import { ensureDownloads } from '#lib/pwa/downloads.svelte.js';
 
 	let data = $state<SaveData | null>(null);
 	let session = $state<LevelSession | null>(null);
@@ -102,6 +103,8 @@
 				if (!data) return;
 				audio.playSfx('level-complete');
 				persistPackage(data);
+				// A finished Package 1 unlocks Package 2; queue it right away.
+				void ensureDownloads();
 			}
 		});
 	});

@@ -27,7 +27,10 @@
 		"validate:assets": "node scripts/validate_assets.mjs",
 		"size": "node scripts/check_build_size.mjs",
 		"assets:words": "python3 scripts/generate_word_art.py --all",
-		"deploy:cf": "pnpm build && pnpm dlx wrangler@latest pages deploy build --project-name letter-buckets"
+		"deploy:cf": "pnpm build && pnpm dlx wrangler@latest pages deploy build --project-name letter-buckets",
+		"prebuild": "tsx scripts/export_content.ts && node scripts/build_manifest.mjs",
+		"predev": "tsx scripts/export_content.ts && node scripts/build_manifest.mjs",
+		"manifests": "node scripts/build_manifest.mjs"
 	},
 	"dependencies": {
 		"@fontsource/nunito": "^5.2.5"

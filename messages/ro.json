@@ -81,5 +81,7 @@
 	"package_locked": "Termină Pachetul 1 pentru a debloca",
 	"package_3": "Pachetul 3",
 	"voice_choice": "Narator",
-	"voice_choice_hint": "Atinge o voce ca s-o auzi."
+	"voice_choice_hint": "Atinge o voce ca s-o auzi.",
+	"preparing_game": "Se pregătește jocul",
+	"downloading_package": "Se descarcă pachetul {n}"
 }

@@ -81,5 +81,7 @@
 	"package_locked": "Completa il Pacchetto 1 per sbloccare",
 	"package_3": "Pacchetto 3",
 	"voice_choice": "Narratore",
-	"voice_choice_hint": "Tocca una voce per ascoltarla."
+	"voice_choice_hint": "Tocca una voce per ascoltarla.",
+	"preparing_game": "Preparazione del gioco",
+	"downloading_package": "Scaricamento pacchetto {n}"
 }

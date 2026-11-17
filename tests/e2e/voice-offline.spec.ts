@@ -7,6 +7,8 @@ test('alternate narrators are cached on first play, not at install', async ({ pa
 
 	await page.goto('/it/');
 	await page.evaluate(() => navigator.serviceWorker.ready);
+	// Package one for the default narrator downloads in the background.
+	await expect(page.locator('.download-bar')).toHaveCount(0, { timeout: 90_000 });
 
 	const cached = (path: string) =>
 		page.evaluate(async (url) => (await caches.match(url)) !== undefined, path);

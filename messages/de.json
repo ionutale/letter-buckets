@@ -81,5 +81,7 @@
 	"package_locked": "Schließe Paket 1 ab zum Freischalten",
 	"package_3": "Paket 3",
 	"voice_choice": "Erzähler",
-	"voice_choice_hint": "Tippe auf eine Stimme, um sie zu hören."
+	"voice_choice_hint": "Tippe auf eine Stimme, um sie zu hören.",
+	"preparing_game": "Spiel wird vorbereitet",
+	"downloading_package": "Paket {n} wird geladen"
 }

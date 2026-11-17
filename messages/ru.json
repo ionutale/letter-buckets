@@ -81,5 +81,7 @@
 	"package_locked": "Завершите Пакет 1, чтобы открыть",
 	"package_3": "Пакет 3",
 	"voice_choice": "Рассказчик",
-	"voice_choice_hint": "Нажмите на голос, чтобы услышать его."
+	"voice_choice_hint": "Нажмите на голос, чтобы услышать его.",
+	"preparing_game": "Подготовка игры",
+	"downloading_package": "Загрузка пакета {n}"
 }
