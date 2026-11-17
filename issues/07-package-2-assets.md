@@ -7,7 +7,7 @@
 **Status:** ready-for-agent
 
 - [x] Extend the asset generators to read Package 2 and write `/art/p2/…` and `/audio/p2/…`.
-- [ ] Generate 50 level illustrations at 768×432 WebP.
+- [x] Generate 50 level illustrations at 768×432 WebP (reviewed via `python3 scripts/contact_sheet.py --package p2`).
 - [ ] Generate 750 localized word clues at 256×256 WebP.
 - [ ] Generate 750 slowed, regional word clips.
   - [x] Italian: 150 clips generated with the native `narratrice-a` voice.
