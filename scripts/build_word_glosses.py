@@ -279,6 +279,7 @@ OVERRIDES = {
 # replacements cover the ones a bare word renders badly.
 PACKAGE_OVERRIDES = {
 	"p2": {
+		"41:1": "overlapping fish scales",
 		"2:1": "a soft square cushion with a button",
 		"23:0": "a television remote with a row of buttons",
 		"24:1": "a radio speaker with a round grille",
@@ -327,6 +328,7 @@ PACKAGE_OVERRIDES = {
 		"49:1": "a pile of gold coins",
 	},
 	"p3": {
+		"16:0": "a glass of water",
 		"2:2": "a round nose with two nostrils",
 		"7:2": "a stack of coloured paper sheets",
 		"14:1": "a pile of mixed nuts",
