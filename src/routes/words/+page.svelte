@@ -4,18 +4,21 @@
 	import { getLocale, localizeHref } from '#lib/paraglide/runtime.js';
 	import { getLevelContent, getWordArt } from '#lib/content/index.js';
 	import type { Locale, PackageId } from '#lib/content/schema.js';
-	import { audio } from '#lib/audio/index.js';
+	import { audio, wordAudioPath } from '#lib/audio/index.js';
+	import { DEFAULT_VOICE, resolveVoice } from '#lib/content/voices.js';
 	import { loadSave, resolveActivePackage, wordKey, type SaveData } from '#lib/storage/save.js';
 	import WordChip from '#lib/components/WordChip.svelte';
 
 	let data = $state<SaveData | null>(null);
 	let locale = $state<Locale>('en');
 	let packageId = $state<PackageId>('p1');
+	let voice = $state(DEFAULT_VOICE);
 
 	onMount(() => {
 		locale = getLocale() as Locale;
 		packageId = resolveActivePackage(localStorage, locale);
 		data = loadSave(localStorage, packageId);
+		voice = resolveVoice(locale, data.settings.voice);
 	});
 
 	const unlocked = $derived(data ? data.locales[locale].unlocked : {});
@@ -34,12 +37,11 @@
 	);
 
 	function audioPath(level: number, index: number): string {
-		const folder = packageId === 'p2' ? '/audio/p2/words' : '/audio/words';
-		return `${folder}/${locale}/l${String(level).padStart(2, '0')}-w${index + 1}.mp3`;
+		return wordAudioPath(locale, level, index, packageId, voice);
 	}
 
 	function play(level: number, index: number): void {
-		audio.playWord(locale, level, index, packageId);
+		audio.playWord(locale, level, index, packageId, voice);
 	}
 </script>
 

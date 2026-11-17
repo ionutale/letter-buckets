@@ -8,7 +8,8 @@ export type SfxName =
 	| 'level-complete'
 	| 'coin';
 
-import type { PackageId } from '../content/schema.js';
+import type { Locale, PackageId } from '../content/schema.js';
+import { DEFAULT_VOICE, voiceSegment } from '../content/voices.js';
 
 export type VolumeChannel = 'music' | 'sfx' | 'voice';
 
@@ -25,8 +26,14 @@ export interface AudioController {
 	setMuted(muted: boolean): void;
 	setVolume(channel: VolumeChannel, value: number): void;
 	setVolumes(volumes: Partial<AudioVolumes>): void;
-	playWord(locale: string, level: number, index: number, packageId?: PackageId): void;
-	preloadLevel(locale: string, level: number, packageId?: PackageId): void;
+	playWord(
+		locale: string,
+		level: number,
+		index: number,
+		packageId?: PackageId,
+		voice?: string
+	): void;
+	preloadLevel(locale: string, level: number, packageId?: PackageId, voice?: string): void;
 	playSfx(name: SfxName): void;
 	playMusic(): void;
 	stopWord(): void;
@@ -40,7 +47,8 @@ export function wordAudioPath(
 	locale: string,
 	level: number,
 	index: number,
-	packageId: PackageId = 'p1'
+	packageId: PackageId = 'p1',
+	voice: string = DEFAULT_VOICE
 ): string {
 	const folder =
 		packageId === 'p3'
@@ -48,7 +56,8 @@ export function wordAudioPath(
 			: packageId === 'p2'
 				? '/audio/p2/words'
 				: '/audio/words';
-	return `${folder}/${locale}/l${String(level).padStart(2, '0')}-w${index + 1}.mp3`;
+	const segment = voiceSegment(locale as Locale, voice);
+	return `${folder}/${locale}/${segment}l${String(level).padStart(2, '0')}-w${index + 1}.mp3`;
 }
 
 export function createAudioController(options: AudioOptions = {}): AudioController {
@@ -239,14 +248,15 @@ export function createAudioController(options: AudioOptions = {}): AudioControll
 		locale: string,
 		level: number,
 		index: number,
-		packageId: PackageId = 'p1'
+		packageId: PackageId = 'p1',
+		voice: string = DEFAULT_VOICE
 	): void {
 		if (muted) return;
 		stopSfx();
 		stopWord();
 		duckMusic(true);
 		const audio = make();
-		audio.src = wordAudioPath(locale, level, index, packageId);
+		audio.src = wordAudioPath(locale, level, index, packageId, voice);
 		const routed = connectElement(audio, 'voice');
 		audio.volume = routed ? 1 : 0.9 * volumes.voice;
 		audio.addEventListener('ended', restoreMusic, { once: true });
@@ -255,9 +265,14 @@ export function createAudioController(options: AudioOptions = {}): AudioControll
 		playQuietly(audio);
 	}
 
-	function preloadLevel(locale: string, level: number, packageId: PackageId = 'p1'): void {
+	function preloadLevel(
+		locale: string,
+		level: number,
+		packageId: PackageId = 'p1',
+		voice: string = DEFAULT_VOICE
+	): void {
 		for (let index = 0; index < 3; index++) {
-			const path = wordAudioPath(locale, level, index, packageId);
+			const path = wordAudioPath(locale, level, index, packageId, voice);
 			if (preloads.has(path)) continue;
 			const audio = make();
 			audio.preload = 'auto';

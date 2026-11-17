@@ -474,3 +474,35 @@ describe('packages', () => {
 		expect(loadSave(store, 'p2').locales.en.levelWords).toEqual({ 1: [0] });
 	});
 });
+
+describe('italian voice', () => {
+	function store(settings: Record<string, unknown>) {
+		const map = new Map<string, string>();
+		map.set('letter-buckets-save', JSON.stringify({ version: 1, settings, locales: {} }));
+		return {
+			getItem: (key: string) => map.get(key) ?? null,
+			setItem: (key: string, value: string) => void map.set(key, value)
+		};
+	}
+
+	it('defaults to the narratrice voice', () => {
+		expect(defaultSave().settings.voice).toBe('narratrice');
+	});
+
+	it('keeps a known voice through a reload', () => {
+		const map = new Map<string, string>();
+		const storage = {
+			getItem: (key: string) => map.get(key) ?? null,
+			setItem: (key: string, value: string) => void map.set(key, value)
+		};
+		const data = defaultSave();
+		data.settings.voice = 'marco';
+		persistSave(data, storage);
+		expect(loadSave(storage).settings.voice).toBe('marco');
+	});
+
+	it('ignores an unknown voice', () => {
+		expect(loadSave(store({ voice: 'someone-else' })).settings.voice).toBe('narratrice');
+		expect(loadSave(store({ voice: 42 })).settings.voice).toBe('narratrice');
+	});
+});

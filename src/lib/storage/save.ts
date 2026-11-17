@@ -1,5 +1,6 @@
 import type { Locale, PackageId } from '../content/schema.js';
 import { LOCALES } from '../content/schema.js';
+import { DEFAULT_VOICE, ITALIAN_VOICES } from '../content/voices.js';
 
 export type GameMode = 'easy' | 'medium' | 'hard';
 
@@ -38,6 +39,8 @@ export interface SaveSettings {
 	mode: GameMode;
 	volumes: VolumeSettings;
 	activePackage: PackageId;
+	/** Italian narrator choice; other languages have a single voice. */
+	voice: string;
 }
 
 export interface SaveData {
@@ -98,7 +101,8 @@ export function defaultSave(): SaveData {
 			installHintDismissed: false,
 			mode: 'easy',
 			volumes: { music: 1, sfx: 1, voice: 1 },
-			activePackage: 'p1'
+			activePackage: 'p1',
+			voice: DEFAULT_VOICE
 		},
 		locales: Object.fromEntries(
 			LOCALES.map((locale) => [locale, defaultLocaleProgress()])
@@ -293,6 +297,13 @@ export function loadSave(storage?: KeyValueStorage | null, packageId: PackageId 
 			parsed.settings.activePackage === 'p3'
 		) {
 			data.settings.activePackage = parsed.settings.activePackage;
+		}
+		const storedVoice = parsed.settings.voice;
+		if (
+			typeof storedVoice === 'string' &&
+			ITALIAN_VOICES.some((option) => option.id === storedVoice)
+		) {
+			data.settings.voice = storedVoice;
 		}
 		if (isPlainObject(parsed.settings.volumes)) {
 			for (const channel of ['music', 'sfx', 'voice'] as const) {

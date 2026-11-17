@@ -1,3 +1,5 @@
+import { DEFAULT_VOICE, ITALIAN_VOICES } from '../content/voices.js';
+
 export interface DecisionInput {
 	method: string;
 	url: string;
@@ -28,4 +30,18 @@ export function decide(input: DecisionInput, origin: string): Decision {
 		return 'bypass';
 	}
 	return 'bypass';
+}
+
+const LAZY_VOICES = new Set(
+	ITALIAN_VOICES.filter((voice) => voice.id !== DEFAULT_VOICE).map((voice) => voice.id)
+);
+
+/**
+ * Alternate Italian narrators stay out of the install precache: five voices of
+ * every Italian clip would double the download. They are cached on first play
+ * by the cache-first `/audio/` lane instead.
+ */
+export function isLazyVoiceClip(path: string): boolean {
+	const match = /\/words\/it\/([^/]+)\//.exec(path);
+	return match !== null && LAZY_VOICES.has(match[1]);
 }

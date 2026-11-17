@@ -6,6 +6,20 @@ describe('wordAudioPath', () => {
 		expect(wordAudioPath('en', 1, 0)).toBe('/audio/words/en/l01-w1.mp3');
 		expect(wordAudioPath('ru', 50, 2)).toBe('/audio/words/ru/l50-w3.mp3');
 	});
+
+	it('keeps the default Italian voice on the flat path', () => {
+		expect(wordAudioPath('it', 1, 0)).toBe('/audio/words/it/l01-w1.mp3');
+		expect(wordAudioPath('it', 1, 0, 'p1', 'narratrice')).toBe('/audio/words/it/l01-w1.mp3');
+	});
+
+	it('puts alternate Italian voices in their own folder', () => {
+		expect(wordAudioPath('it', 3, 1, 'p2', 'marco')).toBe('/audio/p2/words/it/marco/l03-w2.mp3');
+		expect(wordAudioPath('it', 50, 2, 'p3', 'lucia')).toBe('/audio/p3/words/it/lucia/l50-w3.mp3');
+	});
+
+	it('ignores the voice for languages with a single narrator', () => {
+		expect(wordAudioPath('en', 1, 0, 'p1', 'marco')).toBe('/audio/words/en/l01-w1.mp3');
+	});
 });
 
 describe('audio controller', () => {

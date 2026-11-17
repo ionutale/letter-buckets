@@ -79,5 +79,7 @@
 	"package_1": "Pachetul 1",
 	"package_2": "Pachetul 2",
 	"package_locked": "Termină Pachetul 1 pentru a debloca",
-	"package_3": "Pachetul 3"
+	"package_3": "Pachetul 3",
+	"voice_choice": "Narator",
+	"voice_choice_hint": "Atinge o voce ca s-o auzi."
 }

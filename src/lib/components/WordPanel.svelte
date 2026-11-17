@@ -78,7 +78,13 @@
 		document.addEventListener('visibilitychange', onVisibility);
 		document.addEventListener('keydown', onKey);
 		if (session.openIndex !== null) {
-			audio.playWord(session.locale, session.level, session.openIndex, session.packageId);
+			audio.playWord(
+				session.locale,
+				session.level,
+				session.openIndex,
+				session.packageId,
+				session.voice
+			);
 		}
 		return () => {
 			document.removeEventListener('visibilitychange', onVisibility);
@@ -130,7 +136,13 @@
 			if (done) {
 				announcement = m.word_complete();
 				if (session.openIndex !== null) {
-					audio.playWord(session.locale, session.level, session.openIndex, session.packageId);
+					audio.playWord(
+						session.locale,
+						session.level,
+						session.openIndex,
+						session.packageId,
+						session.voice
+					);
 				}
 			} else {
 				audio.playSfx('tile-place');
@@ -252,7 +264,13 @@
 				aria-label={m.hear_word()}
 				onclick={() =>
 					session.openIndex !== null &&
-					audio.playWord(session.locale, session.level, session.openIndex, session.packageId)}
+					audio.playWord(
+						session.locale,
+						session.level,
+						session.openIndex,
+						session.packageId,
+						session.voice
+					)}
 				><svg class="glyph" viewBox="0 0 24 24" aria-hidden="true"
 					><path
 						d="M4 9h4l5-4v14l-5-4H4z"
@@ -288,7 +306,13 @@
 				class="hear"
 				onclick={() =>
 					session.openIndex !== null &&
-					audio.playWord(session.locale, session.level, session.openIndex, session.packageId)}
+					audio.playWord(
+						session.locale,
+						session.level,
+						session.openIndex,
+						session.packageId,
+						session.voice
+					)}
 			>
 				<svg class="glyph" viewBox="0 0 24 24" aria-hidden="true"
 					><path

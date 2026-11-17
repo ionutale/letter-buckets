@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { decide } from './policy.js';
+import { decide, isLazyVoiceClip } from './policy.js';
 
 const app = 'https://letterbuckets.test';
 const input = (over: Partial<Parameters<typeof decide>[0]>) => ({
@@ -45,6 +45,15 @@ describe('decide', () => {
 				app
 			)
 		).toBe('cache-first');
+	});
+
+	it('keeps alternate italian narrators out of the install precache', () => {
+		expect(isLazyVoiceClip('/audio/words/it/chiara/l01-w1.mp3')).toBe(true);
+		expect(isLazyVoiceClip('/audio/p2/words/it/marco/l01-w1.mp3')).toBe(true);
+		expect(isLazyVoiceClip('/audio/p3/words/it/lucia/l50-w3.mp3')).toBe(true);
+		expect(isLazyVoiceClip('/audio/words/it/l01-w1.mp3')).toBe(false);
+		expect(isLazyVoiceClip('/audio/words/en/l01-w1.mp3')).toBe(false);
+		expect(isLazyVoiceClip('/audio/sfx/coin.mp3')).toBe(false);
 	});
 
 	it('bypasses non-GET and cross-origin requests', () => {

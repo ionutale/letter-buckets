@@ -4,6 +4,7 @@
 	import { m } from '#lib/paraglide/messages.js';
 	import { getLocale, localizeHref, locales, setLocale } from '#lib/paraglide/runtime.js';
 	import type { Locale } from '#lib/content/schema.js';
+	import { DEFAULT_VOICE, resolveVoice, voicesFor } from '#lib/content/voices.js';
 	import { audio } from '#lib/audio/index.js';
 	import {
 		currentLevel,
@@ -27,6 +28,7 @@
 	let locale = $state<Locale>('en');
 	let muted = $state(false);
 	let mode = $state<GameMode>('easy');
+	let voice = $state(DEFAULT_VOICE);
 	let holdProgress = $state(0);
 	let toast = $state('');
 	let holdTimer: number | null = null;
@@ -39,6 +41,7 @@
 		locale = getLocale() as Locale;
 		muted = data.settings.muted;
 		mode = data.settings.mode;
+		voice = resolveVoice(locale, data.settings.voice);
 		audio.setVolumes(data.settings.volumes);
 		audio.setMuted(muted);
 	});
@@ -87,6 +90,18 @@
 		data.settings.volumes[channel] = value;
 		audio.setVolume(channel, value);
 		persist();
+	}
+
+	const voices = $derived(voicesFor(locale));
+
+	/** Tapping a voice both selects it and plays a sample of it. */
+	function pickVoice(id: string): void {
+		if (!data) return;
+		audio.playSfx('ui-tap');
+		voice = id;
+		data.settings.voice = id;
+		persist();
+		audio.playWord('it', 1, 0, 'p1', id);
 	}
 
 	function toggleMute(): void {
@@ -199,6 +214,27 @@
 			{/each}
 		</div>
 	</section>
+
+	{#if voices.length > 1}
+		<section class="card" aria-label={m.voice_choice()}>
+			<h2>{m.voice_choice()}</h2>
+			<div class="voice-list">
+				{#each voices as item (item.id)}
+					<button
+						type="button"
+						class="voice"
+						class:selected={voice === item.id}
+						aria-pressed={voice === item.id}
+						onclick={() => pickVoice(item.id)}
+					>
+						<span>{item.label}</span>
+						<span class="speaker" aria-hidden="true">▶</span>
+					</button>
+				{/each}
+			</div>
+			<p class="note">{m.voice_choice_hint()}</p>
+		</section>
+	{/if}
 
 	<section class="card" aria-label={m.mode()}>
 		<h2>{m.mode()}</h2>
@@ -331,6 +367,30 @@
 		color: var(--lb-ink);
 		box-shadow: inset 0 0 0 3px var(--lb-ochre);
 	}
+	.voice-list {
+		display: grid;
+		gap: var(--lb-space-2);
+	}
+	.voice {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: var(--lb-space-2);
+		min-height: 52px;
+		padding: 0 var(--lb-space-3);
+		border-radius: var(--lb-radius-sm);
+		background: var(--lb-paper);
+		box-shadow: inset 0 0 0 2px var(--lb-border);
+		font-weight: 800;
+		text-align: left;
+	}
+	.voice.selected {
+		box-shadow: inset 0 0 0 3px var(--lb-ochre);
+	}
+	.voice .speaker {
+		color: var(--lb-ink-soft);
+		font-size: var(--lb-text-xs);
+	}
 	.mode-grid {
 		display: grid;
 		grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -358,6 +418,30 @@
 		box-shadow: inset 0 0 0 3px var(--lb-ochre);
 	}
 	@media (max-width: 430px) {
+		.voice-list {
+			display: grid;
+			gap: var(--lb-space-2);
+		}
+		.voice {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			gap: var(--lb-space-2);
+			min-height: 52px;
+			padding: 0 var(--lb-space-3);
+			border-radius: var(--lb-radius-sm);
+			background: var(--lb-paper);
+			box-shadow: inset 0 0 0 2px var(--lb-border);
+			font-weight: 800;
+			text-align: left;
+		}
+		.voice.selected {
+			box-shadow: inset 0 0 0 3px var(--lb-ochre);
+		}
+		.voice .speaker {
+			color: var(--lb-ink-soft);
+			font-size: var(--lb-text-xs);
+		}
 		.mode-grid {
 			grid-template-columns: 1fr;
 		}

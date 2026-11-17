@@ -5,6 +5,7 @@
 	import { m } from '#lib/paraglide/messages.js';
 	import { getLocale, localizeHref } from '#lib/paraglide/runtime.js';
 	import { getLevelArt, getWordArt } from '#lib/content/index.js';
+	import { DEFAULT_VOICE, resolveVoice } from '#lib/content/voices.js';
 	import type { Locale, PackageId } from '#lib/content/schema.js';
 	import { createLevelSession } from '#lib/game/session.svelte.js';
 	import type { LevelSession } from '#lib/game/session.svelte.js';
@@ -32,6 +33,7 @@
 	let session = $state<LevelSession | null>(null);
 	let locale = $state<Locale>('en');
 	let packageId = $state<PackageId>('p1');
+	let voice = $state(DEFAULT_VOICE);
 	let artBroken = $state(false);
 	let coachStep = $state<1 | 2 | null>(null);
 	let muted = $state(false);
@@ -53,8 +55,9 @@
 		data = loadSave(localStorage, packageId);
 		muted = data.settings.muted;
 		mode = data.settings.mode;
+		voice = resolveVoice(locale, data.settings.voice);
 		audio.setMuted(muted);
-		audio.preloadLevel(locale, paramLevel, packageId);
+		audio.preloadLevel(locale, paramLevel, packageId, voice);
 		if (paramLevel === 1 && !data.settings.coachDone) coachStep = 1;
 	});
 
@@ -71,12 +74,14 @@
 			void goto(`${localizeHref('/levels')}?locked=1`);
 			return;
 		}
-		if (session?.level === level && session.packageId === packageId) return;
+		if (session?.level === level && session.packageId === packageId && session.voice === voice)
+			return;
 
-		audio.preloadLevel(locale, level, packageId);
+		audio.preloadLevel(locale, level, packageId, voice);
 		session?.closeWord();
 		session = createLevelSession(level, locale, {
 			packageId,
+			voice,
 			progress: getLocaleProgress(data, locale),
 			onWordComplete: (completedLevel, wordIndex, firstTry) => {
 				if (!data) return;

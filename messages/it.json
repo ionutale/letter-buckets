@@ -79,5 +79,7 @@
 	"package_1": "Pacchetto 1",
 	"package_2": "Pacchetto 2",
 	"package_locked": "Completa il Pacchetto 1 per sbloccare",
-	"package_3": "Pacchetto 3"
+	"package_3": "Pacchetto 3",
+	"voice_choice": "Narratore",
+	"voice_choice_hint": "Tocca una voce per ascoltarla."
 }

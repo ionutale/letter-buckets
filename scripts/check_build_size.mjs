@@ -18,10 +18,12 @@ const size = files.reduce((sum, file) => sum + statSync(file).size, 0);
 const images = files.filter((file) => /\/art\/levels\/l\d{2}\.webp$/.test(file));
 const wordImages = files.filter((file) => /\/art\/words\/[a-z]{2}\/l\d{2}-w\d\.webp$/.test(file));
 const clips = files.filter((file) => /\/audio\/words\/[a-z]{2}\/l\d{2}-w\d\.mp3$/.test(file));
+// Alternate Italian narrators live one folder deeper.
+const italianVoiceClips = files.filter((file) => /\/words\/it\/[^/]+\/l\d{2}-w\d\.mp3$/.test(file));
 
 console.log(`build: ${(size / 1024 / 1024).toFixed(2)} MB`);
 console.log(
-	`images: ${images.length}, word images: ${wordImages.length}, word clips: ${clips.length}`
+	`images: ${images.length}, word images: ${wordImages.length}, word clips: ${clips.length}, italian voice clips: ${italianVoiceClips.length}`
 );
 
 const largest = files
@@ -30,8 +32,8 @@ const largest = files
 	.slice(0, 10);
 for (const item of largest) console.log(`${(item.bytes / 1024).toFixed(1)} KB ${item.file}`);
 
-if (size > 20 * 1024 * 1024) {
-	console.error('build is over the 20 MB budget');
+if (size > 24 * 1024 * 1024) {
+	console.error('build is over the 24 MB budget');
 	process.exit(1);
 }
 if (images.length !== 50) {
@@ -44,6 +46,10 @@ if (wordImages.length !== 750) {
 }
 if (clips.length !== 750) {
 	console.error(`expected 750 word clips, found ${clips.length}`);
+	process.exit(1);
+}
+if (italianVoiceClips.length !== 1800) {
+	console.error(`expected 1800 alternate Italian clips, found ${italianVoiceClips.length}`);
 	process.exit(1);
 }
 console.log('size budget OK');

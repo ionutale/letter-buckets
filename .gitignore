@@ -9,6 +9,7 @@ candidates
 scripts/content.json
 scripts/content.p2.json
 scripts/content.p3.json
+scripts/voices.json
 scripts/themes.json
 .venv-piper
 src/lib/paraglide

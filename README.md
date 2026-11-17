@@ -47,9 +47,12 @@ Romanian, Italian, English, German, Russian. UI copy, theme names, word lists, a
 
 All art and audio are generated once and committed; the app makes no runtime model calls and has no third-party requests.
 
-- **Word audio:** Qwen3-TTS (via `music-sfx-voice-studio`) for English and German; Piper `ro_RO-mihai-medium` for Romanian and `ru_RU-irina-medium` for Russian. Italian uses the engine's designed native voice `narratrice-a`, cloned from an Italian reference, because Qwen's fixed presets carry an audible foreign accent.
+- **Word audio:** Qwen3-TTS (via `music-sfx-voice-studio`) for English and German; Piper `ro_RO-mihai-medium` for Romanian and `ru_RU-irina-medium` for Russian. Italian has five designed native narrators (`narratrice`, `chiara`, `marco`, `lucia`, `giovane`), selectable in Settings under Voce; `narratrice` is the default.
 - **Effects and music:** Stable Audio 3 and the studio's procedural effects.
 - **Illustrations:** 50 theme images and 750 per-word clue icons, FLUX.2-klein through mflux, layered-paper direction.
+
+Only the default Italian narrator is precached for offline use. The other four
+are cached the first time one is played, so the install stays around 12 MB.
 
 Regenerate:
 
@@ -62,10 +65,12 @@ node scripts/validate_assets.mjs            # 50 theme images, 750 word clues, 7
 node scripts/validate_assets.mjs --packages # also checks packages 2 and 3
 ```
 
-The audio job generates every package by default. Narrow it with `--package p2`
-and `--locale it`, and add `--force` to overwrite clips that already exist.
-Output goes to `static/audio/words/…` for Package 1 and `static/audio/p2/words/…`,
-`static/audio/p3/words/…` for the others.
+The audio job generates every package by default. Narrow it with `--package p2`,
+`--locale it` and `--voice chiara`, and add `--force` to overwrite clips that
+already exist. Output goes to `static/audio/words/…` for Package 1 and
+`static/audio/p2/words/…`, `static/audio/p3/words/…` for the others. Italian
+alternates get a voice segment, for example
+`static/audio/words/it/chiara/l01-w1.mp3`.
 
 `PIPER_BIN` can point at the local Piper virtualenv, for example
 `PIPER_BIN="$PWD/.venv-piper/bin/piper" node scripts/generate_audio.mjs --all`.

@@ -15,9 +15,10 @@ function flag(name) {
 }
 const ONLY_PACKAGE = flag('package');
 const ONLY_LOCALE = flag('locale');
+const ONLY_VOICE = flag('voice');
 if (!ALL && !SFX_ONLY) {
 	console.error(
-		'usage: node scripts/generate_audio.mjs --all | --sample [--force] [--package p1|p2|p3] [--locale it]'
+		'usage: node scripts/generate_audio.mjs --all | --sample [--force] [--package p1|p2|p3] [--locale it] [--voice chiara]'
 	);
 	process.exit(2);
 }
@@ -40,6 +41,7 @@ const PACKAGES = [
 	{ id: 'p2', content: 'scripts/content.p2.json', out: 'static/audio/p2/words' },
 	{ id: 'p3', content: 'scripts/content.p3.json', out: 'static/audio/p3/words' }
 ];
+const VOICES = JSON.parse(readFileSync('scripts/voices.json', 'utf8'));
 
 const LANGUAGES = {
 	en: 'English',
@@ -129,13 +131,12 @@ function piperWav(text, voice) {
 	return output;
 }
 
-async function qwenWav(text, locale) {
+async function qwenWav(text, locale, studioVoice) {
 	const language = LANGUAGES[locale];
-	const voice = QWEN_VOICE[locale];
-	if (!language || !voice) throw new Error(`No Qwen voice for ${locale}`);
+	if (!language || !studioVoice) throw new Error(`No Qwen voice for ${locale}`);
 	const result = await studio('/voice', {
 		text,
-		voice,
+		voice: studioVoice,
 		instruct: instructFor(locale),
 		language,
 		seconds: 4
@@ -146,7 +147,7 @@ async function qwenWav(text, locale) {
 	return output;
 }
 
-async function wordClip(locale, entry, output) {
+async function wordClip(locale, entry, output, studioVoice) {
 	if (existsSync(output) && !FORCE) {
 		console.log(`skip ${output}`);
 		return;
@@ -157,10 +158,25 @@ async function wordClip(locale, entry, output) {
 			? piperWav(text, PIPER_VOICE)
 			: locale === 'ru'
 				? piperWav(text, PIPER_VOICE_RU)
-				: await qwenWav(text, locale);
+				: await qwenWav(text, locale, studioVoice);
 	convert(wav, output, { speech: true });
 	rmSync(wav, { force: true });
 	console.log(`wrote ${output}`);
+}
+
+/**
+ * Voices to render for a locale. Italian has five; everything else has one.
+ * The default voice stays in the flat folder, the others get a segment.
+ */
+function voicePlan(locale) {
+	if (locale === 'it') {
+		return VOICES.italian.map((voice) => ({
+			id: voice.id,
+			studioId: voice.studioId,
+			segment: voice.id === VOICES.default ? '' : `${voice.id}/`
+		}));
+	}
+	return [{ id: 'default', studioId: QWEN_VOICE[locale], segment: '' }];
 }
 
 function selectedLocales(content) {
@@ -179,25 +195,28 @@ function selectedPackages() {
 async function generateWords() {
 	for (const pkg of selectedPackages()) {
 		for (const locale of selectedLocales(pkg.content)) {
-			if (SAMPLE) {
-				const output = `candidates/audio/${locale}-sample.mp3`;
-				const entry = pkg.content[locale].levels[0].words[0];
-				const text = entry.spoken ?? entry.word.toLowerCase();
-				const wav =
-					locale === 'ro'
-						? piperWav(text, PIPER_VOICE)
-						: locale === 'ru'
-							? piperWav(text, PIPER_VOICE_RU)
-							: await qwenWav(text, locale);
-				convert(wav, output);
-				rmSync(wav, { force: true });
-				console.log(`wrote ${output}`);
-				continue;
-			}
-			for (const level of pkg.content[locale].levels) {
-				for (let index = 0; index < level.words.length; index++) {
-					const output = `${pkg.out}/${locale}/l${pad(level.id)}-w${index + 1}.mp3`;
-					await wordClip(locale, level.words[index], output);
+			const voices = voicePlan(locale).filter((voice) => !ONLY_VOICE || voice.id === ONLY_VOICE);
+			for (const voice of voices) {
+				if (SAMPLE) {
+					const output = `candidates/audio/${locale}-${voice.id}-sample.mp3`;
+					const entry = pkg.content[locale].levels[0].words[0];
+					const text = entry.spoken ?? entry.word.toLowerCase();
+					const wav =
+						locale === 'ro'
+							? piperWav(text, PIPER_VOICE)
+							: locale === 'ru'
+								? piperWav(text, PIPER_VOICE_RU)
+								: await qwenWav(text, locale, voice.studioId);
+					convert(wav, output);
+					rmSync(wav, { force: true });
+					console.log(`wrote ${output}`);
+					continue;
+				}
+				for (const level of pkg.content[locale].levels) {
+					for (let index = 0; index < level.words.length; index++) {
+						const output = `${pkg.out}/${locale}/${voice.segment}l${pad(level.id)}-w${index + 1}.mp3`;
+						await wordClip(locale, level.words[index], output, voice.studioId);
+					}
 				}
 			}
 		}

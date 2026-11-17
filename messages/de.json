@@ -79,5 +79,7 @@
 	"package_1": "Paket 1",
 	"package_2": "Paket 2",
 	"package_locked": "Schließe Paket 1 ab zum Freischalten",
-	"package_3": "Paket 3"
+	"package_3": "Paket 3",
+	"voice_choice": "Erzähler",
+	"voice_choice_hint": "Tippe auf eine Stimme, um sie zu hören."
 }
