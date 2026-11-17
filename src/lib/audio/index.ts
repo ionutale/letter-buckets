@@ -287,14 +287,33 @@ export function createAudioController(options: AudioOptions = {}): AudioControll
 		stopSfx();
 		stopWord();
 		duckMusic(true);
-		const audio = make();
-		audio.src = wordAudioPath(locale, level, index, packageId, voice);
+		const path = wordAudioPath(locale, level, index, packageId, voice);
+		// A buffered element starts cleanly. A fresh one, routed into the graph
+		// and played in the same tick, can lose its first chunk while the media
+		// element is still filling — which sounds like a missing first letter.
+		const preloaded = preloads.get(path);
+		preloads.delete(path);
+		const audio = preloaded ?? make();
+		if (!preloaded) audio.src = path;
 		const routed = connectElement(audio, 'voice');
 		audio.volume = routed ? 1 : 0.9 * volumes.voice;
-		audio.addEventListener('ended', restoreMusic, { once: true });
+		audio.addEventListener('ended', () => {
+			restoreMusic();
+			warm(path);
+		});
 		audio.addEventListener('error', restoreMusic, { once: true });
 		word = audio;
 		playQuietly(audio);
+	}
+
+	/** Keeps one element warm for a repeat, without holding on to many. */
+	function warm(path: string): void {
+		if (preloads.has(path) || muted) return;
+		const audio = make();
+		audio.preload = 'auto';
+		audio.volume = 0;
+		audio.src = path;
+		preloads.set(path, audio);
 	}
 
 	function preloadLevel(

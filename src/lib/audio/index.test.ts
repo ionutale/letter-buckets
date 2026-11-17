@@ -115,6 +115,53 @@ describe('audio controller', () => {
 	});
 });
 
+describe('preloaded word elements', () => {
+	function fakeAudio() {
+		class FakeAudio {
+			src = '';
+			volume = 1;
+			loop = false;
+			preload = '';
+			paused = true;
+			readyState = 0;
+			play = vi.fn(async () => {
+				this.paused = false;
+			});
+			pause = vi.fn(() => {
+				this.paused = true;
+			});
+			addEventListener = vi.fn();
+		}
+		return FakeAudio;
+	}
+
+	it('plays the buffered element instead of loading a new one', () => {
+		const Fake = fakeAudio();
+		const created: InstanceType<typeof Fake>[] = [];
+		const controller = createAudioController({
+			createAudio: () => {
+				const audio = new Fake();
+				created.push(audio);
+				return audio as unknown as HTMLAudioElement;
+			}
+		});
+
+		controller.preloadLevel('en', 1);
+		expect(created).toHaveLength(3);
+		expect(created[0].src).toContain('/audio/words/en/l01-w1.mp3');
+
+		controller.playWord('en', 1, 0);
+		expect(created).toHaveLength(3);
+		expect(created[0].play).toHaveBeenCalled();
+		expect(created[0].volume).toBeCloseTo(0.9);
+
+		// The other two stay warm for their own words.
+		controller.playWord('en', 1, 1);
+		expect(created).toHaveLength(3);
+		expect(created[1].play).toHaveBeenCalled();
+	});
+});
+
 describe('channel volumes', () => {
 	it('scales music, effects and voice independently', () => {
 		class FakeAudio {
