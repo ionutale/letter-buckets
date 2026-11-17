@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onDestroy, onMount } from 'svelte';
+	import { onDestroy, onMount, tick } from 'svelte';
 	import { m } from '#lib/paraglide/messages.js';
 	import type { LevelSession } from '#lib/game/session.svelte.js';
 	import { getWordArt } from '#lib/content/index.js';
@@ -7,10 +7,14 @@
 	import { audio } from '#lib/audio/index.js';
 	import LetterTile from './LetterTile.svelte';
 	import Slot from './Slot.svelte';
+	import CoachMark from './CoachMark.svelte';
 
 	interface Props {
 		session: LevelSession;
 		hintsLeft?: number;
+		/** Coach step shown inside the dialog while it is open (step 2). */
+		coachStep?: 1 | 2 | null;
+		oncoached?: () => void;
 		onclose: () => void;
 	}
 
@@ -24,13 +28,20 @@
 		moved: boolean;
 	}
 
-	let { session, hintsLeft = Number.POSITIVE_INFINITY, onclose }: Props = $props();
+	let {
+		session,
+		hintsLeft = Number.POSITIVE_INFINITY,
+		coachStep = null,
+		oncoached,
+		onclose
+	}: Props = $props();
 
 	let selectedId = $state<string | null>(null);
 	let suggestedSlot = $state<number | null>(null);
 	let hintedSlot = $state<number | null>(null);
 	let hintedTile = $state<string | null>(null);
 	let announcement = $state('');
+	let announceToken = 0;
 	let drag = $state<DragState | null>(null);
 	let panelEl = $state<HTMLDivElement | null>(null);
 	let timers: number[] = [];
@@ -62,11 +73,23 @@
 				return;
 			}
 			if (event.key !== 'Tab' || !panelEl) return;
+			// A placement can disable or remove the focused control, dropping
+			// focus to <body>: pull it back so Tab cannot escape the modal.
+			if (!panelEl.contains(document.activeElement)) {
+				event.preventDefault();
+				panelEl.focus();
+				return;
+			}
 			const focusables = [...panelEl.querySelectorAll<HTMLElement>('button:not([disabled])')];
 			if (focusables.length === 0) return;
 			const first = focusables[0];
 			const last = focusables[focusables.length - 1];
-			if (event.shiftKey && document.activeElement === first) {
+			if (document.activeElement === panelEl) {
+				// The panel itself holds focus on open; Shift+Tab from there would
+				// otherwise move to the obscured level header behind it.
+				event.preventDefault();
+				(event.shiftKey ? last : first).focus();
+			} else if (event.shiftKey && document.activeElement === first) {
 				event.preventDefault();
 				last.focus();
 			} else if (!event.shiftKey && document.activeElement === last) {
@@ -118,14 +141,27 @@
 		for (const timer of uiTimers) window.clearTimeout(timer);
 	});
 
+	// A polite live region only announces when its text changes, so repeated
+	// identical messages ("Letter placed" twice in a row) would be silent.
+	// Clear the region first and set the message on the next tick — the DOM
+	// change is what makes the announcement happen.
+	function announce(message: string): void {
+		const token = ++announceToken;
+		announcement = '';
+		void tick().then(() => {
+			if (token === announceToken) announcement = message;
+		});
+	}
+
 	function selectTile(tile: Tile): void {
 		session.noteInteraction();
 		selectedId = selectedId === tile.id ? null : tile.id;
 		if (selectedId) audio.playSfx('tile-pick');
+		announceToken++; // drop any pending placement announcement
 		announcement = selectedId ? m.letter_selected({ letter: tile.letter }) : '';
 	}
 
-	function attempt(tileId: string, slot: number): void {
+	async function attempt(tileId: string, slot: number): Promise<void> {
 		if (!word) return;
 		const result = session.place(tileId, slot);
 		selectedId = null;
@@ -134,7 +170,7 @@
 			suggestedSlot = null;
 			const done = session.word !== null && isComplete(session.word);
 			if (done) {
-				announcement = m.word_complete();
+				announce(m.word_complete());
 				if (session.openIndex !== null) {
 					audio.playWord(
 						session.locale,
@@ -146,13 +182,27 @@
 				}
 			} else {
 				audio.playSfx('tile-place');
-				announcement = m.letter_placed();
+				announce(m.letter_placed());
+			}
+			// A keyboard or drag placement disables/removes the focused control,
+			// which drops focus to <body>. Park it deterministically: the next
+			// empty slot, or the "Back to buckets" button on the done card.
+			await tick();
+			if (!panelEl || !panelEl.isConnected) return;
+			if (done) {
+				panelEl.querySelector<HTMLElement>('.done-card .back')?.focus();
+			} else {
+				const empty = [
+					...panelEl.querySelectorAll<HTMLElement>('[data-slot]:not([data-filled="true"])')
+				];
+				(empty.find((target) => Number(target.getAttribute('data-slot')) > slot) ?? empty[0])
+					?.focus();
 			}
 			return;
 		}
 
 		audio.playSfx('tile-wrong');
-		announcement = m.try_another();
+		announce(m.try_another());
 		if (result.outcome === 'wrong-word' && result.suggestedSlot !== undefined) {
 			suggestedSlot = result.suggestedSlot;
 			const timer = window.setTimeout(() => {
@@ -379,6 +429,12 @@
 					/>
 				{/each}
 			</div>
+		{/if}
+
+		{#if coachStep === 2}
+			<!-- Rendered inside the aria-modal dialog so the tip and its button
+				are part of the modal subtree and reachable by the focus trap. -->
+			<CoachMark step={2} onclose={oncoached ?? onclose} />
 		{/if}
 
 		<p class="sr-only" aria-live="polite">{announcement}</p>

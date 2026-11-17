@@ -252,7 +252,13 @@
 	{/if}
 
 	{#if session && session.openIndex !== null}
-		<WordPanel {session} {hintsLeft} onclose={() => session?.closeWord()} />
+		<WordPanel
+			{session}
+			{hintsLeft}
+			{coachStep}
+			oncoached={dismissCoach}
+			onclose={() => session?.closeWord()}
+		/>
 	{/if}
 
 	{#if session && session.complete && session.openIndex === null}
@@ -264,7 +270,9 @@
 		/>
 	{/if}
 
-	{#if coachStep !== null}
+	<!-- Step 1 is shown while no word panel is open; step 2 renders inside
+		the panel dialog (WordPanel) so it stays in the modal subtree. -->
+	{#if coachStep === 1}
 		<CoachMark step={coachStep} onclose={dismissCoach} />
 	{/if}
 </main>

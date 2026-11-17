@@ -9,7 +9,10 @@
 	let { step, onclose }: Props = $props();
 </script>
 
-<aside class="coach" class:top={step === 2} role="status">
+<!-- Step 2 renders inside the word panel's dialog (see WordPanel), so it
+	drops the live-region role: it is interactive content in a modal, not a
+	passive status message. Step 1 is text-only and keeps role="status". -->
+<aside class="coach" class:top={step === 2} role={step === 1 ? 'status' : undefined}>
 	<span class="bulb" aria-hidden="true"
 		><svg viewBox="0 0 24 24"
 			><path
@@ -54,7 +57,7 @@
 		font-weight: 700;
 	}
 	button {
-		min-height: 40px;
+		min-height: 44px;
 		padding: 0 var(--lb-space-3);
 		border-radius: var(--lb-radius-pill);
 		background: var(--lb-gold);

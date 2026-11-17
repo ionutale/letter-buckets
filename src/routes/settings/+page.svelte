@@ -163,6 +163,12 @@
 		// Keep receiving the move/up events even if the finger drifts off the
 		// button during the three-second press (common on iOS).
 		element.setPointerCapture?.(event.pointerId);
+		beginHold();
+	}
+
+	/** Shared three-second hold, used by both pointer and keyboard input. */
+	function beginHold(): void {
+		if (!data || holdTimer !== null) return;
 		stopHoldTimer();
 		holdProgress = 0;
 		const started = Date.now();
@@ -170,6 +176,22 @@
 			holdProgress = Math.min(1, (Date.now() - started) / HOLD_MS);
 			if (holdProgress >= 1) completeHold();
 		}, 50);
+	}
+
+	/**
+	 * Keyboard equivalent of the pointer hold: pressing Enter or Space starts
+	 * the same timer, releasing the key (or leaving the button) cancels it
+	 * unless the three seconds already completed the reset.
+	 */
+	function onResetKeydown(event: KeyboardEvent): void {
+		if (event.key !== 'Enter' && event.key !== ' ') return;
+		event.preventDefault();
+		if (!event.repeat) beginHold();
+	}
+
+	function onResetKeyup(event: KeyboardEvent): void {
+		if (event.key !== 'Enter' && event.key !== ' ') return;
+		cancelHold();
 	}
 
 	function endHold(event: PointerEvent): void {
@@ -293,9 +315,20 @@
 			onpointerup={endHold}
 			onpointerleave={cancelHold}
 			onpointercancel={endHold}
+			onkeydown={onResetKeydown}
+			onkeyup={onResetKeyup}
+			onblur={cancelHold}
 			oncontextmenu={(event) => event.preventDefault()}
 		>
-			<span class="bar" style={`width:${Math.round(holdProgress * 100)}%`}></span>
+			<span
+				class="bar"
+				style={`width:${Math.round(holdProgress * 100)}%`}
+				role="progressbar"
+				aria-label={m.reset_progress()}
+				aria-valuemin={0}
+				aria-valuemax={100}
+				aria-valuenow={Math.round(holdProgress * 100)}
+			></span>
 			<span class="reset-label">{m.reset_progress()}</span>
 		</button>
 		<button type="button" class="link" onclick={howToPlay}>{m.how_to_play()}</button>
@@ -308,8 +341,11 @@
 		<p>Nunito (OFL). Generated art and audio. No accounts, no analytics, no tracking.</p>
 	</section>
 
+	<!-- The status region must exist before its text changes to be reliably
+		announced, so it stays mounted and empty; the visible pill follows. -->
+	<p class="sr-only" role="status" aria-live="polite">{toast}</p>
 	{#if toast}
-		<p class="toast" role="status">{toast}</p>
+		<p class="toast" aria-hidden="true">{toast}</p>
 	{/if}
 </main>
 

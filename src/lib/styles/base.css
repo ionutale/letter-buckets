@@ -44,7 +44,9 @@ button {
 }
 
 :focus-visible {
-	outline: 3px solid var(--lb-ochre);
+	/* --lb-ochre is 2.47:1 on paper; WCAG 2.2 SC 1.4.11 wants 3:1 for focus
+	   indicators, and the darker ochre reaches 3.71:1. */
+	outline: 3px solid var(--lb-ochre-dark);
 	outline-offset: 2px;
 	border-radius: 8px;
 }
