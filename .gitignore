@@ -26,3 +26,8 @@ static/manifests
 # Model checkpoints and cloned voice references
 models/
 .venv-xtts/
+
+# Experimental engine environments
+.venv-xtts/
+.venv-moss/
+.venv-f5/

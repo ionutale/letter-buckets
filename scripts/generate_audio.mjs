@@ -35,12 +35,13 @@ const PIPER_VOICE =
 const PIPER_VOICE_RU =
 	process.env.PIPER_VOICE_RU ?? resolve(homedir(), 'piper-voices/ru_RU-irina-medium.onnx');
 const PIPER_LENGTH_SCALE = process.env.PIPER_LENGTH_SCALE ?? '1.2';
-// Romanian uses the XTTS-v2 Romanian fine-tune with a cloned reference voice:
-// the model carries native pronunciation, the reference carries the timbre.
-const XTTS_PYTHON = process.env.XTTS_PYTHON ?? resolve('.venv-xtts/bin/python');
-const XTTS_WORKER = resolve('scripts/xtts_ro_worker.py');
-const XTTS_REFERENCE =
-	process.env.XTTS_REFERENCE ?? resolve('candidates/voice-clone/reference-eu.m4a');
+// Romanian uses MOSS-TTS v1.5 with a cloned reference voice: the model carries
+// native pronunciation, the reference carries the timbre. It is an 8B model, so
+// it runs in a worker that is started once per batch.
+const MOSS_PYTHON = process.env.MOSS_PYTHON ?? resolve('.venv-moss/bin/python');
+const MOSS_WORKER = resolve('scripts/moss_ro_worker.py');
+const MOSS_REFERENCE =
+	process.env.MOSS_REFERENCE ?? resolve('candidates/voice-clone/chunks6/chunk0.wav');
 const TMP = resolve('candidates/audio-tmp');
 mkdirSync(TMP, { recursive: true });
 
@@ -150,24 +151,25 @@ function piperWav(text, voice) {
 }
 
 /**
- * The XTTS checkpoint is 2 GB, so it runs in a worker that is started once and
- * fed one word at a time over stdin. Loading it per clip would take hours.
+ * The MOSS checkpoint is ~17 GB, so it runs in a worker that is started once and
+ * fed one word at a time over stdin. Each word takes seconds; loading the model
+ * per clip would take hours.
  */
-let xttsWorker = null;
-let xttsPending = [];
+let mossWorker = null;
+let mossPending = [];
 
-function startXtts() {
-	if (!existsSync(XTTS_PYTHON)) {
+function startMoss() {
+	if (!existsSync(MOSS_PYTHON)) {
 		throw new Error(
-			`missing ${XTTS_PYTHON}; run: uv venv .venv-xtts --python 3.12 && uv pip install --python .venv-xtts/bin/python "coqui-tts[codec]" torch torchaudio six`
+			`missing ${MOSS_PYTHON}; run: uv venv .venv-moss --python 3.12 && uv pip install --python .venv-moss/bin/python torch torchaudio "transformers==5.0.0" accelerate soundfile librosa torchcodec`
 		);
 	}
-	if (!existsSync(XTTS_REFERENCE)) {
-		throw new Error(`missing Romanian reference recording at ${XTTS_REFERENCE}`);
+	if (!existsSync(MOSS_REFERENCE)) {
+		throw new Error(`missing Romanian reference recording at ${MOSS_REFERENCE}`);
 	}
-	const proc = spawn(XTTS_PYTHON, [XTTS_WORKER], {
+	const proc = spawn(MOSS_PYTHON, [MOSS_WORKER], {
 		stdio: ['pipe', 'pipe', 'inherit'],
-		env: { ...process.env, XTTS_REFERENCE }
+		env: { ...process.env, MOSS_REFERENCE }
 	});
 	const lines = createInterface({ input: proc.stdout });
 	lines.on('line', (line) => {
@@ -179,33 +181,33 @@ function startXtts() {
 			return;
 		}
 		if (message.ready) return;
-		const settle = xttsPending.shift();
+		const settle = mossPending.shift();
 		if (settle) settle(message);
 	});
 	proc.on('exit', (code) => {
-		const failed = xttsPending;
-		xttsPending = [];
+		const failed = mossPending;
+		mossPending = [];
 		for (const settle of failed) settle({ ok: false, error: `worker exited (${code})` });
-		xttsWorker = null;
+		mossWorker = null;
 	});
 	return proc;
 }
 
-function xttsWav(text) {
-	xttsWorker ??= startXtts();
-	const wav = resolve(TMP, `xtts-${Date.now()}-${Math.random().toString(16).slice(2)}.wav`);
+function mossWav(text) {
+	mossWorker ??= startMoss();
+	const wav = resolve(TMP, `moss-${Date.now()}-${Math.random().toString(16).slice(2)}.wav`);
 	return new Promise((resolvePromise, reject) => {
-		xttsPending.push((message) => {
+		mossPending.push((message) => {
 			if (message.ok) resolvePromise(wav);
-			else reject(new Error(`xtts failed for "${text}": ${message.error ?? 'unknown'}`));
+			else reject(new Error(`moss failed for "${text}": ${message.error ?? 'unknown'}`));
 		});
-		xttsWorker.stdin.write(`${JSON.stringify({ text, wav })}\n`);
+		mossWorker.stdin.write(`${JSON.stringify({ text, wav })}\n`);
 	});
 }
 
-function stopXtts() {
-	xttsWorker?.stdin.end();
-	xttsWorker = null;
+function stopMoss() {
+	mossWorker?.stdin.end();
+	mossWorker = null;
 }
 
 async function qwenWav(text, locale, studioVoice) {
@@ -232,7 +234,7 @@ async function wordClip(locale, entry, output, studioVoice) {
 	const text = entry.spoken ?? entry.word.toLowerCase();
 	const wav =
 		locale === 'ro'
-			? await xttsWav(text)
+			? await mossWav(text)
 			: locale === 'ru'
 				? piperWav(text, PIPER_VOICE_RU)
 				: await qwenWav(text, locale, studioVoice);
@@ -280,7 +282,7 @@ async function generateWords() {
 					const text = entry.spoken ?? entry.word.toLowerCase();
 					const wav =
 						locale === 'ro'
-							? await xttsWav(text)
+							? await mossWav(text)
 							: locale === 'ru'
 								? piperWav(text, PIPER_VOICE_RU)
 								: await qwenWav(text, locale, voice.studioId);
@@ -403,7 +405,7 @@ async function main() {
 	try {
 		if (!SFX_ONLY) await generateWords();
 	} finally {
-		stopXtts();
+		stopMoss();
 	}
 	if (SAMPLE) return;
 	await sfx('tile-pick', 'click', 90);

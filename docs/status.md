@@ -57,11 +57,11 @@ issues/              tickets, including issues/review for the 2026-11-17 review
    glosses.
 5. `scripts/generate_audio.mjs --all --package pN [--locale xx] [--voice id]`
    renders clips: Qwen3-TTS for English, German and Italian (Italian uses
-   designed native voices), Piper for Russian, and the XTTS-v2 Romanian
-   fine-tune with a cloned reference voice for Romanian. `PIPER_BIN` must point
-   at `.venv-piper/bin/piper`; `XTTS_REFERENCE` and `XTTS_PYTHON` point at the
-   voice sample and the `.venv-xtts` interpreter. A Romanian-only run skips the
-   studio health check because that model is local.
+   designed native voices), Piper for Russian, and MOSS-TTS v1.5 with a cloned
+   reference voice for Romanian. `PIPER_BIN` must point at
+   `.venv-piper/bin/piper`; `MOSS_REFERENCE` and `MOSS_PYTHON` point at the voice
+   sample and the `.venv-moss` interpreter. A Romanian-only run skips the studio
+   health check because that model is local.
 6. `scripts/build_manifest.mjs` (run by `prebuild`) writes one manifest per
    package, language and narrator into `static/manifests/`, ordered per level
    (illustration, then each clue followed by its clip). A manifest with fewer
@@ -72,29 +72,30 @@ issues/              tickets, including issues/review for the 2026-11-17 review
 
 ## Romanian voice
 
-Romanian is the only locale whose voice is cloned rather than designed.
+Romanian is the only locale whose voice is cloned rather than designed, and it
+took seven rejected engines to get here.
 
-- **Why.** The Piper `ro_RO-mihai-medium` voice was rejected by ear as sounding
-  foreign, and four pacing and bitrate variants of it were rejected too. macOS
-  `Ioana` had the right sounds but an obviously synthetic delivery; Meta
-  `mms-tts-ron`, the `ro_RO-liana-high` Piper voice and the plain multilingual
-  models were all rejected as well.
-- **What ships.** `eduardem/xtts-v2-romanian-v2` (XTTS-v2 fine-tuned on ~700 h
-  of Romanian speech) conditioned on a 12-second recording of the author's own
-  voice. The model supplies native pronunciation, the reference supplies the
-  timbre. License: Coqui CPML, non-commercial, which fits this free game; the
-  attribution lives in Settings → About, in all five languages.
-- **How it runs.** `scripts/xtts_ro_worker.py` loads the 2 GB checkpoint once and
-  takes one word at a time over stdin, so `generate_audio.mjs` keeps a single
-  encode path for every locale. `candidates/voice-design/patch_xtts_ro.py`
-  teaches coqui-tts the Romanian branch the model card requires.
-- **Short-utterance traps.** XTTS pads the end of a word generously, so
-  durations are measured after trimming, not from the raw waveform. Varying the
-  sampler temperature to "retry" produced clipped takes at 0.6 and degenerate
-  repeats at 0.15, so retries resample at the approved 0.3. A take shorter than
-  its syllable count implies is re-sampled rather than shipped.
-- **Reference recording** lives at `candidates/voice-clone/reference-eu.m4a`,
-  which is gitignored: the voice stays out of the repository.
+- **Rejected by ear, in order:** Piper `ro_RO-mihai-medium` and four pacing and
+  bitrate variants of it (foreign accent); macOS `Ioana` (right sounds, obviously
+  synthetic); Meta `mms-tts-ron`; the `ro_RO-liana-high` Piper voice; the
+  XTTS-v2 Romanian fine-tune conditioned on the author's 12 s, 70 s and 130 s
+  recordings ("horrible"); and F5-TTS Romanian, which reads correctly but sounds
+  thin.
+- **What ships:** MOSS-TTS v1.5 (`OpenMOSS-Team/MOSS-TTS-v1.5`, 8B, Apache-2.0),
+  which lists Romanian among its 31 languages, conditioned on a reference
+  recording of Doina. The model supplies native pronunciation, the reference
+  supplies the timbre. Attribution lives in Settings → About, in all five
+  languages.
+- **How it runs:** `scripts/moss_ro_worker.py` loads the ~17 GB checkpoint once
+  and takes one word at a time over stdin, so `generate_audio.mjs` keeps a single
+  encode path for every locale. Words are generated with `tokens=12` because an
+  unconstrained one-word prompt often keeps talking, and every clip is gated on
+  trimmed duration (0.32–1.95 s) with up to four attempts.
+- **Batch generation** is slow — roughly an hour for 374 distinct words — so the
+  script writes one file per distinct word and `scripts/install_ro_clips.mjs`
+  maps those onto the 450 per-level paths, repeating across packages.
+- **Reference recordings** live under `candidates/voice-clone/`, which is
+  gitignored: neither voice enters the repository.
 
 ## Progressive downloads
 
