@@ -115,6 +115,13 @@ its beginning, or the volume sliders doing nothing.
 4. **Unbuffered elements reintroduced the clipped letter** (`7b2820e`).
    `preloadLevel()` built buffered elements that `playWord()` never used. Words
    are now played from the preloaded element and re-warmed after playback.
+5. **The device output was not running yet** (`25e2902`, confirmed on an iPhone).
+   The context reported `running` before the hardware unit produced sound, so
+   the first frames of every word were dropped. Every clip now carries **250 ms
+   of leading silence** (generator: `adelay=250:all=1`; `scripts/add_lead_silence.mjs`
+   can add or trim a prefix), and a silent sample is pushed through the output
+   when the context starts or resumes. Cost: about 5.8 MB of build size and a
+   quarter-second before each word; install size is unchanged.
 
 ## Code review, 2026-11-17
 
@@ -186,4 +193,4 @@ node scripts/validate_assets.mjs --packages
 - The audio and art pipelines need a local GPU and a shared studio process, and
   retry on `409 BUSY`.
 - Each deploy opens a new cache, so download flags are keyed by build version.
-- The build budget is 30 MB; the size gate also asserts exact asset counts.
+- The build budget is 45 MB; the size gate also asserts exact asset counts and the install size.
