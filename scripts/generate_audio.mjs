@@ -111,7 +111,10 @@ function convert(input, output, { music = false, sfx = false, speech = false } =
 		'silenceremove=start_periods=1:start_threshold=-45dB,areverse,' +
 		'silenceremove=start_periods=1:start_threshold=-45dB,areverse,' +
 		(speech ? 'atempo=0.85,' : '') +
-		'loudnorm=I=-18:TP=-3';
+		'loudnorm=I=-18:TP=-3' +
+		// A slow audio pipeline can drop the first frames of a clip. Leading
+		// silence costs half a second but guarantees the word is not clipped.
+		(speech ? ',adelay=250:all=1' : '');
 	// ffmpeg writes a hidden sibling; the rename below is the only thing that
 	// publishes it, so a killed run can never leave a truncated clip behind.
 	atomicallyReplace(output, (temp) => {

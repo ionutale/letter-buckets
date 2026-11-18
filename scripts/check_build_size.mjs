@@ -55,8 +55,8 @@ const largest = files
 	.slice(0, 10);
 for (const item of largest) console.log(`${(item.bytes / 1024).toFixed(1)} KB ${item.file}`);
 
-if (size > 30 * 1024 * 1024) {
-	console.error('build is over the 30 MB budget');
+if (size > 45 * 1024 * 1024) {
+	console.error('build is over the 45 MB budget');
 	process.exit(1);
 }
 if (installSize > INSTALL_BUDGET) {

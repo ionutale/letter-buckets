@@ -19,6 +19,7 @@ class FakeAudio {
 function installContext(state: 'suspended' | 'running') {
 	const createSource = vi.fn(() => ({ connect: vi.fn() }));
 	const gainCalls: number[] = [];
+	const silentStarts: number[] = [];
 	class FakeContext {
 		state = state;
 		destination = {};
@@ -35,6 +36,14 @@ function installContext(state: 'suspended' | 'running') {
 			};
 		}
 		createMediaElementSource = createSource;
+		createBuffer = vi.fn(() => ({}));
+		createBufferSource = vi.fn(() => ({
+			buffer: null,
+			connect: vi.fn(),
+			start: vi.fn(() => {
+				silentStarts.push(1);
+			})
+		}));
 		suspend = vi.fn(async () => {
 			this.state = 'suspended';
 		});
@@ -55,7 +64,7 @@ function installContext(state: 'suspended' | 'running') {
 		configurable: true,
 		writable: true
 	});
-	return { createSource, gainCalls };
+	return { createSource, gainCalls, silentStarts };
 }
 
 describe('audio graph', () => {
@@ -123,6 +132,25 @@ describe('audio graph', () => {
 		controller.playWord('en', 1, 0);
 		expect(createSource).not.toHaveBeenCalled();
 		expect(created[0].play).toHaveBeenCalled();
+	});
+
+	it('warms the output with a silent buffer before real audio', () => {
+		const { silentStarts } = installContext('running');
+		const controller = createAudioController({
+			createAudio: () => new FakeAudio() as unknown as HTMLAudioElement
+		});
+		controller.unlock();
+		expect(silentStarts.length).toBeGreaterThan(0);
+	});
+
+	it('warms again after a suspension', async () => {
+		const { silentStarts } = installContext('suspended');
+		const controller = createAudioController({
+			createAudio: () => new FakeAudio() as unknown as HTMLAudioElement
+		});
+		controller.unlock();
+		await new Promise((resolve) => setTimeout(resolve, 5));
+		expect(silentStarts.length).toBeGreaterThan(0);
 	});
 
 	it('schedules the gain of each channel as its slider moves', () => {

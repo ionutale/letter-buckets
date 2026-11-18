@@ -113,10 +113,32 @@ export function createAudioController(options: AudioOptions = {}): AudioControll
 		}
 	}
 
+	/**
+	 * A resumed context reports `running` before the output unit is actually
+	 * producing sound. Starting a real clip in that window loses its first
+	 * frames, which sounds like a missing first letter. Pushing one silent
+	 * sample through the destination spins the unit up first.
+	 */
+	let warmed = false;
+	function warmOutput(): void {
+		if (!context || context.state !== 'running') return;
+		try {
+			const buffer = context.createBuffer(1, 1, context.sampleRate);
+			const source = context.createBufferSource();
+			source.buffer = buffer;
+			source.connect(context.destination);
+			source.start(0);
+			warmed = true;
+		} catch {
+			// No output device or a blocked context: nothing to warm.
+		}
+	}
+
 	/** Music outlives the suspension that started it: link it when we can. */
 	function linkMusic(): void {
 		if (!context || context.state !== 'running') return;
 		if (!music || routed.has(music)) return;
+		if (!warmed) warmOutput();
 		connectElement(music, 'music');
 		if (routed.has(music)) {
 			// The channel gain owns the level from here. Leaving the element's own
@@ -130,12 +152,17 @@ export function createAudioController(options: AudioOptions = {}): AudioControll
 		// iOS reports "interrupted" after calls, alarms and the screen lock, and a
 		// suspended context is what a first tap usually leaves behind.
 		if (context?.state !== 'suspended' && context?.state !== 'interrupted') {
+			if (!warmed) warmOutput();
 			linkMusic();
 			return;
 		}
+		warmed = false;
 		void context
 			.resume()
-			.then(() => linkMusic())
+			.then(() => {
+				warmOutput();
+				linkMusic();
+			})
 			.catch(() => undefined);
 	}
 
@@ -181,6 +208,7 @@ export function createAudioController(options: AudioOptions = {}): AudioControll
 		unlocked = true;
 		ensureGraph();
 		resumeContext();
+		warmOutput();
 		if (!muted) playMusic();
 	}
 

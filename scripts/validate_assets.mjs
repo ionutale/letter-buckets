@@ -116,7 +116,7 @@ for (const pkg of PACKAGES) {
 								.toString()
 								.trim()
 						);
-						if (!Number.isFinite(duration) || duration < 0.15 || duration > 3) {
+						if (!Number.isFinite(duration) || duration < 0.15 || duration > 4) {
 							issues.push(`clip duration ${duration}s: ${clip}`);
 						}
 					} catch {
