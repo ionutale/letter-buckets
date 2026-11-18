@@ -28,7 +28,7 @@
 	"hold_to_reset": "Hold to reset",
 	"reset_progress": "Reset progress",
 	"about": "About",
-	"about_note": "Nunito (OFL). Generated art and audio. No accounts, no analytics, no tracking.",
+	"about_note": "Nunito (OFL). Art generated; Romanian voice cloned from the author's recording (XTTS v2, CPML). No accounts, no analytics, no tracking.",
 	"how_to_play": "How to play",
 	"level_locked_in_language": "That level isn't open in this language yet.",
 	"reset_done": "Progress reset.",

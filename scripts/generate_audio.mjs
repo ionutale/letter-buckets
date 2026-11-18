@@ -1,4 +1,5 @@
-import { spawnSync } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
+import { createInterface } from 'node:readline';
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, resolve } from 'node:path';
@@ -34,6 +35,12 @@ const PIPER_VOICE =
 const PIPER_VOICE_RU =
 	process.env.PIPER_VOICE_RU ?? resolve(homedir(), 'piper-voices/ru_RU-irina-medium.onnx');
 const PIPER_LENGTH_SCALE = process.env.PIPER_LENGTH_SCALE ?? '1.2';
+// Romanian uses the XTTS-v2 Romanian fine-tune with a cloned reference voice:
+// the model carries native pronunciation, the reference carries the timbre.
+const XTTS_PYTHON = process.env.XTTS_PYTHON ?? resolve('.venv-xtts/bin/python');
+const XTTS_WORKER = resolve('scripts/xtts_ro_worker.py');
+const XTTS_REFERENCE =
+	process.env.XTTS_REFERENCE ?? resolve('candidates/voice-clone/reference-eu.m4a');
 const TMP = resolve('candidates/audio-tmp');
 mkdirSync(TMP, { recursive: true });
 
@@ -105,12 +112,14 @@ async function take(url) {
 	return Buffer.from(await response.arrayBuffer());
 }
 
-function convert(input, output, { music = false, sfx = false, speech = false } = {}) {
+function convert(input, output, { music = false, sfx = false, speech = false, slow = false } = {}) {
 	mkdirSync(dirname(output), { recursive: true });
 	const filter =
 		'silenceremove=start_periods=1:start_threshold=-45dB,areverse,' +
 		'silenceremove=start_periods=1:start_threshold=-45dB,areverse,' +
-		(speech ? 'atempo=0.85,' : '') +
+		// The cloned Romanian voice is already at a natural pace; slowing it made
+		// the previous Piper voice sound foreign.
+		(slow ? 'atempo=0.85,' : '') +
 		'loudnorm=I=-18:TP=-3' +
 		// A slow audio pipeline can drop the first frames of a clip. Leading
 		// silence costs half a second but guarantees the word is not clipped.
@@ -140,6 +149,65 @@ function piperWav(text, voice) {
 	return output;
 }
 
+/**
+ * The XTTS checkpoint is 2 GB, so it runs in a worker that is started once and
+ * fed one word at a time over stdin. Loading it per clip would take hours.
+ */
+let xttsWorker = null;
+let xttsPending = [];
+
+function startXtts() {
+	if (!existsSync(XTTS_PYTHON)) {
+		throw new Error(
+			`missing ${XTTS_PYTHON}; run: uv venv .venv-xtts --python 3.12 && uv pip install --python .venv-xtts/bin/python "coqui-tts[codec]" torch torchaudio six`
+		);
+	}
+	if (!existsSync(XTTS_REFERENCE)) {
+		throw new Error(`missing Romanian reference recording at ${XTTS_REFERENCE}`);
+	}
+	const proc = spawn(XTTS_PYTHON, [XTTS_WORKER], {
+		stdio: ['pipe', 'pipe', 'inherit'],
+		env: { ...process.env, XTTS_REFERENCE }
+	});
+	const lines = createInterface({ input: proc.stdout });
+	lines.on('line', (line) => {
+		let message;
+		try {
+			message = JSON.parse(line);
+		} catch {
+			// Model loaders print progress to stdout; ignore anything else.
+			return;
+		}
+		if (message.ready) return;
+		const settle = xttsPending.shift();
+		if (settle) settle(message);
+	});
+	proc.on('exit', (code) => {
+		const failed = xttsPending;
+		xttsPending = [];
+		for (const settle of failed) settle({ ok: false, error: `worker exited (${code})` });
+		xttsWorker = null;
+	});
+	return proc;
+}
+
+function xttsWav(text) {
+	xttsWorker ??= startXtts();
+	const wav = resolve(TMP, `xtts-${Date.now()}-${Math.random().toString(16).slice(2)}.wav`);
+	return new Promise((resolvePromise, reject) => {
+		xttsPending.push((message) => {
+			if (message.ok) resolvePromise(wav);
+			else reject(new Error(`xtts failed for "${text}": ${message.error ?? 'unknown'}`));
+		});
+		xttsWorker.stdin.write(`${JSON.stringify({ text, wav })}\n`);
+	});
+}
+
+function stopXtts() {
+	xttsWorker?.stdin.end();
+	xttsWorker = null;
+}
+
 async function qwenWav(text, locale, studioVoice) {
 	const language = LANGUAGES[locale];
 	if (!language || !studioVoice) throw new Error(`No Qwen voice for ${locale}`);
@@ -164,11 +232,11 @@ async function wordClip(locale, entry, output, studioVoice) {
 	const text = entry.spoken ?? entry.word.toLowerCase();
 	const wav =
 		locale === 'ro'
-			? piperWav(text, PIPER_VOICE)
+			? await xttsWav(text)
 			: locale === 'ru'
 				? piperWav(text, PIPER_VOICE_RU)
 				: await qwenWav(text, locale, studioVoice);
-	convert(wav, output, { speech: true });
+	convert(wav, output, { speech: true, slow: locale !== 'ro' });
 	rmSync(wav, { force: true });
 	console.log(`wrote ${output}`);
 }
@@ -212,11 +280,11 @@ async function generateWords() {
 					const text = entry.spoken ?? entry.word.toLowerCase();
 					const wav =
 						locale === 'ro'
-							? piperWav(text, PIPER_VOICE)
+							? await xttsWav(text)
 							: locale === 'ru'
 								? piperWav(text, PIPER_VOICE_RU)
 								: await qwenWav(text, locale, voice.studioId);
-					convert(wav, output);
+					convert(wav, output, { speech: true, slow: locale !== 'ro' });
 					rmSync(wav, { force: true });
 					console.log(`wrote ${output}`);
 					continue;
@@ -317,13 +385,26 @@ function preflight() {
 
 async function main() {
 	preflight();
-	const health = await fetch(`${STUDIO}/health`).catch(() => null);
-	if (!health?.ok) {
-		throw new Error(
-			`Audio studio is not running at ${STUDIO}. Start music-sfx-voice-studio first.`
+	// Romanian and Russian are local models; only the Qwen voices need the studio,
+	// so a Romanian-only run should not fail because it is down.
+	const needsStudio =
+		SFX_ONLY ||
+		selectedPackages().some((pkg) =>
+			selectedLocales(pkg.content).some((locale) => locale !== 'ro' && locale !== 'ru')
 		);
+	if (needsStudio) {
+		const health = await fetch(`${STUDIO}/health`).catch(() => null);
+		if (!health?.ok) {
+			throw new Error(
+				`Audio studio is not running at ${STUDIO}. Start music-sfx-voice-studio first.`
+			);
+		}
 	}
-	if (!SFX_ONLY) await generateWords();
+	try {
+		if (!SFX_ONLY) await generateWords();
+	} finally {
+		stopXtts();
+	}
 	if (SAMPLE) return;
 	await sfx('tile-pick', 'click', 90);
 	await sfx('tile-place', 'blip', 130);

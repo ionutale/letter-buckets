@@ -57,8 +57,11 @@ issues/              tickets, including issues/review for the 2026-11-17 review
    glosses.
 5. `scripts/generate_audio.mjs --all --package pN [--locale xx] [--voice id]`
    renders clips: Qwen3-TTS for English, German and Italian (Italian uses
-   designed native voices), Piper for Romanian and Russian. `PIPER_BIN` must
-   point at `.venv-piper/bin/piper`.
+   designed native voices), Piper for Russian, and the XTTS-v2 Romanian
+   fine-tune with a cloned reference voice for Romanian. `PIPER_BIN` must point
+   at `.venv-piper/bin/piper`; `XTTS_REFERENCE` and `XTTS_PYTHON` point at the
+   voice sample and the `.venv-xtts` interpreter. A Romanian-only run skips the
+   studio health check because that model is local.
 6. `scripts/build_manifest.mjs` (run by `prebuild`) writes one manifest per
    package, language and narrator into `static/manifests/`, ordered per level
    (illustration, then each clue followed by its clip). A manifest with fewer
@@ -66,6 +69,32 @@ issues/              tickets, including issues/review for the 2026-11-17 review
 7. `node scripts/validate_assets.mjs --packages` checks every plate, clue and
    clip for every package and narrator, plus the effects, music and the level
    prompts, and `pnpm size` verifies the result.
+
+## Romanian voice
+
+Romanian is the only locale whose voice is cloned rather than designed.
+
+- **Why.** The Piper `ro_RO-mihai-medium` voice was rejected by ear as sounding
+  foreign, and four pacing and bitrate variants of it were rejected too. macOS
+  `Ioana` had the right sounds but an obviously synthetic delivery; Meta
+  `mms-tts-ron`, the `ro_RO-liana-high` Piper voice and the plain multilingual
+  models were all rejected as well.
+- **What ships.** `eduardem/xtts-v2-romanian-v2` (XTTS-v2 fine-tuned on ~700 h
+  of Romanian speech) conditioned on a 12-second recording of the author's own
+  voice. The model supplies native pronunciation, the reference supplies the
+  timbre. License: Coqui CPML, non-commercial, which fits this free game; the
+  attribution lives in Settings → About, in all five languages.
+- **How it runs.** `scripts/xtts_ro_worker.py` loads the 2 GB checkpoint once and
+  takes one word at a time over stdin, so `generate_audio.mjs` keeps a single
+  encode path for every locale. `candidates/voice-design/patch_xtts_ro.py`
+  teaches coqui-tts the Romanian branch the model card requires.
+- **Short-utterance traps.** XTTS pads the end of a word generously, so
+  durations are measured after trimming, not from the raw waveform. Varying the
+  sampler temperature to "retry" produced clipped takes at 0.6 and degenerate
+  repeats at 0.15, so retries resample at the approved 0.3. A take shorter than
+  its syllable count implies is re-sampled rather than shipped.
+- **Reference recording** lives at `candidates/voice-clone/reference-eu.m4a`,
+  which is gitignored: the voice stays out of the repository.
 
 ## Progressive downloads
 

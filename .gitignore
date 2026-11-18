@@ -18,3 +18,11 @@ src/lib/paraglide
 project.inlang/cache
 scripts/__pycache__/
 static/manifests
+
+# Local secrets
+.env
+.env.local
+
+# Model checkpoints and cloned voice references
+models/
+.venv-xtts/
