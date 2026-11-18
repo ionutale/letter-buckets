@@ -26,6 +26,18 @@ body {
 	font-family: var(--lb-font-body);
 	-webkit-tap-highlight-color: transparent;
 	overscroll-behavior: none;
+	/* A game, not a document: dragging on tiles or labels must never start a
+	   text selection or the iOS callout. */
+	-webkit-user-select: none;
+	user-select: none;
+	-webkit-touch-callout: none;
+}
+
+/* Keep selection working anywhere text is genuinely editable. */
+input,
+textarea {
+	-webkit-user-select: text;
+	user-select: text;
 }
 
 h1,

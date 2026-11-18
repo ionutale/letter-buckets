@@ -17,3 +17,26 @@ test('a 320px phone fits a six-letter word without horizontal overflow', async (
 		.poll(() => page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1))
 		.toBe(false);
 });
+
+test('dragging on the page never starts a text selection', async ({ page }) => {
+	await seedSave(page, { locale: 'en' });
+	await page.goto('/en/settings');
+	await expect(page.locator('#volume-music')).toBeVisible();
+
+	const styles = await page.evaluate(() => {
+		const range = document.querySelector('#volume-music');
+		return {
+			body: getComputedStyle(document.body).userSelect,
+			range: range ? getComputedStyle(range).userSelect : null
+		};
+	});
+	expect(styles.body).toBe('none');
+	expect(styles.range).toBe('text');
+
+	// A drag across the about text must not leave a selection behind.
+	await page.mouse.move(20, 300);
+	await page.mouse.down();
+	await page.mouse.move(300, 360, { steps: 10 });
+	await page.mouse.up();
+	expect(await page.evaluate(() => (window.getSelection()?.toString() ?? '').length)).toBe(0);
+});
