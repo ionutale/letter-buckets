@@ -40,3 +40,24 @@ test('dragging on the page never starts a text selection', async ({ page }) => {
 	await page.mouse.up();
 	expect(await page.evaluate(() => (window.getSelection()?.toString() ?? '').length)).toBe(0);
 });
+
+test('the game cannot be pinched or double-tap zoomed', async ({ page }) => {
+	await page.goto('/en/settings');
+
+	const viewport = await page.getAttribute('meta[name="viewport"]', 'content');
+	expect(viewport).toContain('user-scalable=no');
+	expect(viewport).toContain('maximum-scale=1');
+
+	// pan-x pan-y keeps scrolling but forbids pinch and double-tap zoom.
+	const touchAction = await page.evaluate(() => getComputedStyle(document.body).touchAction);
+	expect(touchAction).toBe('pan-x pan-y');
+
+	// iOS ignores the meta tag, so the gesture handler must be installed and must
+	// cancel a pinch rather than let it through.
+	const cancelled = await page.evaluate(() => {
+		const event = new Event('gesturestart', { bubbles: true, cancelable: true });
+		document.body.dispatchEvent(event);
+		return event.defaultPrevented;
+	});
+	expect(cancelled).toBe(true);
+});

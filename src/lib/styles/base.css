@@ -31,6 +31,8 @@ body {
 	-webkit-user-select: none;
 	user-select: none;
 	-webkit-touch-callout: none;
+	/* Panning and scrolling still work; pinch and double-tap zoom do not. */
+	touch-action: pan-x pan-y;
 }
 
 /* Keep selection working anywhere text is genuinely editable. */

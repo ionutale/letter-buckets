@@ -2,7 +2,21 @@
 <html lang="en">
 	<head>
 		<meta charset="utf-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+		<!-- A game, not a document: pinch and double-tap zoom only ever fight the
+		     tiles. iOS ignores user-scalable=no, so the guards below cover it. -->
+		<meta
+			name="viewport"
+			content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
+		/>
+		<script>
+			// Safari on iOS has ignored user-scalable=no since iOS 10. Gesture
+			// events are the only reliable way to stop a pinch there.
+			for (const type of ['gesturestart', 'gesturechange', 'gestureend']) {
+				document.addEventListener(type, (event) => event.preventDefault(), {
+					passive: false
+				});
+			}
+		</script>
 		<meta name="theme-color" content="#fdf6e9" />
 		<meta name="mobile-web-app-capable" content="yes" />
 		<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
