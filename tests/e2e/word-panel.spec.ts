@@ -90,3 +90,41 @@ test('a wrong letter returns to the tray', async ({ page }) => {
 	await expect(slot).toHaveAttribute('data-filled', 'false');
 	await expect(tile).toBeVisible();
 });
+
+test('a finger drag still moves a tile (touch, not mouse)', async ({ page, browserName }) => {
+	// Only Chromium exposes CDP, and the point is to drive real touch events.
+	test.skip(browserName !== 'chromium', 'touch events need CDP');
+	await page.goto('/en/levels/1');
+	await openFirstBucket(page);
+
+	const slot = await missingSlot(page);
+	const letter = await slot.getAttribute('data-letter');
+	const tile = page.locator(`[data-tile][data-letter="${letter}"]`).first();
+
+	const tileBox = await tile.boundingBox();
+	const slotBox = await slot.boundingBox();
+	expect(tileBox).not.toBeNull();
+	expect(slotBox).not.toBeNull();
+	if (!tileBox || !slotBox) return;
+
+	const from = { x: tileBox.x + tileBox.width / 2, y: tileBox.y + tileBox.height / 2 };
+	const to = { x: slotBox.x + slotBox.width / 2, y: slotBox.y + slotBox.height / 2 };
+
+	const session = await page.context().newCDPSession(page);
+	const touch = (type: string, point: { x: number; y: number }) =>
+		session.send('Input.dispatchTouchEvent', {
+			type,
+			touchPoints: type === 'touchEnd' ? [] : [{ x: point.x, y: point.y }]
+		});
+
+	await touch('touchStart', from);
+	for (let step = 1; step <= 8; step++) {
+		await touch('touchMove', {
+			x: from.x + ((to.x - from.x) * step) / 8,
+			y: from.y + ((to.y - from.y) * step) / 8
+		});
+	}
+	await touch('touchEnd', to);
+
+	await expect(page.locator('[data-slot][data-filled="true"]')).toHaveCount(1);
+});
